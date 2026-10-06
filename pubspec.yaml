@@ -1,0 +1,42 @@
+name: replika
+description: "Реплика — постановочный мессенджер для кино и сериалов (Android, iPhone, iPad)."
+publish_to: 'none'
+version: 0.17.0+19
+
+environment:
+  sdk: ^3.6.0
+  flutter: ">=3.27.0"
+
+# Зависимости сознательно минимальны: чем их меньше, тем надёжнее первая сборка.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  sqflite: ^2.4.1
+  path: ^1.9.0
+  path_provider: ^2.1.5
+  file_picker: ^12.3.0
+  video_player: ^2.9.0
+  just_audio: ^0.10.5
+  camera: '>=0.11.0 <0.13.0'
+  record: ^6.2.0
+  flutter_local_notifications: ^19.4.0
+  # Connect: ключи в Android Keystore / iOS Keychain, шифрование (чистый Dart), фоновая служба.
+  flutter_secure_storage: ^11.2.0
+  cryptography: ^2.7.0
+  flutter_foreground_task: ^9.2.0
+  # iOS: экран не гаснет, пока включён Connect (замена фоновой службы Android).
+  wakelock_plus: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  # Настоящая SQLite в автотестах на компьютере (GitHub), без телефона.
+  sqflite_common_ffi: ^2.3.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/sounds/

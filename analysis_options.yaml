@@ -1,0 +1,15 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    # Заготовка слоя «Реплика AI»: нужен пакет llamadart, которого нет в
+    # обычном pubspec. В сборке build-ios-ai.yml файлы копируются в lib/ai/
+    # и проверяются там.
+    - ai_edition/**
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    avoid_print: true
