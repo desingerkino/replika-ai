@@ -1,1 +1,47 @@
+name: Сборка iOS AI (без подписи)
 
+on:
+  workflow_dispatch:
+
+jobs:
+  ios-ai:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Версии
+        run: |
+          flutter --version
+          dart --version
+          xcodebuild -version
+
+      - name: Подготовка (слой ИИ, llamadart, iOS 16.4)
+        run: bash tool/prepare_ai_ios.sh
+
+      - name: Анализ кода слоя ИИ
+        run: flutter analyze lib --no-fatal-infos --no-fatal-warnings
+
+      - name: Сборка iOS (release)
+        run: flutter build ios --release --no-codesign -t lib/main_ai.dart
+
+      - name: Размер приложения
+        run: |
+          du -sh build/ios/iphoneos/Runner.app
+          du -sh build/ios/iphoneos/Runner.app/Frameworks/* 2>/dev/null || true
+
+      - name: Неподписанный архив
+        run: |
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qr replika-ai-unsigned.ipa Payload
+          ls -lh replika-ai-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: replika-ai-ios-unsigned
+          path: replika-ai-unsigned.ipa
