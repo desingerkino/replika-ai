@@ -8,6 +8,7 @@ import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/avatar.dart';
+import '../../core/design/widgets/pressable.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../core/util/time_format.dart';
@@ -147,9 +148,12 @@ class _CallTile extends StatelessWidget {
       what,
       if (call.durationMs > 0) callClock(Duration(milliseconds: call.durationMs)),
     ].join(' · ');
-    return InkWell(
+    // Мягкая подсветка вместо Material-волны (как в списке чатов).
+    return Pressable(
       onTap: onTap,
-      child: Padding(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: Sizes.chatRowMinHeight),
+        child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: Space.s),
         child: Row(
           children: [
@@ -158,6 +162,7 @@ class _CallTile extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     item.displayName,
@@ -168,12 +173,19 @@ class _CallTile extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        incoming ? AppIcons.callIncoming : AppIcons.callOutgoing,
+                        missed ? AppIcons.callMissed : (incoming ? AppIcons.callIncoming : AppIcons.callOutgoing),
                         size: 16,
                         color: missed ? rc.danger : rc.textSecondary,
                       ),
                       const SizedBox(width: Space.xs),
-                      Expanded(child: Text(detail, style: tt.bodySmall)),
+                      Expanded(
+                        child: Text(
+                          detail,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tt.bodySmall?.copyWith(color: missed ? rc.danger : null),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -182,6 +194,7 @@ class _CallTile extends StatelessWidget {
             const SizedBox(width: Space.s),
             Text(formatChatListTime(call.startedAt, now), style: tt.labelMedium),
           ],
+        ),
         ),
       ),
     );

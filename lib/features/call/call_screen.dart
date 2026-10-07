@@ -10,12 +10,20 @@ import '../../app/call_engine.dart';
 import '../../app/call_video_recording.dart';
 import '../../app/operator_toast.dart';
 import '../../app/services.dart';
+import '../../core/design/colors.dart';
 import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
+import '../../core/design/widgets/pressable.dart';
 import '../../data/models/call_record.dart';
 import '../media/media_kinds.dart';
 import 'camera_self_view.dart';
+
+/// Экран звонка всегда тёмный (на съёмке нет бликов), независимо от темы
+/// приложения. Фон и главные действия берутся из общей палитры.
+final Color _callBackground = ReplikaColors.dark.chatBackground;
+const Color _endColor = Palette.danger;
+const Color _acceptColor = Palette.success;
 
 /// Экран постановочного звонка. Закрывается сам, когда звонок убран.
 class CallScreen extends StatefulWidget {
@@ -204,7 +212,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final session = _engine.session;
-    if (session == null) return const Scaffold(backgroundColor: Color(0xFF0B1115));
+    if (session == null) return Scaffold(backgroundColor: _callBackground);
     final phase = _engine.phase;
     final video = session.kind == CallKind.video;
     final remote = _video;
@@ -220,7 +228,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
           systemNavigationBarColor: Colors.transparent,
         ),
         child: Scaffold(
-          backgroundColor: const Color(0xFF0B1115),
+          backgroundColor: _callBackground,
           // expand: без него Scaffold даёт Stack «свободные» размеры, и он
           // сжимается до ширины самого широкого содержимого (полэкрана).
           body: Stack(
@@ -243,7 +251,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
                           gradient: RadialGradient(
                             center: const Alignment(0, -0.35),
                             radius: 1.1,
-                            colors: [tone.withValues(alpha: 0.55), const Color(0xFF0B1115)],
+                            colors: [tone.withValues(alpha: 0.55), _callBackground],
                           ),
                         ),
                       ),
@@ -273,18 +281,37 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
                       child: Text(
                         session.displayName,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 28, height: 1.2, fontWeight: FontWeight.w700),
                       ),
                     ),
                     const SizedBox(height: Space.xs),
-                    Text(
-                      _status(session),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 16,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+                    // Значок вида звонка (голос / видео) рядом со статусом:
+                    // тип звонка читается и без текста.
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (phase != CallPhase.ended) ...[
+                          Icon(
+                            video ? AppIcons.video : AppIcons.call,
+                            size: 18,
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                          const SizedBox(width: Space.xs + 2),
+                        ],
+                        Flexible(
+                          child: Text(
+                            _status(session),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 16,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     if (_engine.muted && phase != CallPhase.ended)
                       Padding(
@@ -349,13 +376,13 @@ class _Controls extends StatelessWidget {
         ..add(_RoundButton(
           icon: AppIcons.callEnd,
           label: 'Отклонить',
-          color: const Color(0xFFE5483E),
+          color: _endColor,
           onTap: engine.decline,
         ))
         ..add(_RoundButton(
           icon: video ? AppIcons.video : AppIcons.call,
           label: 'Принять',
-          color: const Color(0xFF34B36B),
+          color: _acceptColor,
           onTap: engine.accept,
         ));
     } else {
@@ -363,7 +390,7 @@ class _Controls extends StatelessWidget {
         icon: engine.muted ? AppIcons.microphoneOff : AppIcons.microphone,
         label: engine.muted ? 'Включить' : 'Микрофон',
         color: engine.muted ? Colors.white : Colors.white24,
-        iconColor: engine.muted ? const Color(0xFF0B1115) : Colors.white,
+        iconColor: engine.muted ? _callBackground : Colors.white,
         onTap: engine.toggleMute,
       ));
       if (video) {
@@ -371,7 +398,7 @@ class _Controls extends StatelessWidget {
           icon: engine.cameraOff ? AppIcons.videoOff : AppIcons.video,
           label: 'Камера',
           color: engine.cameraOff ? Colors.white : Colors.white24,
-          iconColor: engine.cameraOff ? const Color(0xFF0B1115) : Colors.white,
+          iconColor: engine.cameraOff ? _callBackground : Colors.white,
           onTap: engine.toggleCamera,
         ));
       }
@@ -386,7 +413,7 @@ class _Controls extends StatelessWidget {
       buttons.add(_RoundButton(
         icon: AppIcons.callEnd,
         label: 'Завершить',
-        color: const Color(0xFFE5483E),
+        color: _endColor,
         onTap: engine.hangUp,
       ));
     }
@@ -419,27 +446,34 @@ class _RoundButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 88,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Material(
-            color: color,
-            shape: const CircleBorder(),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onTap,
-              child: SizedBox(width: 68, height: 68, child: Icon(icon, color: iconColor, size: 30)),
+    // Область нажатия 88 × ~100 px, кнопка 68 px; вместо Material-волны —
+    // короткое сжатие (Pressable). Подпись читается скринридером как кнопка.
+    return Pressable(
+      tint: false,
+      scale: 0.94,
+      onTap: onTap,
+      semanticsLabel: label,
+      child: SizedBox(
+        width: 88,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              child: Icon(icon, color: iconColor, size: 30),
             ),
-          ),
-          const SizedBox(height: Space.s),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-          ),
-        ],
+            const SizedBox(height: Space.s),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+            ),
+          ],
+        ),
       ),
     );
   }
