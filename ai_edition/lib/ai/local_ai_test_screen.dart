@@ -301,7 +301,7 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
               LinearProgressIndicator(
                 value: _totalBytes == null || _totalBytes == 0
                     ? null
-                    : (_copiedBytes! / _totalBytes!).clamp(0.0, 1.0),
+                    : (_copiedBytes! / _totalBytes!).clamp(0.0, 1.0).toDouble(),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
