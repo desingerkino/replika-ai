@@ -33,7 +33,6 @@ class GlassIconButton extends StatelessWidget {
         semanticsLabel: label,
         child: GlassSurface(
           radius: size / 2,
-          strong: true,
           child: SizedBox.square(
             dimension: size,
             child: Icon(icon, size: size * 0.5, color: glass.textPrimary),

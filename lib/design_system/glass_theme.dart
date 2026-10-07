@@ -54,10 +54,10 @@ class GlassTheme {
   static const GlassTheme day = GlassTheme(
     dark: false,
     background: [Color(0xFFEAF0FF), Color(0xFFE6ECFC), Color(0xFFEAE4FA)],
-    blobs: [Color(0xFF9DBBFF), Color(0xFFCDB8FF), Color(0xFF93B6FF), Color(0xFFE3B4F2)],
-    surface: Color(0x61FFFFFF),
-    surfaceStrong: Color(0x85FFFFFF),
-    border: Color(0xBFFFFFFF),
+    blobs: [Color(0xFF8FB1FF), Color(0xFFCDB8FF), Color(0xFF86ACFF), Color(0xFFE3B4F2)],
+    surface: Color(0x57FFFFFF),
+    surfaceStrong: Color(0x80FFFFFF),
+    border: Color(0xA6FFFFFF),
     highlight: Color(0x66FFFFFF),
     shadow: Color(0x144F63C8),
     textPrimary: Color(0xFF111827),
@@ -83,6 +83,13 @@ class GlassTheme {
 
   static GlassTheme of(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark ? night : day;
+
+  /// Счётчики непрочитанных: тот же градиент, но ближе к синему.
+  static const LinearGradient counterGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF3E7BFF), Color(0xFF4A63FF), Color(0xFF6A5CFF)],
+  );
 
   static const LinearGradient accentGradient = LinearGradient(
     begin: Alignment.topLeft,

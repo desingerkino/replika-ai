@@ -124,7 +124,7 @@ class _ChatTileState extends State<ChatTile> with SingleTickerProviderStateMixin
                                 overflow: TextOverflow.ellipsis,
                                 textScaler: scaler,
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 15.5,
                                   height: 1.25,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: -0.2,
@@ -138,7 +138,7 @@ class _ChatTileState extends State<ChatTile> with SingleTickerProviderStateMixin
                               maxLines: 1,
                               textScaler: scaler,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11.5,
                                 height: 1.25,
                                 fontWeight: FontWeight.w400,
                                 color: glass.textTertiary,
@@ -228,7 +228,7 @@ class _ChatTileState extends State<ChatTile> with SingleTickerProviderStateMixin
     final chat = item.chat;
     final last = item.lastMessage;
     final draft = chat.draft?.trim() ?? '';
-    final style = TextStyle(fontSize: 14, height: 1.3, color: glass.textSecondary);
+    final style = TextStyle(fontSize: 13.5, height: 1.3, color: glass.textSecondary);
 
     if (widget.typing) {
       return Text(
@@ -355,7 +355,7 @@ class _Counter extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: GlassTheme.accentGradient,
+        gradient: GlassTheme.counterGradient,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [BoxShadow(color: GlassTheme.accentGlow.withValues(alpha: 0.45), blurRadius: 8)],
       ),
