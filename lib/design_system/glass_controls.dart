@@ -51,7 +51,7 @@ class GlassChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    this.height = 36,
+    this.height = 30,
   });
 
   final String label;
@@ -85,10 +85,10 @@ class GlassChip extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.15),
                 style: TextStyle(
-                  fontSize: 14.5,
+                  fontSize: 13.5,
                   height: 1.1,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected ? Colors.white : glass.textSecondary,
+                  color: selected ? Colors.white : glass.textPrimary.withValues(alpha: 0.78),
                 ),
               ),
             ),
@@ -99,7 +99,7 @@ class GlassChip extends StatelessWidget {
   }
 }
 
-/// Стеклянное поле поиска 48 пунктов высотой с кнопкой очистки.
+/// Стеклянное поле поиска с кнопкой очистки.
 class GlassSearchBar extends StatelessWidget {
   const GlassSearchBar({
     super.key,
@@ -108,7 +108,7 @@ class GlassSearchBar extends StatelessWidget {
     required this.onChanged,
     required this.searchIcon,
     required this.clearIcon,
-    this.height = 48,
+    this.height = 44,
   });
 
   final TextEditingController controller;
@@ -121,7 +121,7 @@ class GlassSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = GlassTheme.of(context);
-    final style = TextStyle(fontSize: 17, height: 1.25, color: glass.textPrimary);
+    final style = TextStyle(fontSize: 16, height: 1.25, color: glass.textPrimary);
     return GlassSurface(
       radius: height / 2,
       strong: true,
@@ -131,7 +131,7 @@ class GlassSearchBar extends StatelessWidget {
         child: Row(
           children: [
             const SizedBox(width: 18),
-            Icon(searchIcon, size: 22, color: glass.textTertiary),
+            Icon(searchIcon, size: 20, color: glass.textTertiary),
             const SizedBox(width: 10),
             Expanded(
               child: TextField(

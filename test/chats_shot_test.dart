@@ -47,7 +47,7 @@ class _Screen extends StatelessWidget {
                   ),
                 ),
                 ChatFilterBar(selected: ChatFilter.all, onSelect: (_) {}),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Expanded(
                   child: ListView(
                     padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + 12),

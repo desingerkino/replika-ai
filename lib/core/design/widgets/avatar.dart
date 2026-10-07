@@ -8,18 +8,19 @@ import 'story_ring.dart';
 
 export 'story_ring.dart' show StoryRing;
 
-/// Инициалы: «Алексей Громов» → «АГ», «Мама» → «М».
+/// Инициалы: «Алексей Громов» → «АГ», «Мама» → «М». Кавычки, скобки и
+/// прочие знаки в начале слова пропускаются: «Проект «Сцена 7»» → «ПС».
 String initialsOf(String name) {
-  final parts = name
+  final letter = RegExp(r'[\p{L}\p{N}]', unicode: true);
+  final initials = name
       .trim()
       .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
+      .map((word) => letter.firstMatch(word)?.group(0))
+      .whereType<String>()
+      .map((char) => char.toUpperCase())
       .toList();
-  if (parts.isEmpty) return '?';
-  String first(String word) =>
-      String.fromCharCodes(word.runes.take(1)).toUpperCase();
-  if (parts.length == 1) return first(parts.first);
-  return first(parts[0]) + first(parts[1]);
+  if (initials.isEmpty) return '?';
+  return initials.length == 1 ? initials.first : initials[0] + initials[1];
 }
 
 /// Аватар: фото из медиатеки или инициалы на фирменном тоне.

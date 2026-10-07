@@ -53,16 +53,16 @@ class GlassTheme {
 
   static const GlassTheme day = GlassTheme(
     dark: false,
-    background: [Color(0xFFF2F6FF), Color(0xFFE9EEFC), Color(0xFFEEE8FB)],
-    blobs: [Color(0xFFB9CDFF), Color(0xFFD8C6FF), Color(0xFFBFE0FF), Color(0xFFEFC6F3)],
-    surface: Color(0x8CFFFFFF),
-    surfaceStrong: Color(0xA6FFFFFF),
-    border: Color(0xCCFFFFFF),
-    highlight: Color(0x99FFFFFF),
-    shadow: Color(0x1F4F63C8),
+    background: [Color(0xFFEAF0FF), Color(0xFFE6ECFC), Color(0xFFEAE4FA)],
+    blobs: [Color(0xFF9DBBFF), Color(0xFFCDB8FF), Color(0xFF93B6FF), Color(0xFFE3B4F2)],
+    surface: Color(0x61FFFFFF),
+    surfaceStrong: Color(0x85FFFFFF),
+    border: Color(0xBFFFFFFF),
+    highlight: Color(0x66FFFFFF),
+    shadow: Color(0x144F63C8),
     textPrimary: Color(0xFF111827),
-    textSecondary: Color(0xFF636B7E),
-    textTertiary: Color(0xFF8790A5),
+    textSecondary: Color(0xFF5E6679),
+    textTertiary: Color(0xFF8A93A8),
     icon: Color(0xFF6A7692),
   );
 

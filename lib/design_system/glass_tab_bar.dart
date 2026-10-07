@@ -95,7 +95,7 @@ class _TabButton extends StatelessWidget {
     final color = active ? Colors.white : glass.icon;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    Widget icon = Icon(active ? tab.activeIcon : tab.icon, size: 25, color: color);
+    Widget icon = Icon(active ? tab.activeIcon : tab.icon, size: 23, color: color);
     final badge = tab.badge;
     if (badge != null) {
       icon = Badge(
@@ -119,10 +119,10 @@ class _TabButton extends StatelessWidget {
           child: AnimatedContainer(
             duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
-            width: 70,
-            height: 58,
+            width: 66,
+            height: 52,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(20),
               gradient: active ? GlassTheme.accentGradient : null,
               border: active ? Border.all(color: const Color(0x59FFFFFF)) : null,
               boxShadow: active
@@ -133,7 +133,7 @@ class _TabButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 icon,
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   tab.label,
                   maxLines: 1,
@@ -141,7 +141,7 @@ class _TabButton extends StatelessWidget {
                   softWrap: false,
                   textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.1),
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 11,
                     height: 1.1,
                     fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                     color: color,

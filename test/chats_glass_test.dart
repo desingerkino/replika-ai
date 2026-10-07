@@ -138,11 +138,11 @@ void main() {
   });
 
   group('Карточка чата', () {
-    testWidgets('размеры по макету: карточка 78, аватар 56, поля 20', (tester) async {
+    testWidgets('размеры по эталону: карточка 72, аватар 58, поля 20, зазор 2', (tester) async {
       await tester.pumpWidget(host(tile(chat('anna'))));
-      expect(tester.getSize(find.byType(ChatTile)), const Size(393, 78 + 4));
-      expect(tester.getSize(find.byType(GlassSurface)), const Size(353, 78));
-      expect(tester.getSize(find.byType(Avatar)), const Size(56, 56));
+      expect(tester.getSize(find.byType(ChatTile)), const Size(393, 72 + 2));
+      expect(tester.getSize(find.byType(GlassSurface)), const Size(353, 72));
+      expect(tester.getSize(find.byType(Avatar)), const Size(58, 58));
       expect(ChatTile.margin.left, 20);
     });
 
@@ -311,14 +311,18 @@ void main() {
     testWidgets('карточка проявляется в свой отрезок времени', (tester) async {
       final controller = AnimationController(vsync: tester, duration: ChatsIntro.duration);
       addTearDown(controller.dispose);
-      await tester.pumpWidget(host(ChatsIntro.card(
-        animation: controller,
-        index: 2,
-        child: const SizedBox(key: Key('card'), width: 100, height: 40),
+      await tester.pumpWidget(host(KeyedSubtree(
+        key: const Key('slot'),
+        child: ChatsIntro.card(
+          animation: controller,
+          index: 2,
+          child: const SizedBox(width: 100, height: 40),
+        ),
       )));
-      // Своя пара «проявление + сдвиг» (у перехода между экранами другая).
       double opacity() => tester
-          .widget<FadeTransition>(find.byWidgetPredicate((w) => w is FadeTransition && w.child is SlideTransition))
+          .widget<FadeTransition>(
+            find.descendant(of: find.byKey(const Key('slot')), matching: find.byType(FadeTransition)),
+          )
           .opacity
           .value;
       expect(opacity(), 0);

@@ -265,7 +265,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                           }),
                         ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Expanded(child: _list(context, services, snapshot)),
               ],
             );
@@ -474,7 +474,7 @@ class ChatsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final glass = GlassTheme.of(context);
     final header = Padding(
-      padding: const EdgeInsets.fromLTRB(ChatsScreen.sideMargin, 8, ChatsScreen.sideMargin, 6),
+      padding: const EdgeInsets.fromLTRB(ChatsScreen.sideMargin, 2, ChatsScreen.sideMargin, 6),
       child: Row(
         children: [
           Expanded(

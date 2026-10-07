@@ -44,7 +44,7 @@ class _WallpaperPainter extends CustomPainter {
 
     final w = size.width;
     final h = size.height;
-    final strength = glass.dark ? 0.55 : 0.6;
+    final strength = glass.dark ? 0.55 : 0.75;
 
     // Цветные пятна: (центр x, центр y, радиус) в долях ширины и высоты.
     void blob(Color color, double cx, double cy, double r, double opacity) {
@@ -60,14 +60,14 @@ class _WallpaperPainter extends CustomPainter {
       );
     }
 
-    blob(glass.blobs[0], 0.05, 0.06, 0.95, 0.9);
-    blob(glass.blobs[1], 1.02, 0.36, 0.8, 0.75);
-    blob(glass.blobs[2], -0.05, 0.72, 0.85, 0.7);
-    blob(glass.blobs[3], 1.0, 0.95, 0.9, 0.8);
-    blob(glass.blobs[0], 0.45, 1.02, 0.7, 0.55);
+    blob(glass.blobs[0], 0.02, 0.04, 1.0, 1.0);
+    blob(glass.blobs[1], 1.05, 0.30, 0.85, 0.8);
+    blob(glass.blobs[2], -0.08, 0.80, 0.95, 0.95);
+    blob(glass.blobs[3], 1.02, 0.93, 0.95, 0.95);
+    blob(glass.blobs[1], 0.5, 1.05, 0.75, 0.6);
 
     // Светлые волны: широкие полупрозрачные ленты, как блики на стекле.
-    final sheen = glass.dark ? const Color(0x12FFFFFF) : const Color(0x73FFFFFF);
+    final sheen = glass.dark ? const Color(0x12FFFFFF) : const Color(0x8CFFFFFF);
     Paint wave(double sigma) => Paint()
       ..color = sheen
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, sigma);

@@ -41,12 +41,12 @@ class ChatTile extends StatefulWidget {
   /// Нажатие на аватар (открыть историю). Без него аватар — часть карточки.
   final VoidCallback? onAvatarTap;
 
-  static const double height = 78;
-  static const double avatarSize = 56;
-  static const double radius = 22;
+  static const double height = 72;
+  static const double avatarSize = 58;
+  static const double radius = 20;
 
   /// Поля карточки от краёв экрана и зазор между карточками.
-  static const EdgeInsets margin = EdgeInsets.symmetric(horizontal: 20, vertical: 2);
+  static const EdgeInsets margin = EdgeInsets.symmetric(horizontal: 20, vertical: 1);
 
   static const Duration pulseDuration = Duration(milliseconds: 900);
 
@@ -103,11 +103,11 @@ class _ChatTileState extends State<ChatTile> with SingleTickerProviderStateMixin
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: ChatTile.height),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 14, 8),
+              padding: const EdgeInsets.fromLTRB(11, 6, 14, 6),
               child: Row(
                 children: [
                   _avatar(context, glass),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 11),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -124,7 +124,7 @@ class _ChatTileState extends State<ChatTile> with SingleTickerProviderStateMixin
                                 overflow: TextOverflow.ellipsis,
                                 textScaler: scaler,
                                 style: TextStyle(
-                                  fontSize: 17,
+                                  fontSize: 16,
                                   height: 1.25,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: -0.2,
@@ -138,7 +138,7 @@ class _ChatTileState extends State<ChatTile> with SingleTickerProviderStateMixin
                               maxLines: 1,
                               textScaler: scaler,
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 height: 1.25,
                                 fontWeight: FontWeight.w400,
                                 color: glass.textTertiary,
@@ -146,20 +146,20 @@ class _ChatTileState extends State<ChatTile> with SingleTickerProviderStateMixin
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Row(
                           children: [
                             Expanded(child: _preview(context, glass, scaler)),
                             if (chat.muted) ...[
                               const SizedBox(width: 8),
-                              Icon(AppIcons.muted, size: 18, color: glass.textTertiary),
+                              Icon(AppIcons.muted, size: 16, color: glass.textTertiary),
                             ],
                             if (unread > 0) ...[
                               const SizedBox(width: 8),
                               _Counter(count: unread),
                             ] else if (chat.isPinned) ...[
                               const SizedBox(width: 8),
-                              Icon(AppIcons.pin, size: 18, color: glass.textTertiary),
+                              Icon(AppIcons.pin, size: 16, color: glass.textTertiary),
                             ],
                           ],
                         ),
@@ -228,7 +228,7 @@ class _ChatTileState extends State<ChatTile> with SingleTickerProviderStateMixin
     final chat = item.chat;
     final last = item.lastMessage;
     final draft = chat.draft?.trim() ?? '';
-    final style = TextStyle(fontSize: 15, height: 1.3, color: glass.textSecondary);
+    final style = TextStyle(fontSize: 14, height: 1.3, color: glass.textSecondary);
 
     if (widget.typing) {
       return Text(
@@ -321,13 +321,13 @@ class _ChatTileState extends State<ChatTile> with SingleTickerProviderStateMixin
     return Row(
       children: [
         if (showTicks) ...[
-          MessageTicks(state: last!.state, color: glass.textTertiary, readColor: GlassTheme.accentBlue, size: 17),
+          MessageTicks(state: last!.state, color: glass.textTertiary, readColor: GlassTheme.accentBlue, size: 16),
           const SizedBox(width: 5),
         ],
         if (icon != null) ...[
           Icon(
             icon,
-            size: 17,
+            size: 16,
             color: last?.type == MessageType.voice ? GlassTheme.accentBlue : glass.textTertiary,
           ),
           const SizedBox(width: 5),
@@ -351,12 +351,12 @@ class _Counter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
-      padding: const EdgeInsets.symmetric(horizontal: 6.5),
+      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: GlassTheme.accentGradient,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [BoxShadow(color: GlassTheme.accentGlow.withValues(alpha: 0.45), blurRadius: 8)],
       ),
       child: Text(
@@ -364,7 +364,7 @@ class _Counter extends StatelessWidget {
         textScaler: TextScaler.noScaling,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 12.5,
+          fontSize: 12,
           height: 1.15,
           fontWeight: FontWeight.w700,
           fontFeatures: [FontFeature.tabularFigures()],

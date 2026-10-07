@@ -84,7 +84,7 @@ class GlassSurface extends StatelessWidget {
     }
 
     final shadows = <BoxShadow>[
-      if (shadow) BoxShadow(color: glass.shadow, blurRadius: 18, offset: const Offset(0, 6)),
+      if (shadow) BoxShadow(color: glass.shadow, blurRadius: 14, offset: const Offset(0, 4)),
       if (glow != null) BoxShadow(color: glow!, blurRadius: 16, spreadRadius: 0.5),
     ];
     if (shadows.isEmpty) return body;
