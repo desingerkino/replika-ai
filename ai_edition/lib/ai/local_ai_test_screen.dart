@@ -33,7 +33,8 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
   StreamSubscription<LocalLlmStatus>? _sub;
   String? _modelPath;
   String? _error;
-  double? _copyProgress;
+  /// Сколько байт модели скопировано; null — копирования нет.
+  int? _copiedBytes;
   LocalLlmMetrics? _metrics;
 
   static const _systemPrompt =
@@ -90,12 +91,12 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
   Future<void> _pickModel() async {
     setState(() {
       _error = null;
-      _copyProgress = 0;
+      _copiedBytes = 0;
     });
     try {
-      final picked = await FilePicker.pickFiles(type: FileType.any, allowMultiple: false);
+      final picked = await FilePicker.pickFiles(type: FileType.any);
       if (picked.isEmpty) {
-        setState(() => _copyProgress = null);
+        setState(() => _copiedBytes = null);
         return;
       }
       final file = picked.first;
@@ -104,7 +105,6 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
       }
       final dir = await _modelsDir();
       final target = File(p.join(dir.path, file.name));
-      final total = file.size;
 
       // Копируем потоком: файл в 1,3 ГБ целиком в память не читаем.
       final sink = target.openWrite();
@@ -113,7 +113,7 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
         await for (final part in file.readAsByteStream()) {
           sink.add(part);
           done += part.length;
-          if (total > 0 && mounted) setState(() => _copyProgress = done / total);
+          if (mounted) setState(() => _copiedBytes = done);
         }
       } finally {
         await sink.close();
@@ -134,13 +134,13 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
       if (!mounted) return;
       setState(() {
         _modelPath = target.path;
-        _copyProgress = null;
+        _copiedBytes = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = e.toString();
-        _copyProgress = null;
+        _copiedBytes = null;
       });
     }
   }
@@ -236,12 +236,18 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
               _modelPath == null ? 'Файл модели не выбран' : 'Модель: ${p.basename(_modelPath!)}',
             ),
             const SizedBox(height: 8),
-            if (_copyProgress != null) LinearProgressIndicator(value: _copyProgress),
+            if (_copiedBytes != null) ...[
+              const LinearProgressIndicator(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text('Копирование модели: ${_mb(_copiedBytes!)}'),
+              ),
+            ],
             Wrap(
               spacing: 8,
               children: [
                 OutlinedButton(
-                  onPressed: busy || _copyProgress != null ? null : _pickModel,
+                  onPressed: busy || _copiedBytes != null ? null : _pickModel,
                   child: const Text('Выбрать .gguf'),
                 ),
                 FilledButton(

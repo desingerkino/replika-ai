@@ -63,7 +63,7 @@ class LlamadartLocalLlmProvider implements LocalLlmProvider {
         ),
       );
       watch.stop();
-      final backend = '${await engine.getBackendName()}';
+      final backend = await engine.getBackendName();
       _engine = engine;
       _info = LocalLlmModelInfo(
         path: modelPath,
