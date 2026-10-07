@@ -240,7 +240,7 @@ class _Rail extends StatelessWidget {
 
 /// Нижняя навигация. Открыта для виджет-тестов (test/ui_regression_test.dart).
 class HomeNavBar extends StatelessWidget {
-  const HomeNavBar({required this.index, required this.unread, required this.onSelect});
+  const HomeNavBar({super.key, required this.index, required this.unread, required this.onSelect});
 
   final int index;
   final int unread;

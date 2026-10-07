@@ -274,6 +274,7 @@ class ProfileActions extends StatelessWidget {
 /// остальные — спокойные, с рамкой 1 px. Нажатие без Material-волны.
 class ProfileAction extends StatelessWidget {
   const ProfileAction({
+    super.key,
     required this.icon,
     required this.label,
     required this.onTap,

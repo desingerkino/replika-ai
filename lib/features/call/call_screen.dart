@@ -358,7 +358,7 @@ double _avatarSize(BuildContext context) {
 
 /// Кнопки экрана звонка. Открыт для виджет-тестов (test/ui_regression_test.dart).
 class CallControls extends StatelessWidget {
-  const CallControls({required this.engine, required this.video, this.onFlip, this.flipToRear = true});
+  const CallControls({super.key, required this.engine, required this.video, this.onFlip, this.flipToRear = true});
 
   final CallEngine engine;
   final bool video;
