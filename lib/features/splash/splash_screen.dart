@@ -200,8 +200,8 @@ class SplashLogotype extends StatelessWidget {
 
   static const String text = 'REPLIKA';
   static const double nameSize = 32.3;
-  static const double subSize = 17.3;
-  static const double spacing = 20.1;
+  static const double subSize = 17.9;
+  static const double spacing = 20.6;
 
   static const TextStyle _base = TextStyle(
     inherit: false,
@@ -216,47 +216,42 @@ class SplashLogotype extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Разрядка добавляется и после последней буквы — сдвигаем, чтобы слово
-    // стояло ровно по центру.
-    return Padding(
-      padding: const EdgeInsets.only(left: spacing),
-      child: Stack(
-        children: [
-          // Свечение: буквы невидимы, видны только их размытые тени.
-          Text(
+    return Stack(
+      children: [
+        // Свечение: буквы невидимы, видны только их размытые тени.
+        Text(
+          text,
+          maxLines: 1,
+          softWrap: false,
+          style: _base.copyWith(
+            color: const Color(0x00000000),
+            shadows: const [
+              Shadow(color: Color(0x704678FF), blurRadius: 11),
+              Shadow(color: Color(0x384678FF), blurRadius: 4),
+            ],
+          ),
+        ),
+        ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFFF2F3F7),
+              Color(0xFFE8EAF0),
+              Color(0xFF8ABFF7),
+              Color(0xFF66AEF4),
+              Color(0xFF7AB1F7),
+              Color(0xFFB9AAF7),
+            ],
+            stops: [0, 0.30, 0.42, 0.56, 0.82, 1],
+          ).createShader(Offset.zero & bounds.size),
+          child: Text(
             text,
             maxLines: 1,
             softWrap: false,
-            style: _base.copyWith(
-              color: const Color(0x00000000),
-              shadows: const [
-                Shadow(color: Color(0x704678FF), blurRadius: 11),
-                Shadow(color: Color(0x384678FF), blurRadius: 4),
-              ],
-            ),
+            style: _base.copyWith(color: const Color(0xFFFFFFFF)),
           ),
-          ShaderMask(
-            blendMode: BlendMode.srcIn,
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [
-                Color(0xFFF2F3F7),
-                Color(0xFFE8EAF0),
-                Color(0xFF8ABFF7),
-                Color(0xFF66AEF4),
-                Color(0xFF7AB1F7),
-                Color(0xFFB9AAF7),
-              ],
-              stops: [0, 0.30, 0.42, 0.56, 0.82, 1],
-            ).createShader(Rect.fromLTWH(0, 0, bounds.width - spacing, bounds.height)),
-            child: Text(
-              text,
-              maxLines: 1,
-              softWrap: false,
-              style: _base.copyWith(color: const Color(0xFFFFFFFF)),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -266,12 +261,15 @@ class SplashSubtitle extends StatelessWidget {
   const SplashSubtitle({super.key});
 
   static const String text = 'MESSENGER';
-  static const double spacing = 7.5;
+  static const double spacing = 7.0;
+
+  /// На эталоне вторая строка стоит чуть правее центра.
+  static const double shift = 3.5;
 
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.only(left: spacing),
+      padding: EdgeInsets.only(left: shift * 2),
       child: Text(
         text,
         maxLines: 1,
@@ -311,7 +309,7 @@ class SplashStatusText extends StatelessWidget {
         fontFamily: 'Inter',
         fontSize: size,
         fontWeight: FontWeight.w400,
-        letterSpacing: 0.3,
+        letterSpacing: 0.75,
         height: 1,
         color: Color(0xE6D6D8EC),
         decoration: TextDecoration.none,

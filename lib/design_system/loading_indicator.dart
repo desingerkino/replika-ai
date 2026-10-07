@@ -93,8 +93,8 @@ class _FillPainter extends CustomPainter {
     canvas.drawRRect(
       shape.inflate(3),
       Paint()
-        ..color = const Color(0xCC2F55FF)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+        ..color = const Color(0x992F55FF)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
     canvas.drawRRect(
       shape.inflate(1),

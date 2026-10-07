@@ -53,7 +53,7 @@ void main() {
       // Строки: середина заглавных букв на отметках эталона.
       double capCenter(Finder f, double size) => tester.getTopLeft(f).dy + size * 0.4365;
       expect(capCenter(find.byType(SplashLogotype), 32.3), closeTo(441.4, 0.6));
-      expect(capCenter(find.byType(SplashSubtitle), 17.3), closeTo(477.2, 0.6));
+      expect(capCenter(find.byType(SplashSubtitle), SplashLogotype.subSize), closeTo(477.2, 0.6));
       expect(capCenter(find.byType(SplashStatusText), 12.6), closeTo(558.6, 0.6));
 
       // Полоса: по центру, 206×5.2.
@@ -63,9 +63,11 @@ void main() {
       expect(bar.width, closeTo(206 + GlassLoadingBar.glowPad * 2, 0.5));
 
       // Надписи и полоса по центру экрана.
-      for (final f in [find.byType(SplashLogotype), find.byType(SplashSubtitle), find.byType(SplashStatusText)]) {
+      for (final f in [find.byType(SplashLogotype), find.byType(SplashStatusText)]) {
         expect(tester.getCenter(f).dx, closeTo(design.width / 2, 0.6));
       }
+      expect(tester.getCenter(find.text('MESSENGER')).dx,
+          closeTo(design.width / 2 + SplashSubtitle.shift, 0.6), reason: 'как на эталоне — чуть правее');
     });
 
     testWidgets('iPhone 393×852: всё масштабируется вместе и остаётся по центру', (tester) async {

@@ -54,7 +54,7 @@ class ReplikaOrb extends StatelessWidget {
           child: GlowEffect(
             color: GlassPalette.blue,
             // Дополнительный ореол растёт вместе с яркостью сферы.
-            intensity: appear.clamp(0.0, 1.0) * glow.clamp(0.0, 1.0) * 0.35,
+            intensity: appear.clamp(0.0, 1.0) * glow.clamp(0.0, 1.0) * 0.22,
             spread: 1.12,
             child: Opacity(
               opacity: opacityFor(appear, glow),
