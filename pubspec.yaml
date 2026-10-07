@@ -58,3 +58,8 @@ flutter:
           weight: 600
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
+    # Собственные значки (нижняя навигация, «Назад», галочки статуса).
+    # Собираются скриптом tool/build_icon_font.py.
+    - family: ReplikaIcons
+      fonts:
+        - asset: assets/fonts/ReplikaIcons.ttf

@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 
-/// Единый набор иконок: только скруглённый стиль Material.
-/// Все иконки ключевых экранов мессенджера берутся отсюда: чтобы сменить
-/// набор, достаточно поменять значения в этом файле.
+/// Единый набор иконок. Все иконки ключевых экранов мессенджера берутся
+/// отсюда: чтобы сменить значок, достаточно поменять значение в этом файле.
+///
+/// Большая часть — скруглённый стиль Material. Самые заметные в кадре значки
+/// (нижняя навигация, «Назад», галочки статуса) — собственные, из шрифта
+/// assets/fonts/ReplikaIcons.ttf; он собирается скриптом
+/// tool/build_icon_font.py, коды символов заданы там же.
 abstract final class AppIcons {
-  static const IconData chats = Icons.chat_bubble_outline_rounded;
-  static const IconData chatsActive = Icons.chat_bubble_rounded;
-  static const IconData contacts = Icons.person_outline_rounded;
-  static const IconData contactsActive = Icons.person_rounded;
+  static const String _own = 'ReplikaIcons';
+
+  static const IconData chats = IconData(0xE002, fontFamily: _own);
+  static const IconData chatsActive = IconData(0xE003, fontFamily: _own);
+  static const IconData contacts = IconData(0xE004, fontFamily: _own);
+  static const IconData contactsActive = IconData(0xE005, fontFamily: _own);
   static const IconData search = Icons.search_rounded;
   static const IconData searchOff = Icons.search_off_rounded;
-  static const IconData back = Icons.arrow_back_rounded;
+  static const IconData back = IconData(0xE001, fontFamily: _own);
   static const IconData send = Icons.arrow_upward_rounded;
   static const IconData pin = Icons.push_pin_rounded;
   static const IconData pinOff = Icons.push_pin_outlined;
@@ -21,8 +27,8 @@ abstract final class AppIcons {
   static const IconData star = Icons.star_rounded;
   static const IconData starOutline = Icons.star_outline_rounded;
   static const IconData clear = Icons.close_rounded;
-  static const IconData tickSent = Icons.check_rounded;
-  static const IconData tickDouble = Icons.done_all_rounded;
+  static const IconData tickSent = IconData(0xE008, fontFamily: _own);
+  static const IconData tickDouble = IconData(0xE009, fontFamily: _own);
   static const IconData sending = Icons.schedule_rounded;
   static const IconData error = Icons.error_outline_rounded;
   static const IconData muted = Icons.notifications_off_rounded;
@@ -31,8 +37,8 @@ abstract final class AppIcons {
   static const IconData markDeleted = Icons.block_rounded;
   static const IconData emptyChats = Icons.forum_rounded;
   static const IconData emptyContacts = Icons.people_outline_rounded;
-  static const IconData settings = Icons.settings_outlined;
-  static const IconData settingsActive = Icons.settings_rounded;
+  static const IconData settings = IconData(0xE006, fontFamily: _own);
+  static const IconData settingsActive = IconData(0xE007, fontFamily: _own);
   static const IconData reply = Icons.reply_rounded;
   static const IconData add = Icons.person_add_alt_rounded;
   static const IconData edit = Icons.edit_rounded;
