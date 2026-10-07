@@ -82,9 +82,13 @@ class ConnectDiscovery {
         }
       }
     } catch (_) {}
+    // Порт назначения — реально занятый порт сокета. При `port: 0` («выбрать
+    // свободный») отправка на порт 0 недопустима и закрывает сокет, после чего
+    // телефон перестаёт отвечать на запросы; в обычной работе он равен [port].
+    final destinationPort = socket.port;
     for (final t in targets) {
       try {
-        socket.send(packet, t, port);
+        socket.send(packet, t, destinationPort);
       } catch (_) {
         // Сети нет — маяк повторится по таймеру.
       }
