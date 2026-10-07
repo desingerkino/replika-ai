@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 ///
 /// Большая часть — скруглённый стиль Material. Самые заметные в кадре значки
 /// (нижняя навигация, «Назад», галочки статуса, отправка, поиск, трубка,
-/// видео, микрофон, правка) — собственные, из шрифта
+/// видео, микрофон, правка, состояния звонка) — собственные, из шрифта
 /// assets/fonts/ReplikaIcons.ttf; он собирается скриптом
 /// tool/build_icon_font.py, коды символов заданы там же.
 abstract final class AppIcons {
@@ -58,7 +58,7 @@ abstract final class AppIcons {
   // Поле ввода и вложения.
   static const IconData attachment = Icons.attach_file_rounded;
   static const IconData microphone = IconData(0xE010, fontFamily: _own);
-  static const IconData microphoneOff = Icons.mic_off_rounded;
+  static const IconData microphoneOff = IconData(0xE012, fontFamily: _own);
   static const IconData attachPhotoVideo = Icons.photo_library_rounded;
   static const IconData attachVideoNoteRecord = Icons.radio_button_checked_rounded;
   static const IconData attachVideoNoteFile = Icons.video_camera_front_rounded;
@@ -68,13 +68,13 @@ abstract final class AppIcons {
   // Звонки и видео.
   static const IconData call = IconData(0xE00C, fontFamily: _own);
   static const IconData callOutlined = IconData(0xE00D, fontFamily: _own);
-  static const IconData callEnd = Icons.call_end_rounded;
-  static const IconData callMissed = Icons.phone_missed_rounded;
+  static const IconData callEnd = IconData(0xE014, fontFamily: _own);
+  static const IconData callMissed = IconData(0xE015, fontFamily: _own);
   static const IconData callIncoming = Icons.call_received_rounded;
   static const IconData callOutgoing = Icons.call_made_rounded;
   static const IconData video = IconData(0xE00E, fontFamily: _own);
   static const IconData videoOutlined = IconData(0xE00F, fontFamily: _own);
-  static const IconData videoOff = Icons.videocam_off_rounded;
+  static const IconData videoOff = IconData(0xE013, fontFamily: _own);
   static const IconData cameraSwitch = Icons.cameraswitch_rounded;
 
   // Чаты.

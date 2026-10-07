@@ -35,6 +35,18 @@ class Canvas:
         c = (np.arange(SAMPLES) + 0.5) / self.res
         self.x, self.y = np.meshgrid(c, c)
 
+    def moved(self, angle=0.0, scale=1.0, dx=0.0, dy=0.0):
+        """Та же сетка, но всё нарисованное на ней будет повёрнуто вокруг центра
+        на angle градусов (по часовой), увеличено в scale раз и сдвинуто."""
+        other = Canvas.__new__(Canvas)
+        other.size, other.res = self.size, self.res
+        mid = self.size / 2
+        a = math.radians(-angle)
+        px, py = (self.x - dx - mid) / scale, (self.y - dy - mid) / scale
+        other.x = mid + px * math.cos(a) - py * math.sin(a)
+        other.y = mid + px * math.sin(a) + py * math.cos(a)
+        return other
+
     # --- примитивы: возвращают маску (True — внутри) ---
     def circle(self, cx, cy, r):
         return np.hypot(self.x - cx, self.y - cy) < r
@@ -274,6 +286,42 @@ def edit():
     return c, c.outline(c.soften(pencil, convex=0.9), 2.0)
 
 
+# ---------------------------------------------------------------------------
+# Состояния звонка: те же микрофон, камера и трубка
+# ---------------------------------------------------------------------------
+
+def _struck(c, mask, start, end):
+    """Перечёркивает значок: линия и чистый зазор вокруг неё."""
+    slash = c.stroke([start, end], 2.0)
+    return (mask & ~c.grow(slash, 1.2)) | slash
+
+
+def microphone_off():
+    c, mic = microphone()
+    return c, _struck(c, mic, (4.6, 3.6), (19.4, 20.4))
+
+
+def video_off():
+    c, cam = video()
+    return c, _struck(c, cam, (4.0, 3.4), (18.2, 20.6))
+
+
+def call_end():
+    """Та же трубка, положенная горизонтально вогнутой стороной вниз."""
+    # По диагонали трубка длиннее сетки, поэтому лёжа она чуть меньше.
+    c = Canvas(24)
+    return c, _handset(c.moved(angle=135, scale=0.9, dy=1.4))
+
+
+def call_missed():
+    """Положенная трубка поменьше и над ней стрелка, отскочившая назад."""
+    c = Canvas(24)
+    handset = _handset(c.moved(angle=135, scale=0.76, dy=5.6))
+    bounce = c.stroke([(6.6, 3.4), (12.0, 8.8), (17.4, 3.4)], 2.0)
+    head = c.stroke([(10.4, 3.4), (6.6, 3.4), (6.6, 7.2)], 2.0)
+    return c, handset | bounce | head
+
+
 GLYPHS = [
     (0xE001, 'back', back),
     (0xE002, 'chats', chats),
@@ -292,6 +340,10 @@ GLYPHS = [
     (0xE00F, 'videoOutlined', video_outlined),
     (0xE010, 'microphone', microphone),
     (0xE011, 'edit', edit),
+    (0xE012, 'microphoneOff', microphone_off),
+    (0xE013, 'videoOff', video_off),
+    (0xE014, 'callEnd', call_end),
+    (0xE015, 'callMissed', call_missed),
 ]
 
 
