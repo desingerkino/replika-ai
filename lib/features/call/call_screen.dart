@@ -320,7 +320,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
                       ),
                     const Spacer(),
-                    _Controls(
+                    CallControls(
                       engine: _engine,
                       video: video,
                       onFlip: video && showSelf && _camera.canFlip ? _camera.flip : null,
@@ -356,8 +356,9 @@ double _avatarSize(BuildContext context) {
   return size.shortestSide >= 600 ? 148 : 116;
 }
 
-class _Controls extends StatelessWidget {
-  const _Controls({required this.engine, required this.video, this.onFlip, this.flipToRear = true});
+/// Кнопки экрана звонка. Открыт для виджет-тестов (test/ui_regression_test.dart).
+class CallControls extends StatelessWidget {
+  const CallControls({required this.engine, required this.video, this.onFlip, this.flipToRear = true});
 
   final CallEngine engine;
   final bool video;

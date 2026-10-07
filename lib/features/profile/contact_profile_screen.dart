@@ -166,39 +166,7 @@ class _ProfileBody extends StatelessWidget {
         ],
         const SizedBox(height: Space.xl),
         // Три действия в ряд: значок над подписью, область нажатия не меньше 48 px.
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _ProfileAction(
-                    icon: AppIcons.message,
-                    label: 'Написать',
-                    primary: true,
-                    onTap: onWrite,
-                  ),
-                ),
-                const SizedBox(width: Space.s),
-                Expanded(
-                  child: _ProfileAction(
-                    icon: AppIcons.call,
-                    label: 'Позвонить',
-                    onTap: () => onCall(CallKind.audio),
-                  ),
-                ),
-                const SizedBox(width: Space.s),
-                Expanded(
-                  child: _ProfileAction(
-                    icon: AppIcons.video,
-                    label: 'Видео',
-                    onTap: () => onCall(CallKind.video),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        ProfileActions(onWrite: onWrite, onCall: onCall),
         const SizedBox(height: Space.xl),
         if (character.phone.trim().isNotEmpty)
           _InfoCard(
@@ -256,10 +224,56 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
+/// Три действия профиля в ряд: «Написать», «Позвонить», «Видео».
+/// Открыт для виджет-тестов (test/ui_regression_test.dart).
+class ProfileActions extends StatelessWidget {
+  const ProfileActions({super.key, required this.onWrite, required this.onCall});
+
+  final VoidCallback onWrite;
+  final void Function(CallKind kind) onCall;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Row(
+          children: [
+            Expanded(
+              child: ProfileAction(
+                icon: AppIcons.message,
+                label: 'Написать',
+                primary: true,
+                onTap: onWrite,
+              ),
+            ),
+            const SizedBox(width: Space.s),
+            Expanded(
+              child: ProfileAction(
+                icon: AppIcons.call,
+                label: 'Позвонить',
+                onTap: () => onCall(CallKind.audio),
+              ),
+            ),
+            const SizedBox(width: Space.s),
+            Expanded(
+              child: ProfileAction(
+                icon: AppIcons.video,
+                label: 'Видео',
+                onTap: () => onCall(CallKind.video),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Действие профиля: значок над подписью. «Написать» — основное (заливка),
 /// остальные — спокойные, с рамкой 1 px. Нажатие без Material-волны.
-class _ProfileAction extends StatelessWidget {
-  const _ProfileAction({
+class ProfileAction extends StatelessWidget {
+  const ProfileAction({
     required this.icon,
     required this.label,
     required this.onTap,

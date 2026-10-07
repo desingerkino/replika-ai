@@ -109,7 +109,7 @@ class _HomeShellState extends State<HomeShell> {
                     tables: const {Tables.chats},
                     queryKey: deviceId,
                     load: () => services.chats.totalUnread(deviceId),
-                    builder: (context, snapshot) => _NavBar(
+                    builder: (context, snapshot) => HomeNavBar(
                       index: index,
                       unread: snapshot.data ?? 0,
                       onSelect: (selected) => AppNavigator.homeTab.value = selected,
@@ -238,8 +238,9 @@ class _Rail extends StatelessWidget {
   }
 }
 
-class _NavBar extends StatelessWidget {
-  const _NavBar({required this.index, required this.unread, required this.onSelect});
+/// Нижняя навигация. Открыта для виджет-тестов (test/ui_regression_test.dart).
+class HomeNavBar extends StatelessWidget {
+  const HomeNavBar({required this.index, required this.unread, required this.onSelect});
 
   final int index;
   final int unread;

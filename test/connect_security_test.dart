@@ -48,9 +48,13 @@ void main() {
 
   test('зашифрованный кадр читает только собеседник', () async {
     final (device, controller) = await pairOfCiphers();
-    final frame = await controller.seal({'type': 'command', 'commandId': 'c1'});
-    expect(frame.toString(), isNot(contains('c1')), reason: 'в кадре нет открытого текста');
-    expect((await device.open(frame))['commandId'], 'c1');
+    // Маркер с пробелами: в base64 шифртекста пробела быть не может, поэтому
+    // проверка не срабатывает случайно (короткая подстрока вроде «c1» иногда
+    // встречается в случайных байтах сама по себе).
+    const marker = 'secret command 42';
+    final frame = await controller.seal({'type': 'command', 'commandId': marker});
+    expect(frame.toString(), isNot(contains(marker)), reason: 'в кадре нет открытого текста');
+    expect((await device.open(frame))['commandId'], marker);
   });
 
   test('повтор перехваченного кадра отклоняется', () async {

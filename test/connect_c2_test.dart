@@ -57,6 +57,21 @@ Future<void> pairAndHello() async {
 Future<int> connectTexts(String text) async =>
     (await s.messages.forChat('chat-veronika')).where((m) => m.text == text && m.sceneId != null).length;
 
+/// Поиск по UDP на loopback: пакет `discover` может потеряться (старт сокета,
+/// нагрузка параллельных тестов), поэтому до трёх попыток. Пустой ответ
+/// после всех попыток — явная ошибка с пояснением, а не `Bad state: No element`.
+Future<Map<String, Object?>> discoverOne(int port) async {
+  for (var attempt = 1; attempt <= 3; attempt++) {
+    final found = await discoverDevices(
+      hosts: const ['127.0.0.1'],
+      port: port,
+      wait: const Duration(milliseconds: 1500),
+    );
+    if (found.isNotEmpty) return found.first;
+  }
+  fail('UDP-поиск на 127.0.0.1:$port не получил ответ за 3 попытки');
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -77,10 +92,10 @@ void main() {
       final junk = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
       junk.send(utf8.encode('мусор'), InternetAddress.loopbackIPv4, discovery.boundPort!);
       junk.close();
-      final found = await discoverDevices(hosts: const ['127.0.0.1'], port: discovery.boundPort!);
-      expect(found.single['deviceId'], 'MESSENGER-ABC123');
-      expect(found.single['port'], 47620);
-      expect(found.single.keys, isNot(contains('publicKey')), reason: 'в маяке нет секретов');
+      final found = await discoverOne(discovery.boundPort!);
+      expect(found['deviceId'], 'MESSENGER-ABC123');
+      expect(found['port'], 47620);
+      expect(found.keys, isNot(contains('publicKey')), reason: 'в маяке нет секретов');
       await discovery.stop();
     });
 
@@ -139,9 +154,9 @@ void main() {
 
     test('Controller находит телефон поиском в сети', () async {
       expect(connect.discoverable, isTrue);
-      final found = await discoverDevices(hosts: const ['127.0.0.1'], port: connect.discoveryBoundPort!);
-      expect(found.single['deviceId'], connect.deviceId);
-      expect(found.single['port'], connect.boundPort);
+      final found = await discoverOne(connect.discoveryBoundPort!);
+      expect(found['deviceId'], connect.deviceId);
+      expect(found['port'], connect.boundPort);
     });
 
     test('обрыв связи: «потеряна» → переподключение → «подключён»', () async {
