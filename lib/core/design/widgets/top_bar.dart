@@ -112,8 +112,20 @@ class ScreenHeader extends StatelessWidget {
     );
   }
 
-  Widget _hold(Widget child) {
-    final action = onTitleHold;
+  Widget _hold(Widget child) => TitleHold(onHold: onTitleHold, child: child);
+}
+
+/// Скрытое действие по удержанию заголовка: 2 секунды, без какого-либо
+/// отклика в кадре. Без [onHold] — обычный заголовок.
+class TitleHold extends StatelessWidget {
+  const TitleHold({super.key, required this.child, this.onHold});
+
+  final Widget child;
+  final VoidCallback? onHold;
+
+  @override
+  Widget build(BuildContext context) {
+    final action = onHold;
     if (action == null) return child;
     return RawGestureDetector(
       behavior: HitTestBehavior.opaque,

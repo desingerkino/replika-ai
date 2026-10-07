@@ -13,6 +13,10 @@ const List<String> _monthsShort = [
 
 const List<String> _weekdaysShort = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
 
+const List<String> _weekdaysFull = [
+  'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье',
+];
+
 String _two(int value) => value.toString().padLeft(2, '0');
 
 /// «09:05»
@@ -32,6 +36,18 @@ String formatChatListTime(DateTime time, DateTime now) {
   if (days <= 0) return formatClock(time);
   if (days == 1) return 'вчера';
   if (days < 7) return _weekdaysShort[time.weekday - 1];
+  if (time.year == now.year) return '${time.day} ${_monthsShort[time.month - 1]}';
+  return '${_two(time.day)}.${_two(time.month)}.${_two(time.year % 100)}';
+}
+
+/// Время на карточке чата (главный экран): сегодня — «14:05», вчера —
+/// «Вчера», на этой неделе — «Понедельник», в этом году — «10 сент.»,
+/// раньше — «31.12.25».
+String formatChatCardTime(DateTime time, DateTime now) {
+  final days = daysBetween(time, now);
+  if (days <= 0) return formatClock(time);
+  if (days == 1) return 'Вчера';
+  if (days < 7) return _weekdaysFull[time.weekday - 1];
   if (time.year == now.year) return '${time.day} ${_monthsShort[time.month - 1]}';
   return '${_two(time.day)}.${_two(time.month)}.${_two(time.year % 100)}';
 }

@@ -15,6 +15,7 @@ import '../data/repositories/message_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/seed/demo_seed.dart';
 import 'audio_playback.dart';
+import 'chat_archive.dart';
 import 'story_store.dart';
 import 'call_engine.dart';
 import 'call_services.dart';
@@ -74,6 +75,9 @@ class AppServices {
 
   /// Истории контактов (кольца в ленте и просмотр).
   late final StoryStore stories = StoryStore(settings);
+
+  /// Чаты, убранные в архив (фильтр «Архив» на главном экране).
+  late final ChatArchive archive = ChatArchive(settings);
 
   final SceneRepository scenes;
 
@@ -320,6 +324,11 @@ class AppServices {
         await services.stories.load();
       } catch (error) {
         debugPrint('Истории не загружены: $error');
+      }
+      try {
+        await services.archive.load();
+      } catch (error) {
+        debugPrint('Архив чатов не загружен: $error');
       }
       await services.notifications.init();
       // Connect поднимается в фоне: запуск приложения его не ждёт.

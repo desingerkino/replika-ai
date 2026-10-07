@@ -3,10 +3,10 @@ name: Сборка iOS AI (без подписи)
 on:
   workflow_dispatch:
     inputs:
-      splash_shot:
-        description: 'Показать в сводке снимок стартового экрана (для сверки с эталоном)'
-        type: boolean
-        default: false
+      shot:
+        description: 'Показать в сводке снимок экрана из автотеста: splash или chats (пусто — не показывать)'
+        type: string
+        default: ''
 
 jobs:
   ios-ai:
@@ -146,19 +146,20 @@ jobs:
           PY
           exit $code
 
-      # Снимок стартового экрана из автотеста — в сводку запуска (см.
-      # tool/ci_emit_image.py). Только когда запуск просит об этом.
-      - name: Снимок стартового экрана (1)
-        if: ${{ always() && inputs.splash_shot }}
+      # Снимок экрана из автотеста — в сводку запуска (tool/ci_emit_image.py),
+      # чтобы сверять вёрстку с эталоном. Только когда запуск просит об этом:
+      # gh workflow run ... -f shot=chats
+      - name: Снимок экрана (1)
+        if: ${{ always() && inputs.shot != '' }}
         run: |
           pip install --quiet pillow
-          python3 tool/ci_emit_image.py splash 0 build/splash_shot_a.png build/splash_shot_b.png
-      - name: Снимок стартового экрана (2)
-        if: ${{ always() && inputs.splash_shot }}
-        run: python3 tool/ci_emit_image.py splash 1 build/splash_shot_a.png build/splash_shot_b.png
-      - name: Снимок стартового экрана (3)
-        if: ${{ always() && inputs.splash_shot }}
-        run: python3 tool/ci_emit_image.py splash 2 build/splash_shot_a.png build/splash_shot_b.png
-      - name: Снимок стартового экрана (4)
-        if: ${{ always() && inputs.splash_shot }}
-        run: python3 tool/ci_emit_image.py splash 3 build/splash_shot_a.png build/splash_shot_b.png
+          python3 tool/ci_emit_image.py "${{ inputs.shot }}" 0 "build/${{ inputs.shot }}_shot_a.png" "build/${{ inputs.shot }}_shot_b.png"
+      - name: Снимок экрана (2)
+        if: ${{ always() && inputs.shot != '' }}
+        run: python3 tool/ci_emit_image.py "${{ inputs.shot }}" 1 "build/${{ inputs.shot }}_shot_a.png" "build/${{ inputs.shot }}_shot_b.png"
+      - name: Снимок экрана (3)
+        if: ${{ always() && inputs.shot != '' }}
+        run: python3 tool/ci_emit_image.py "${{ inputs.shot }}" 2 "build/${{ inputs.shot }}_shot_a.png" "build/${{ inputs.shot }}_shot_b.png"
+      - name: Снимок экрана (4)
+        if: ${{ always() && inputs.shot != '' }}
+        run: python3 tool/ci_emit_image.py "${{ inputs.shot }}" 3 "build/${{ inputs.shot }}_shot_a.png" "build/${{ inputs.shot }}_shot_b.png"

@@ -31,6 +31,8 @@ class SwipeActionTile extends StatefulWidget {
     required this.child,
     this.leading = const [],
     this.trailing = const [],
+    this.background,
+    this.clip = true,
   });
 
   /// Ширина одного действия.
@@ -46,6 +48,14 @@ class SwipeActionTile extends StatefulWidget {
   final Widget child;
   final List<SwipeAction> leading;
   final List<SwipeAction> trailing;
+
+  /// Фон под строкой; по умолчанию — цвет поверхности темы. Для стеклянных
+  /// карточек — прозрачный.
+  final Color? background;
+
+  /// Обрезать содержимое по границам строки. Карточкам с тенью и свечением
+  /// обрезка не нужна: строка и так во всю ширину экрана.
+  final bool clip;
 
   @override
   State<SwipeActionTile> createState() => _SwipeActionTileState();
@@ -127,6 +137,7 @@ class _SwipeActionTileState extends State<SwipeActionTile> with SingleTickerProv
       onHorizontalDragUpdate: _onDragUpdate,
       onHorizontalDragEnd: _onDragEnd,
       child: ClipRect(
+        clipBehavior: widget.clip ? Clip.hardEdge : Clip.none,
         child: AnimatedBuilder(
           animation: _offset,
           builder: (context, _) {
@@ -151,7 +162,7 @@ class _SwipeActionTileState extends State<SwipeActionTile> with SingleTickerProv
                   offset: Offset(dx, 0),
                   child: Stack(
                     children: [
-                      ColoredBox(color: context.cs.surface, child: widget.child),
+                      ColoredBox(color: widget.background ?? context.cs.surface, child: widget.child),
                       if (_isOpen)
                         Positioned.fill(
                           child: GestureDetector(

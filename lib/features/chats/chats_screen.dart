@@ -13,50 +13,77 @@ import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../core/design/widgets/dialogs.dart';
 import '../../core/design/widgets/form.dart';
-import '../../core/design/widgets/search_field.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../data/db/tables.dart';
 import '../../data/models/chat.dart';
+import '../../design_system/glass_controls.dart';
+import '../../design_system/glass_theme.dart';
+import '../../design_system/glass_wallpaper.dart';
+import '../../design_system/orb_refresh.dart';
+import '../search/message_hit_tile.dart';
+import '../stories/story_viewer.dart';
 import 'chat_filter.dart';
 import 'chat_tile.dart';
-import 'swipe_actions.dart';
 import 'contact_story_bar.dart';
-import '../stories/story_viewer.dart';
-import '../search/message_hit_tile.dart';
+import 'swipe_actions.dart';
 
-enum _ChatAction { pin, read, mute, delete }
+enum _ChatAction { pin, read, mute, archive, delete }
 
-/// Список чатов текущего телефона.
+enum _MenuAction { newGroup, readAll }
+
+/// Главный экран: список чатов текущего телефона («светлое жидкое стекло»).
 class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key, required this.deviceId});
 
   final String deviceId;
 
+  /// Поля экрана слева и справа.
+  static const double sideMargin = 20;
+
   @override
   State<ChatsScreen> createState() => _ChatsScreenState();
 }
 
-class _ChatsScreenState extends State<ChatsScreen> {
+class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _search = TextEditingController();
   String _query = '';
+  ChatFilter _filter = ChatFilter.all;
   Timer? _clock;
 
   /// Какая строка списка открыта свайпом (одна на весь список).
   final ValueNotifier<String?> _openSwipe = ValueNotifier<String?>(null);
 
+  /// Открытие экрана: шапка съезжает сверху, карточки появляются по очереди.
+  late final AnimationController _intro =
+      AnimationController(vsync: this, duration: ChatsIntro.duration);
+  bool _introStarted = false;
+
   @override
   void initState() {
     super.initState();
-    // Подписи времени («14:05», «вчера») сами обновляются раз в минуту.
+    // Подписи времени («14:05», «Вчера») сами обновляются раз в минуту.
     _clock = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_introStarted) return;
+    _introStarted = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _intro.value = 1;
+    } else {
+      _intro.forward();
+    }
+  }
+
+  @override
   void dispose() {
     _clock?.cancel();
+    _intro.dispose();
     _search.dispose();
     _openSwipe.dispose();
     super.dispose();
@@ -68,10 +95,44 @@ class _ChatsScreenState extends State<ChatsScreen> {
     messenger.showSnackBar(SnackBar(content: Text(text)));
   }
 
+  /// Меню «…» в шапке.
+  Future<void> _openMenu(List<ChatListItem> all) async {
+    HapticFeedback.selectionClick();
+    final hasUnread = all.any((item) => item.chat.unreadCount > 0);
+    final action = await showActionSheet<_MenuAction>(
+      context,
+      actions: [
+        const SheetAction(value: _MenuAction.newGroup, icon: AppIcons.groupAdd, label: 'Новая группа'),
+        if (hasUnread)
+          const SheetAction(
+            value: _MenuAction.readAll,
+            icon: AppIcons.markRead,
+            label: 'Отметить все прочитанными',
+          ),
+      ],
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _MenuAction.newGroup:
+        await AppNavigator.openNewGroup();
+      case _MenuAction.readAll:
+        final services = Services.read(context);
+        try {
+          for (final item in all) {
+            if (item.chat.unreadCount > 0) await services.chats.markRead(item.chat.id);
+          }
+        } catch (error) {
+          debugPrint('Чаты не отмечены прочитанными: $error');
+          if (mounted) _showSnack('Не удалось выполнить действие');
+        }
+    }
+  }
+
   Future<void> _openActions(ChatListItem item) async {
     HapticFeedback.selectionClick();
     final pinned = item.chat.isPinned;
     final unread = item.chat.unreadCount > 0;
+    final archived = Services.read(context).archive.contains(item.chat.id);
 
     final action = await showActionSheet<_ChatAction>(
       context,
@@ -91,6 +152,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
           value: _ChatAction.mute,
           icon: item.chat.muted ? AppIcons.notificationsOn : AppIcons.muted,
           label: item.chat.muted ? 'Включить уведомления' : 'Без звука',
+        ),
+        SheetAction(
+          value: _ChatAction.archive,
+          icon: archived ? AppIcons.unarchive : AppIcons.archive,
+          label: archived ? 'Вернуть из архива' : 'В архив',
         ),
         const SheetAction(
           value: _ChatAction.delete,
@@ -123,6 +189,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
           }
         case _ChatAction.mute:
           await services.chats.setMuted(chatId, !item.chat.muted);
+        case _ChatAction.archive:
+          await services.archive.setArchived(chatId, !services.archive.contains(chatId));
         case _ChatAction.delete:
           final confirmed = await showConfirmDialog(
             context,
@@ -132,7 +200,10 @@ class _ChatsScreenState extends State<ChatsScreen> {
             confirmLabel: 'Удалить',
             destructive: true,
           );
-          if (confirmed) await services.chats.delete(chatId);
+          if (confirmed) {
+            await services.chats.delete(chatId);
+            await services.archive.setArchived(chatId, false);
+          }
       }
     } catch (error) {
       debugPrint('Действие с чатом не выполнено: $error');
@@ -143,9 +214,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
   @override
   Widget build(BuildContext context) {
     final services = Services.of(context);
-    final cs = context.cs;
-    return ColoredBox(
-      color: cs.surface,
+    return GlassWallpaper(
       child: SafeArea(
         bottom: false,
         child: LiveQuery<List<ChatListItem>>(
@@ -164,40 +233,39 @@ class _ChatsScreenState extends State<ChatsScreen> {
             final searching = _query.trim().isNotEmpty;
             return Column(
               children: [
-                const ScreenHeader(
-                  title: 'Чаты',
+                ChatsHeader(
+                  appear: _intro,
                   onTitleHold: AppNavigator.openOperator,
-                  actions: [
-                    IconButton(
-                      tooltip: 'Новая группа',
-                      icon: Icon(AppIcons.groupAdd),
-                      onPressed: AppNavigator.openNewGroup,
-                    ),
-                  ],
-                ),
-                // Лента контактов: при поиске сворачивается, из дерева не уходит.
-                ContactStoryBar(
-                  items: all ?? const <ChatListItem>[],
-                  visible: !searching && all != null && all.isNotEmpty,
+                  onMenu: () => _openMenu(all ?? const <ChatListItem>[]),
+                  // Новый чат начинается с выбора контакта.
                   onNewChat: () => AppNavigator.homeTab.value = 2,
-                  onOpen: AppNavigator.openChat,
-                  stories: services.stories,
-                  onOpenStory: (item) => openStoryViewer(
-                    context,
-                    characterId: item.chat.peerCharacterId!,
-                    name: item.displayName,
-                    avatarPath: item.peer.avatarPath,
-                    avatarTone: item.peer.avatarTone,
-                  ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.s),
-                  child: SearchField(
+                  padding: const EdgeInsets.fromLTRB(ChatsScreen.sideMargin, 6, ChatsScreen.sideMargin, 0),
+                  child: GlassSearchBar(
                     controller: _search,
                     hint: 'Поиск',
+                    searchIcon: AppIcons.search,
+                    clearIcon: AppIcons.clear,
                     onChanged: (value) => setState(() => _query = value),
                   ),
                 ),
+                // Фильтры: при поиске сворачиваются (поиск идёт по всем чатам).
+                AnimatedSize(
+                  duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.normal,
+                  curve: Motion.curve,
+                  alignment: Alignment.topCenter,
+                  child: searching
+                      ? const SizedBox(width: double.infinity)
+                      : ChatFilterBar(
+                          selected: _filter,
+                          onSelect: (filter) => setState(() {
+                            _filter = filter;
+                            _openSwipe.value = null;
+                          }),
+                        ),
+                ),
+                const SizedBox(height: 10),
                 Expanded(child: _list(context, services, snapshot)),
               ],
             );
@@ -209,6 +277,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
   Widget _list(BuildContext context, AppServices services, LiveSnapshot<List<ChatListItem>> snapshot) {
     final all = snapshot.data;
+    final bottomInset = MediaQuery.paddingOf(context).bottom + Space.m;
     if (all == null) {
       return snapshot.error != null
           ? ErrorState(
@@ -224,48 +293,78 @@ class _ChatsScreenState extends State<ChatsScreen> {
         message: 'Откройте контакт, чтобы начать переписку.',
       );
     }
-    final items = filterChats(all, _query);
     final now = DateTime.now();
-    if (_query.trim().isEmpty) {
-      return ListenableBuilder(
-        listenable: services.typing,
-        builder: (context, _) => ListView.builder(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.only(bottom: Space.s),
-          itemCount: items.length,
-          itemBuilder: (context, index) => _tile(
-            items[index],
-            now,
-            showDivider: index < items.length - 1,
-          ),
-        ),
+    if (_query.trim().isNotEmpty) {
+      return _SearchResults(
+        deviceId: widget.deviceId,
+        query: _query,
+        chats: filterChats(all, _query),
+        now: now,
+        bottomInset: bottomInset,
+        chatTile: (item) => _tile(services, item, now),
       );
     }
-    return _SearchResults(
-      deviceId: widget.deviceId,
-      query: _query,
-      chats: items,
-      now: now,
-      chatTile: (item, divider) => _tile(item, now, showDivider: divider),
+    return ListenableBuilder(
+      listenable: Listenable.merge([services.typing, services.stories, services.archive]),
+      builder: (context, _) {
+        final items = applyChatFilter(all, _filter, services.archive.ids);
+        if (items.isEmpty) return _emptyFilter();
+        return OrbRefresh(
+          onRefresh: () async => snapshot.reload(),
+          child: ListView.builder(
+            // «Пружина» у краёв на любой платформе: за неё тянут, чтобы обновить.
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.only(bottom: bottomInset),
+            itemCount: items.length,
+            itemBuilder: (context, index) => ChatsIntro.card(
+              animation: _intro,
+              index: index,
+              child: _tile(services, items[index], now),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _tile(ChatListItem item, DateTime now, {required bool showDivider}) {
+  Widget _emptyFilter() => switch (_filter) {
+        ChatFilter.archive => const EmptyState(
+            icon: AppIcons.archive,
+            title: 'В архиве пусто',
+            message: 'Смахните чат влево и выберите «В архив».',
+          ),
+        ChatFilter.groups => const EmptyState(
+            icon: AppIcons.group,
+            title: 'Групп пока нет',
+            message: 'Создать группу можно через меню «…» вверху.',
+          ),
+        _ => const EmptyState(
+            icon: AppIcons.emptyChats,
+            title: 'Здесь пока пусто',
+            message: 'Откройте контакт, чтобы начать переписку.',
+          ),
+      };
+
+  Widget _tile(AppServices services, ChatListItem item, DateTime now) {
     final rc = context.rc;
-    final cs = context.cs;
     final pinned = item.chat.isPinned;
     final unread = item.chat.unreadCount > 0;
     final muted = item.chat.muted;
+    final archived = services.archive.contains(item.chat.id);
+    final ring = ContactStoryBar.ringFor(item, services.stories);
     return SwipeActionTile(
       key: ValueKey('swipe-${item.chat.id}'),
       id: item.chat.id,
       open: _openSwipe,
-      // Вправо: прочитано / закрепить. Влево: звук / удалить.
+      background: Colors.transparent,
+      clip: false,
+      // Вправо: прочитано / закрепить. Влево: звук / удалить / архив.
       leading: [
         SwipeAction(
           icon: unread ? AppIcons.markRead : AppIcons.markUnread,
           label: unread ? 'Прочитан' : 'Не прочитан',
-          color: cs.primary,
+          color: GlassTheme.accentBlue,
           onTap: () => _perform(_ChatAction.read, item),
         ),
         SwipeAction(
@@ -288,15 +387,160 @@ class _ChatsScreenState extends State<ChatsScreen> {
           color: rc.danger,
           onTap: () => _perform(_ChatAction.delete, item),
         ),
+        SwipeAction(
+          icon: archived ? AppIcons.unarchive : AppIcons.archive,
+          label: archived ? 'Из архива' : 'В архив',
+          color: const Color(0xFF8A93A6),
+          onTap: () => _perform(_ChatAction.archive, item),
+        ),
       ],
       child: ChatTile(
         key: ValueKey(item.chat.id),
         item: item,
         now: now,
-        typing: Services.read(context).typing.isTyping(item.chat.id),
-        showDivider: showDivider,
+        typing: services.typing.isTyping(item.chat.id),
+        ring: ring,
+        // История открывается нажатием на аватар с кольцом, чат — на карточку.
+        onAvatarTap: ring == StoryRing.none
+            ? null
+            : () => openStoryViewer(
+                  context,
+                  characterId: item.chat.peerCharacterId!,
+                  name: item.displayName,
+                  avatarPath: item.peer.avatarPath,
+                  avatarTone: item.peer.avatarTone,
+                ),
         onTap: () => AppNavigator.openChat(item.chat.id),
         onLongPress: () => _openActions(item),
+      ),
+    );
+  }
+}
+
+/// Анимация открытия главного экрана.
+abstract final class ChatsIntro {
+  static const Duration duration = Duration(milliseconds: 900);
+
+  /// Карточки появляются по очереди с шагом 50 мс.
+  static const Duration step = Duration(milliseconds: 50);
+  static const Duration cardDuration = Duration(milliseconds: 320);
+  static const Duration cardsDelay = Duration(milliseconds: 120);
+
+  /// Сколько первых карточек идут по очереди; остальные — вместе с последней.
+  static const int staggered = 9;
+
+  /// Отрезок общей анимации для карточки с номером [index].
+  static Interval intervalFor(int index) {
+    final total = duration.inMilliseconds;
+    final i = index < staggered ? index : staggered;
+    final begin = (cardsDelay.inMilliseconds + step.inMilliseconds * i) / total;
+    final end = (begin + cardDuration.inMilliseconds / total).clamp(0.0, 1.0);
+    return Interval(begin.clamp(0.0, 1.0), end, curve: Curves.easeOutCubic);
+  }
+
+  /// Карточка в общей анимации открытия: проявляется и чуть поднимается.
+  static Widget card({required Animation<double> animation, required int index, required Widget child}) {
+    final curve = CurveTween(curve: intervalFor(index));
+    return FadeTransition(
+      opacity: animation.drive(curve),
+      child: SlideTransition(
+        position: animation.drive(Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero).chain(curve)),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Шапка: заголовок «Чаты» и две круглые стеклянные кнопки.
+class ChatsHeader extends StatelessWidget {
+  const ChatsHeader({
+    super.key,
+    required this.onMenu,
+    required this.onNewChat,
+    this.onTitleHold,
+    this.appear,
+  });
+
+  final VoidCallback onMenu;
+  final VoidCallback onNewChat;
+
+  /// Скрытое действие: удерживать заголовок 2 секунды.
+  final VoidCallback? onTitleHold;
+
+  /// Открытие экрана: шапка проявляется и съезжает сверху.
+  final Animation<double>? appear;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = GlassTheme.of(context);
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(ChatsScreen.sideMargin, 8, ChatsScreen.sideMargin, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: TitleHold(
+              onHold: onTitleHold,
+              child: Semantics(
+                header: true,
+                child: Text(
+                  'Чаты',
+                  maxLines: 1,
+                  textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.15),
+                  style: TextStyle(
+                    fontSize: 36,
+                    height: 1.15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.8,
+                    color: glass.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GlassIconButton(icon: AppIcons.more, label: 'Меню', onPressed: onMenu),
+          const SizedBox(width: 12),
+          GlassIconButton(icon: AppIcons.plus, label: 'Новый чат', onPressed: onNewChat),
+        ],
+      ),
+    );
+    final animation = appear;
+    if (animation == null) return header;
+    final curve = CurveTween(curve: const Interval(0, 0.45, curve: Curves.easeOutCubic));
+    return FadeTransition(
+      opacity: animation.drive(curve),
+      child: SlideTransition(
+        position: animation.drive(Tween<Offset>(begin: const Offset(0, -0.35), end: Offset.zero).chain(curve)),
+        child: header,
+      ),
+    );
+  }
+}
+
+/// Фильтры списка: «Все», «Личные», «Группы», «Архив».
+class ChatFilterBar extends StatelessWidget {
+  const ChatFilterBar({super.key, required this.selected, required this.onSelect});
+
+  final ChatFilter selected;
+  final ValueChanged<ChatFilter> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(ChatsScreen.sideMargin, 14, ChatsScreen.sideMargin, 0),
+      child: Row(
+        children: [
+          for (final filter in ChatFilter.values) ...[
+            if (filter != ChatFilter.values.first) const SizedBox(width: 8),
+            Expanded(
+              child: GlassChip(
+                key: ValueKey('filter-${filter.name}'),
+                label: filter.label,
+                selected: filter == selected,
+                onTap: () => onSelect(filter),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -309,6 +553,7 @@ class _SearchResults extends StatelessWidget {
     required this.query,
     required this.chats,
     required this.now,
+    required this.bottomInset,
     required this.chatTile,
   });
 
@@ -316,7 +561,8 @@ class _SearchResults extends StatelessWidget {
   final String query;
   final List<ChatListItem> chats;
   final DateTime now;
-  final Widget Function(ChatListItem item, bool showDivider) chatTile;
+  final double bottomInset;
+  final Widget Function(ChatListItem item) chatTile;
 
   @override
   Widget build(BuildContext context) {
@@ -335,29 +581,32 @@ class _SearchResults extends StatelessWidget {
             message: 'Нет чатов и сообщений по запросу «${query.trim()}».',
           );
         }
-        return ListView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.only(bottom: Space.s),
-          children: [
-            if (chats.isNotEmpty) ...[
-              const SectionLabel('Чаты'),
-              for (var i = 0; i < chats.length; i++) chatTile(chats[i], i < chats.length - 1),
-            ],
-            if (hits.isNotEmpty) ...[
-              SectionLabel(hits.length >= 100 ? 'Сообщения (первые 100)' : 'Сообщения'),
-              for (final hit in hits)
-                MessageHitTile(
-                  key: ValueKey('hit-${hit.message.id}'),
-                  hit: hit,
-                  now: now,
-                  query: query,
-                  onTap: () => AppNavigator.openChat(
-                    hit.message.chatId,
-                    revealMessageId: hit.message.id,
+        return ListenableBuilder(
+          listenable: Listenable.merge([services.typing, services.stories, services.archive]),
+          builder: (context, _) => ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.only(bottom: bottomInset),
+            children: [
+              if (chats.isNotEmpty) ...[
+                const SectionLabel('Чаты'),
+                for (final chat in chats) chatTile(chat),
+              ],
+              if (hits.isNotEmpty) ...[
+                SectionLabel(hits.length >= 100 ? 'Сообщения (первые 100)' : 'Сообщения'),
+                for (final hit in hits)
+                  MessageHitTile(
+                    key: ValueKey('hit-${hit.message.id}'),
+                    hit: hit,
+                    now: now,
+                    query: query,
+                    onTap: () => AppNavigator.openChat(
+                      hit.message.chatId,
+                      revealMessageId: hit.message.id,
+                    ),
                   ),
-                ),
+              ],
             ],
-          ],
+          ),
         );
       },
     );

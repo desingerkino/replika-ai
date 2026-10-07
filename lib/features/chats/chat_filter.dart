@@ -25,3 +25,31 @@ List<ChatListItem> filterChats(List<ChatListItem> items, String query) {
     return preview != null && normalizeForSearch(preview).contains(q);
   }).toList();
 }
+
+/// Фильтр списка чатов (капсулы под поиском).
+enum ChatFilter {
+  all('Все'),
+  personal('Личные'),
+  groups('Группы'),
+  archive('Архив');
+
+  const ChatFilter(this.label);
+
+  final String label;
+}
+
+/// Чаты под фильтром. Архивные видны только в «Архиве»; остальные фильтры
+/// показывают то, что не в архиве.
+List<ChatListItem> applyChatFilter(
+  List<ChatListItem> items,
+  ChatFilter filter,
+  Set<String> archived,
+) {
+  bool inArchive(ChatListItem item) => archived.contains(item.chat.id);
+  return switch (filter) {
+    ChatFilter.all => items.where((i) => !inArchive(i)).toList(),
+    ChatFilter.personal => items.where((i) => !inArchive(i) && !i.chat.isGroup).toList(),
+    ChatFilter.groups => items.where((i) => !inArchive(i) && i.chat.isGroup).toList(),
+    ChatFilter.archive => items.where(inArchive).toList(),
+  };
+}

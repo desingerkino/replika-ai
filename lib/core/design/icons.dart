@@ -93,4 +93,12 @@ abstract final class AppIcons {
   static const IconData device = Icons.phone_android_rounded;
   static const IconData addons = Icons.extension_outlined;
   static const IconData lock = Icons.lock_outline_rounded;
+
+  // Главный экран (светлое стекло).
+  static const IconData more = Icons.more_horiz_rounded;
+  static const IconData waveform = Icons.graphic_eq_rounded;
+  static const IconData photo = Icons.image_rounded;
+  static const IconData group = Icons.groups_rounded;
+  static const IconData archive = Icons.archive_outlined;
+  static const IconData unarchive = Icons.unarchive_outlined;
 }

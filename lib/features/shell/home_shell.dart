@@ -9,6 +9,7 @@ import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/unread_badge.dart';
 import '../../data/db/tables.dart';
+import '../../design_system/glass_tab_bar.dart';
 import '../calls/calls_screen.dart';
 import '../chat/chat_screen.dart';
 import '../chats/chats_screen.dart';
@@ -61,13 +62,17 @@ class _HomeShellState extends State<HomeShell> {
         final index = AppNavigator.homeTab.value;
         final wide = isWideWindow(MediaQuery.sizeOf(context));
         _setTwoPane(wide);
+        // Плавающая панель вкладок лежит поверх содержимого. «Чаты» сами
+        // учитывают её высоту (список уходит под стекло); остальные разделы
+        // пока заканчиваются над панелью.
+        Widget aboveBar(Widget screen) => wide ? screen : _AboveNavBar(child: screen);
         final tabs = IndexedStack(
           index: index,
           children: [
             ChatsScreen(deviceId: deviceId),
-            CallsScreen(deviceId: deviceId),
-            ContactsScreen(deviceId: deviceId),
-            SettingsScreen(deviceId: deviceId),
+            aboveBar(CallsScreen(deviceId: deviceId)),
+            aboveBar(ContactsScreen(deviceId: deviceId)),
+            aboveBar(SettingsScreen(deviceId: deviceId)),
           ],
         );
         return PopScope(
@@ -83,6 +88,7 @@ class _HomeShellState extends State<HomeShell> {
             }
           },
           child: Scaffold(
+            extendBody: true,
             body: wide
                 ? Row(
                     children: [
@@ -238,7 +244,28 @@ class _Rail extends StatelessWidget {
   }
 }
 
-/// Нижняя навигация. Открыта для виджет-тестов (test/ui_regression_test.dart).
+/// Раздел, который заканчивается над плавающей панелью вкладок: нижний
+/// отступ равен высоте панели и дальше вниз уже не передаётся.
+class _AboveNavBar extends StatelessWidget {
+  const _AboveNavBar({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
+      child: MediaQuery.removePadding(context: context, removeBottom: true, child: child),
+    );
+  }
+}
+
+/// Нижняя навигация: плавающая стеклянная панель. Открыта для виджет-тестов
+/// (test/ui_regression_test.dart).
+///
+/// [index] и [onSelect] работают с прежними номерами разделов (0 — чаты,
+/// 1 — звонки, 2 — контакты, 3 — настройки): на них завязаны команды Connect
+/// и кнопка «назад». Порядок на панели другой — как на эталоне.
 class HomeNavBar extends StatelessWidget {
   const HomeNavBar({super.key, required this.index, required this.unread, required this.onSelect});
 
@@ -246,51 +273,27 @@ class HomeNavBar extends StatelessWidget {
   final int unread;
   final ValueChanged<int> onSelect;
 
+  /// Порядок разделов на панели слева направо (номера разделов).
+  static const List<int> order = [1, 2, 0, 3];
+
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
-    Widget chatsIcon(IconData icon) => Badge(
-          isLabelVisible: unread > 0,
-          backgroundColor: rc.badge,
-          textColor: rc.onBadge,
-          label: Text(UnreadBadge.label(unread)),
-          child: Icon(icon),
-        );
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: rc.divider, width: Sizes.line)),
+    final tabs = <int, GlassTab>{
+      0: GlassTab(
+        label: 'Чаты',
+        icon: AppIcons.chats,
+        activeIcon: AppIcons.chatsActive,
+        // Счётчик нужен, пока список чатов не на экране.
+        badge: unread > 0 && index != 0 ? UnreadBadge.label(unread) : null,
       ),
-      child: Theme(
-        data: Theme.of(context).copyWith(splashFactory: NoSplash.splashFactory),
-        child: NavigationBar(
-        // 64 при обычном шрифте; при крупном — выше, чтобы подписи не обрезались.
-        height: 64 + (MediaQuery.textScalerOf(context).scale(12) - 12).clamp(0.0, 24.0) * 1.5,
-        selectedIndex: index,
-        onDestinationSelected: onSelect,
-        destinations: [
-          NavigationDestination(
-            icon: chatsIcon(AppIcons.chats),
-            selectedIcon: chatsIcon(AppIcons.chatsActive),
-            label: 'Чаты',
-          ),
-          const NavigationDestination(
-            icon: Icon(AppIcons.callOutlined),
-            selectedIcon: Icon(AppIcons.call),
-            label: 'Звонки',
-          ),
-          const NavigationDestination(
-            icon: Icon(AppIcons.contacts),
-            selectedIcon: Icon(AppIcons.contactsActive),
-            label: 'Контакты',
-          ),
-          const NavigationDestination(
-            icon: Icon(AppIcons.settings),
-            selectedIcon: Icon(AppIcons.settingsActive),
-            label: 'Настройки',
-          ),
-        ],
-      ),
-      ),
+      1: const GlassTab(label: 'Звонки', icon: AppIcons.callOutlined, activeIcon: AppIcons.call),
+      2: const GlassTab(label: 'Контакты', icon: AppIcons.contacts, activeIcon: AppIcons.contactsActive),
+      3: const GlassTab(label: 'Настройки', icon: AppIcons.settings, activeIcon: AppIcons.settingsActive),
+    };
+    return GlassTabBar(
+      tabs: [for (final section in order) tabs[section]!],
+      selected: order.indexOf(index),
+      onSelect: (position) => onSelect(order[position]),
     );
   }
 }
