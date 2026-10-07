@@ -33,9 +33,17 @@ class _VideoNoteRecorderState extends State<_VideoNoteRecorder> {
   Timer? _ticker;
   bool _busy = false;
 
+  // Экран рекордера тёмный при любой теме: сообщаем об этом своей строке
+  // состояния кинорежима (как звонок и просмотр фото), чтобы значки над ним
+  // были светлыми.
+  ValueNotifier<int>? _darkScreens;
+
   @override
   void initState() {
     super.initState();
+    _darkScreens = Services.read(context).darkScreens;
+    final dark = _darkScreens!;
+    scheduleMicrotask(() => dark.value++);
     unawaited(_open());
   }
 
@@ -106,6 +114,8 @@ class _VideoNoteRecorderState extends State<_VideoNoteRecorder> {
 
   @override
   void dispose() {
+    final dark = _darkScreens;
+    if (dark != null) scheduleMicrotask(() => dark.value = dark.value > 0 ? dark.value - 1 : 0);
     _ticker?.cancel();
     final controller = _controller;
     _controller = null;
