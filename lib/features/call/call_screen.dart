@@ -7,6 +7,8 @@ import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../app/call_engine.dart';
+import '../../app/call_video_recording.dart';
+import '../../app/operator_toast.dart';
 import '../../app/services.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
@@ -22,9 +24,17 @@ class CallScreen extends StatefulWidget {
   State<CallScreen> createState() => _CallScreenState();
 }
 
-class _CallScreenState extends State<CallScreen> {
+class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
   late final CallEngine _engine = Services.read(context).callEngine;
   bool _closing = false;
+
+  // Камера: кнопка «Перевернуть» (фронтальная ↔ основная).
+  final CameraSelfController _camera = CameraSelfController();
+
+  // Автозапись видеозвонка в один mp4 (экран Replika → галерея).
+  CallVideoRecording? _recording;
+  bool _recordingClosed = false;
+  Timer? _stopTimer;
 
   // Материалы собеседника в разговоре.
   AudioPlayer? _voice;
@@ -35,8 +45,11 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _camera.addListener(_onCameraChange);
     _engine.addListener(_onChange);
     _syncPeerMedia();
+    _syncRecording();
     _darkScreens = Services.read(context).darkScreens;
     final dark = _darkScreens!;
     scheduleMicrotask(() => dark.value++);
@@ -44,7 +57,68 @@ class _CallScreenState extends State<CallScreen> {
 
   ValueNotifier<int>? _darkScreens;
 
+  void _onCameraChange() {
+    if (mounted) setState(() {});
+  }
+
+  /// Запись идёт, пока звонок идёт на экране: старт — при соединении,
+  /// остановка — вскоре после завершения (в видео попадает «Звонок завершён»).
+  void _syncRecording() {
+    if (_recordingClosed || _engine.session?.kind != CallKind.video) return;
+    switch (_engine.phase) {
+      case CallPhase.connecting:
+      case CallPhase.active:
+        if (_recording == null) {
+          final recording = CallVideoRecording();
+          _recording = recording;
+          unawaited(recording.start());
+        }
+      case CallPhase.ended:
+        _stopTimer ??= Timer(const Duration(milliseconds: 900), _closeRecording);
+      case CallPhase.idle:
+        _closeRecording();
+      case CallPhase.incoming:
+      case CallPhase.outgoing:
+        break;
+    }
+  }
+
+  /// Останавливает и закрывает запись ровно один раз и сохраняет видео в галерею.
+  void _closeRecording() {
+    _stopTimer?.cancel();
+    _stopTimer = null;
+    if (_recordingClosed) return;
+    _recordingClosed = true;
+    final recording = _recording;
+    if (recording == null) return;
+    unawaited(recording.stopAndSave().then(_reportRecording));
+  }
+
+  void _reportRecording(CallRecordingResult result) {
+    switch (result.outcome) {
+      case CallRecordingOutcome.savedLocally:
+        showOperatorToast('Видео звонка сохранено в папке приложения: в галерею записать не удалось');
+      case CallRecordingOutcome.failed:
+        showOperatorToast('Запись видеозвонка не сохранилась');
+      case CallRecordingOutcome.savedToGallery:
+      case CallRecordingOutcome.nothing:
+        break;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Свёрнутое приложение не может снимать камеру, поэтому запись закрываем
+    // сразу и целиком (файл не бывает битым). inactive не считаем: так
+    // выглядят системные окна разрешений. Пока запись только стартует
+    // (системное окно «Начать запись»), тоже ничего не закрываем.
+    if (state == AppLifecycleState.paused && _recording?.starting != true) {
+      _closeRecording();
+    }
+  }
+
   void _onChange() {
+    _syncRecording();
     if (_engine.phase == CallPhase.idle) {
       if (!_closing && mounted) {
         _closing = true;
@@ -97,6 +171,10 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   void dispose() {
+    _closeRecording();
+    WidgetsBinding.instance.removeObserver(this);
+    _camera.removeListener(_onCameraChange);
+    _camera.dispose();
     final dark = _darkScreens;
     if (dark != null) scheduleMicrotask(() => dark.value = dark.value > 0 ? dark.value - 1 : 0);
     _engine.removeListener(_onChange);
@@ -214,7 +292,12 @@ class _CallScreenState extends State<CallScreen> {
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
                       ),
                     const Spacer(),
-                    _Controls(engine: _engine, video: video),
+                    _Controls(
+                      engine: _engine,
+                      video: video,
+                      onFlip: video && showSelf && _camera.canFlip ? _camera.flip : null,
+                      flipToRear: _camera.isFront,
+                    ),
                     const SizedBox(height: Space.xl),
                   ],
                         ),
@@ -227,7 +310,7 @@ class _CallScreenState extends State<CallScreen> {
                 Positioned(
                   top: MediaQuery.paddingOf(context).top + Space.l,
                   right: Space.l,
-                  child: const CameraSelfView(),
+                  child: CameraSelfView(controller: _camera),
                 ),
             ],
           ),
@@ -246,10 +329,14 @@ double _avatarSize(BuildContext context) {
 }
 
 class _Controls extends StatelessWidget {
-  const _Controls({required this.engine, required this.video});
+  const _Controls({required this.engine, required this.video, this.onFlip, this.flipToRear = true});
 
   final CallEngine engine;
   final bool video;
+
+  /// Переключить камеру; null — кнопки нет (аудиозвонок, камера выключена или у телефона одна камера).
+  final VoidCallback? onFlip;
+  final bool flipToRear;
 
   @override
   Widget build(BuildContext context) {
@@ -287,6 +374,14 @@ class _Controls extends StatelessWidget {
           onTap: engine.toggleCamera,
         ));
       }
+      if (video && onFlip != null && phase != CallPhase.incoming) {
+        buttons.add(_RoundButton(
+          icon: Icons.cameraswitch_rounded,
+          label: 'Перевернуть',
+          color: Colors.white24,
+          onTap: onFlip!,
+        ));
+      }
       buttons.add(_RoundButton(
         icon: Icons.call_end_rounded,
         label: 'Завершить',
@@ -298,7 +393,7 @@ class _Controls extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: Space.l),
       child: Wrap(
         alignment: WrapAlignment.spaceEvenly,
-        spacing: Space.xl,
+        spacing: buttons.length > 3 ? 0 : Space.xl,
         runSpacing: Space.l,
         children: buttons,
       ),

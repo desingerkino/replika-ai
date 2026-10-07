@@ -66,13 +66,19 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
 
   Future<void> _findSavedModel() async {
     final dir = await _modelsDir();
+    File? newest;
+    DateTime? newestTime;
     await for (final entity in dir.list()) {
       if (entity is File && entity.path.toLowerCase().endsWith('.gguf')) {
-        if (!mounted) return;
-        setState(() => _modelPath = entity.path);
-        return;
+        final time = (await entity.stat()).modified;
+        if (newestTime == null || time.isAfter(newestTime)) {
+          newest = entity;
+          newestTime = time;
+        }
       }
     }
+    if (newest == null || !mounted) return;
+    setState(() => _modelPath = newest!.path);
   }
 
   static String _mb(num bytes) => '${(bytes / 1048576).toStringAsFixed(0)} МБ';

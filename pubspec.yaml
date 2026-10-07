@@ -21,6 +21,9 @@ dependencies:
   just_audio: ^0.10.5
   camera: '>=0.11.0 <0.13.0'
   record: ^6.2.0
+  # Запись экрана видеозвонка и сохранение в галерею (свой небольшой плагин, packages/replika_recorder).
+  replika_recorder:
+    path: packages/replika_recorder
   flutter_local_notifications: ^19.4.0
   # Connect: ключи в Android Keystore / iOS Keychain, шифрование (чистый Dart), фоновая служба.
   flutter_secure_storage: ^11.2.0

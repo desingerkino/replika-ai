@@ -1,0 +1,15 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Запись экрана идёт через системное окно MediaProjection; ему нужна
+         служба переднего плана типа mediaProjection (Android 10+/14+). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
+    <!-- Только Android 9 и старше: сохранить видео в общую папку Movies. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+
+    <application>
+        <service
+            android:name="ru.kinoprop.replika_recorder.ReplikaRecorderService"
+            android:foregroundServiceType="mediaProjection"
+            android:exported="false"/>
+    </application>
+</manifest>

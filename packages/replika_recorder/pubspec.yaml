@@ -1,0 +1,21 @@
+name: replika_recorder
+description: "Запись экрана звонка в видеофайл и сохранение его в галерею (iOS и Android)."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.6.0
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: ru.kinoprop.replika_recorder
+        pluginClass: ReplikaRecorderPlugin
+      ios:
+        pluginClass: ReplikaRecorderPlugin

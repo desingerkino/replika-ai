@@ -36,10 +36,19 @@ class LocalAutoReplyEngine implements AutoReplyEngine {
     final base = await getApplicationSupportDirectory();
     final dir = Directory(p.join(base.path, 'models'));
     if (!await dir.exists()) return null;
+    // Если моделей несколько, берём ту, что добавлена последней.
+    File? newest;
+    DateTime? newestTime;
     await for (final entity in dir.list()) {
-      if (entity is File && entity.path.toLowerCase().endsWith('.gguf')) return entity.path;
+      if (entity is File && entity.path.toLowerCase().endsWith('.gguf')) {
+        final time = (await entity.stat()).modified;
+        if (newestTime == null || time.isAfter(newestTime)) {
+          newest = entity;
+          newestTime = time;
+        }
+      }
     }
-    return null;
+    return newest?.path;
   }
 
   @override
@@ -58,7 +67,8 @@ class LocalAutoReplyEngine implements AutoReplyEngine {
     return 'Ты — $name, живой человек, переписываешься в мессенджере с близким знакомым.'
         '$who Отвечай по-русски, как в обычной переписке: одной короткой репликой '
         '(обычно 1–2 предложения), без пояснений, без кавычек, без имени в начале, '
-        'без оформления. Не говори, что ты ИИ или модель.';
+        'без оформления. Отвечай именно на последнее сообщение собеседника, '
+        'по смыслу и без выдумок. Не говори, что ты ИИ или модель.';
   }
 
   /// Убирает то, что модель иногда добавляет: остатки размышлений,
@@ -89,7 +99,7 @@ class LocalAutoReplyEngine implements AutoReplyEngine {
       ],
       systemPrompt: systemPrompt(name, persona),
       maxTokens: 80,
-      temperature: 0.8,
+      temperature: 0.6,
     );
     final text = clean(result.text, name);
     return text.isEmpty ? null : text;

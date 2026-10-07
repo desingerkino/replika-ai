@@ -61,6 +61,9 @@ plist_set NSLocalNetworkUsageDescription string \
 # Выбор фото, видео и музыки из медиатеки устройства (file_picker).
 plist_set NSPhotoLibraryUsageDescription string \
   "Доступ к фото и видео нужен, чтобы добавлять их в медиатеку приложения для сцен и чатов."
+# Только добавление записи видеозвонка в «Фото» (без чтения медиатеки).
+plist_set NSPhotoLibraryAddUsageDescription string \
+  "Реплика сохраняет запись видеозвонка в «Фото»."
 plist_set NSAppleMusicUsageDescription string \
   "Доступ к музыке нужен, чтобы добавлять аудиофайлы в медиатеку приложения для сцен и чатов."
 # Своё шифрование Connect (X25519, AES-GCM, чистый Dart) — это не экспортное
