@@ -86,9 +86,9 @@ class ChatGlassHeader extends StatelessWidget {
     this.onMore,
   });
 
-  static const double side = 16;
+  static const double side = 14;
   static const double avatarSize = 48;
-  static const double buttonSize = 38;
+  static const double buttonSize = 36;
 
   final ChatPeer peer;
   final bool typing;
@@ -144,9 +144,9 @@ class ChatGlassHeader extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: glass.textPrimary,
-                            fontSize: 15.5,
-                            height: 21 / 15.5,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            height: 20 / 15,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         if (status.isNotEmpty)
