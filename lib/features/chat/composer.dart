@@ -6,6 +6,9 @@ import '../../core/design/tokens.dart';
 import '../../core/design/typography.dart';
 import 'message_bubble.dart';
 
+/// Кнопки-значки без Material-волны: только мягкая подсветка при касании.
+final ButtonStyle _quietButton = IconButton.styleFrom(splashFactory: NoSplash.splashFactory);
+
 /// Поле ввода сообщения с кнопкой отправки.
 class Composer extends StatelessWidget {
   const Composer({
@@ -55,18 +58,22 @@ class Composer extends StatelessWidget {
               if (busy) const LinearProgressIndicator(minHeight: 2),
               if (reply != null) _ReplyBar(reply: reply!, onCancel: onCancelReply),
               Padding(
-            padding: EdgeInsets.fromLTRB(onAttach == null ? Space.m : Space.xs, Space.s, Space.s, Space.s),
+            padding: EdgeInsets.fromLTRB(onAttach == null ? Space.m : Space.xs, Space.s - 2, Space.s - 2, Space.s - 2),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (onAttach != null)
                   IconButton(
                     tooltip: 'Прикрепить',
+                    style: _quietButton,
                     onPressed: busy ? null : onAttach,
                     icon: Icon(AppIcons.attachment, color: rc.textSecondary),
                   ),
                 Expanded(
-                  child: Container(
+                  // 2 px сверху и снизу: поле на одной линии с 48-пиксельной областью кнопки.
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: (Sizes.minTouch - Sizes.sendButton) / 2),
+                    child: Container(
                     constraints: const BoxConstraints(minHeight: Sizes.sendButton),
                     // Рамка 1 px: край поля читается в крупном плане; отступы
                     // уменьшены на её ширину, размер поля прежний.
@@ -89,9 +96,10 @@ class Composer extends StatelessWidget {
                         hintStyle: AppType.message.copyWith(color: rc.textTertiary),
                       ),
                     ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: Space.s),
+                const SizedBox(width: Space.s - 2),
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
@@ -218,7 +226,10 @@ class _CircleButtonState extends State<_CircleButton> {
         onTapUp: active ? (_) => _setPressed(false) : null,
         onTapCancel: active ? () => _setPressed(false) : null,
         onTap: active ? widget.onPressed : null,
-        child: AnimatedScale(
+        // Область нажатия 48 px (Sizes.minTouch), сама кнопка — 44.
+        child: Padding(
+          padding: const EdgeInsets.all((Sizes.minTouch - Sizes.sendButton) / 2),
+          child: AnimatedScale(
           scale: pressed ? 0.92 : 1,
           duration: duration,
           curve: Curves.easeOut,
@@ -236,6 +247,7 @@ class _CircleButtonState extends State<_CircleButton> {
                 child: Icon(widget.icon, size: 22, color: widget.iconColor),
               ),
             ),
+          ),
           ),
         ),
       ),
@@ -283,6 +295,7 @@ class _ReplyBar extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'Отменить ответ',
+            style: _quietButton,
             onPressed: onCancel,
             icon: Icon(AppIcons.clear, color: rc.textSecondary),
           ),

@@ -15,6 +15,7 @@ class Pressable extends StatefulWidget {
     this.onLongPress,
     this.tint = true,
     this.scale = 1,
+    this.borderRadius,
     this.semanticsLabel,
   });
 
@@ -27,6 +28,9 @@ class Pressable extends StatefulWidget {
 
   /// Масштаб при нажатии (1 — без изменения).
   final double scale;
+
+  /// Скругление подсветки (для небольших элементов вроде заголовка чата).
+  final BorderRadius? borderRadius;
   final String? semanticsLabel;
 
   @override
@@ -48,7 +52,7 @@ class _PressableState extends State<Pressable> {
     Widget content = AnimatedContainer(
       duration: duration,
       curve: Motion.curve,
-      color: tint,
+      decoration: BoxDecoration(color: tint, borderRadius: widget.borderRadius),
       child: widget.scale == 1
           ? widget.child
           : AnimatedScale(

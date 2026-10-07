@@ -13,6 +13,7 @@ import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/avatar.dart';
+import '../../core/design/widgets/pressable.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../data/db/tables.dart';
@@ -692,7 +693,7 @@ class _ChatTitle extends StatelessWidget {
     final tt = context.tt;
     final status = typing ? 'печатает…' : (subtitle ?? peer.statusText.trim());
     final highlight = typing || (subtitle == null && peer.isOnline);
-    return InkWell(
+    return Pressable(
       onTap: onTap,
       borderRadius: BorderRadius.circular(Radii.control),
       child: Padding(
@@ -704,6 +705,7 @@ class _ChatTitle extends StatelessWidget {
               size: Sizes.avatarHeader,
               imagePath: peer.avatarPath,
               tone: peer.avatarTone,
+              online: subtitle == null && peer.isOnline,
             ),
             const SizedBox(width: Space.m - 2),
             Expanded(
