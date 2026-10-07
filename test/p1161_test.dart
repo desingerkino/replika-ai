@@ -9,7 +9,7 @@ import 'package:replika/features/media/fitted_media.dart';
 const _portrait =
     'iVBORw0KGgoAAAANSUhEUgAAABQAAAAeCAIAAACjcKk8AAAAHklEQVR4nGPQqDhBNmIY1TyqeVTzqOZRzaOah7NmAAAPS+7M0IGHAAAAAElFTkSuQmCC';
 const _landscape =
-    'iVBORw0KGgoAAAANSUhEUgAAAB4AAAAUCAIAAAAVyRqTAAAAH0lEQVR4nGPQqDhBI8QwavSo0aPGjxo9avSo0UPRaACERkvulyYRrAAAAABJRU5ErkJggg==';
+    'iVBORw0KGgoAAAANSUhEUgAAAB4AAAAUCAIAAAAVyRqTAAAAH0lEQVR4nGPQqDhBI8QwavSo0aNGjxo9avSo0UPRaACERkvulyYRrAAAAABJRU5ErkJggg==';
 
 Widget _host(Widget child) => MaterialApp(
       home: Scaffold(
