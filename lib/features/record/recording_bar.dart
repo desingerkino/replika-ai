@@ -16,6 +16,9 @@ class RecordingBar extends StatelessWidget {
 
   final VoiceRecordingController controller;
 
+  /// Высота волны в зафиксированной записи.
+  static const double waveHeight = 28;
+
   @override
   Widget build(BuildContext context) {
     final rc = context.rc;
@@ -53,14 +56,19 @@ class RecordingBar extends StatelessWidget {
                 ? Row(
                     children: [
                       Expanded(
-                        child: SizedBox(
-                          height: 28,
-                          child: CustomPaint(
-                            painter: WaveformPainter(
-                              values: controller.recentLevels.isEmpty ? const [0.05] : controller.recentLevels,
-                              progress: 1,
-                              played: cs.primary,
-                              idle: rc.textTertiary,
+                        // Высота волны жёсткая, рисование обрезано по ней:
+                        // панель записи не может вырасти выше своей строки.
+                        child: ClipRect(
+                          child: SizedBox(
+                            height: waveHeight,
+                            child: CustomPaint(
+                              size: const Size(double.infinity, waveHeight),
+                              painter: WaveformPainter(
+                                values: controller.liveWaveform,
+                                progress: 1,
+                                played: cs.primary,
+                                idle: rc.textTertiary,
+                              ),
                             ),
                           ),
                         ),

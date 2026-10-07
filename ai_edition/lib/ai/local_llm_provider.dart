@@ -108,11 +108,18 @@ abstract class LocalLlmProvider {
   });
 
   /// Ответ с учётом переписки: [history] по порядку, последняя — от человека.
+  ///
+  /// Параметры выборки по умолчанию — рекомендованные для Qwen3 без
+  /// размышлений. [repeatPenalty] 1.0 — штрафа за повторы нет.
   Future<LocalLlmResult> chat(
     List<LocalLlmMessage> history, {
     String? systemPrompt,
     int maxTokens = 64,
     double temperature = 0.7,
+    double topP = 0.8,
+    int topK = 20,
+    double minP = 0.0,
+    double repeatPenalty = 1.0,
     void Function(String piece)? onToken,
   });
 

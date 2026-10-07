@@ -50,6 +50,23 @@ final List<Addon> addons = [
             Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
           },
         ),
+        ListenableBuilder(
+          listenable: auto,
+          builder: (context, _) => SettingsTile(
+            icon: Icons.receipt_long_outlined,
+            title: 'Последний запрос к модели',
+            subtitle: auto.lastExchange == null
+                ? 'Появится после первого ответа ИИ'
+                : 'Что модель получила и что ответила',
+            onTap: () {
+              final exchange = auto.lastExchange;
+              if (exchange == null) return;
+              Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => AiExchangeScreen(exchange: exchange),
+              ));
+            },
+          ),
+        ),
       ]);
     },
   ),
@@ -206,6 +223,48 @@ class AddonsScreen extends StatelessWidget {
       body: ListView(
         padding: listPadding(context, const EdgeInsets.only(bottom: Space.xl)),
         children: children,
+      ),
+    );
+  }
+}
+
+/// Что модель получила и что ответила — для проверки на устройстве.
+class AiExchangeScreen extends StatelessWidget {
+  const AiExchangeScreen({super.key, required this.exchange});
+
+  final AiExchange exchange;
+
+  /// Текст страницы: запрос, сырой ответ модели и ответ после очистки.
+  static String textOf(AiExchange exchange) {
+    final raw = exchange.reply;
+    final out = StringBuffer(exchange.prompt.describe())
+      ..writeln()
+      ..writeln();
+    if (exchange.error != null) {
+      out.writeln('[ошибка]\n${exchange.error}');
+    } else {
+      out
+        ..writeln('[ответ модели как есть]')
+        ..writeln(raw == null || raw.isEmpty ? '(пусто)' : raw)
+        ..writeln()
+        ..writeln('[в чат ушло]')
+        ..writeln(raw == null ? '(ничего)' : cleanAiReply(raw, exchange.prompt.persona.name));
+    }
+    return out.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: ReplikaTopBar(
+        leading: const BackIconButton(),
+        title: Text('Запрос к модели', style: context.tt.titleMedium),
+      ),
+      body: ListView(
+        padding: listPadding(context, const EdgeInsets.all(Space.l)),
+        children: [
+          SelectableText(textOf(exchange), style: context.tt.bodySmall),
+        ],
       ),
     );
   }

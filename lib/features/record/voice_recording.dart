@@ -144,6 +144,21 @@ class VoiceRecordingController extends ChangeNotifier {
   List<double> get recentLevels =>
       _levels.length > 40 ? _levels.sublist(_levels.length - 40) : List<double>.of(_levels);
 
+  /// Сколько столбиков в волне записи: всегда столько, даже в первые доли
+  /// секунды, когда замеров ещё один-два.
+  static const int liveBars = 40;
+
+  /// Волна записи фиксированной длины: новые замеры приходят справа,
+  /// недостающие слева — тихие столбики.
+  List<double> get liveWaveform {
+    final recent =
+        _levels.length > liveBars ? _levels.sublist(_levels.length - liveBars) : _levels;
+    return [
+      for (var i = recent.length; i < liveBars; i++) 0.05,
+      ...recent,
+    ];
+  }
+
   void _changed() {
     if (!_disposed) notifyListeners();
   }

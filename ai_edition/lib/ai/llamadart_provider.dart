@@ -121,6 +121,10 @@ class LlamadartLocalLlmProvider implements LocalLlmProvider {
     String? systemPrompt,
     int maxTokens = 64,
     double temperature = 0.7,
+    double topP = 0.8,
+    int topK = 20,
+    double minP = 0.0,
+    double repeatPenalty = 1.0,
     void Function(String piece)? onToken,
   }) async {
     final engine = _engine;
@@ -150,10 +154,21 @@ class LlamadartLocalLlmProvider implements LocalLlmProvider {
     try {
       await for (final chunk in engine.create(
         messages,
-        // У Qwen3 по умолчанию есть режим «размышлений»: для короткой
-        // реплики он не нужен и только тратит время.
+        // Шаблон чата берётся из самого файла модели (Jinja) — вручную
+        // строка запроса не склеивается. У Qwen3 по умолчанию включён режим
+        // «размышлений»: для реплики в переписке он не нужен, и шаблон
+        // получает enable_thinking = false.
         enableThinking: false,
-        params: GenerationParams(maxTokens: maxTokens, temp: temperature),
+        // Без этих значений библиотека берёт свои: top_k 40, top_p 0.9 и
+        // штраф за повторы 1.1 — он портит русские окончания.
+        params: GenerationParams(
+          maxTokens: maxTokens,
+          temp: temperature,
+          topP: topP,
+          topK: topK,
+          minP: minP,
+          penalty: repeatPenalty,
+        ),
       )) {
         if (chunk.choices.isNotEmpty) {
           final piece = chunk.choices.first.delta.content;

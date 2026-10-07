@@ -62,46 +62,25 @@ class LocalAutoReplyEngine implements AutoReplyEngine {
     await provider.load(path);
   }
 
-  static String systemPrompt(String name, String persona) {
-    final who = persona.trim().isEmpty ? '' : ' Твой характер и обстоятельства: ${persona.trim()}.';
-    return 'Ты — $name, живой человек, переписываешься в мессенджере с близким знакомым.'
-        '$who Отвечай по-русски, как в обычной переписке: одной короткой репликой '
-        '(обычно 1–2 предложения), без пояснений, без кавычек, без имени в начале, '
-        'без оформления. Отвечай именно на последнее сообщение собеседника, '
-        'по смыслу и без выдумок. Не говори, что ты ИИ или модель.';
-  }
-
-  /// Убирает то, что модель иногда добавляет: остатки размышлений,
-  /// кавычки, «Имя:» в начале.
-  static String clean(String raw, String name) {
-    var t = raw;
-    t = t.replaceAll(RegExp(r'<think>[\s\S]*?</think>'), '');
-    t = t.replaceAll(RegExp(r'</?think>'), '');
-    t = t.trim();
-    final prefix = RegExp('^${RegExp.escape(name)}\\s*[:：]\\s*', caseSensitive: false);
-    t = t.replaceFirst(prefix, '');
-    if (t.length >= 2 && '"«“'.contains(t[0]) && '"»”'.contains(t[t.length - 1])) {
-      t = t.substring(1, t.length - 1);
-    }
-    return t.trim();
-  }
-
+  /// Запрос собирает приложение (lib/app/auto_reply.dart): системная
+  /// инструкция с персонажем и переписка. Здесь он только передаётся модели;
+  /// шаблон чата Qwen3 (ChatML) накладывает движок из самого файла .gguf.
   @override
-  Future<String?> reply({
-    required String personaName,
-    required String persona,
-    required List<AiTurn> history,
-  }) async {
-    final name = personaName.trim().isEmpty ? 'собеседник' : personaName.trim();
+  Future<String?> reply(AiPrompt prompt) async {
+    final sampling = prompt.sampling;
     final result = await provider.chat(
       [
-        for (final t in history) LocalLlmMessage(fromUser: t.fromOwner, text: t.text),
+        for (final t in prompt.turns) LocalLlmMessage(fromUser: t.fromOwner, text: t.text),
       ],
-      systemPrompt: systemPrompt(name, persona),
-      maxTokens: 80,
-      temperature: 0.6,
+      systemPrompt: prompt.system,
+      maxTokens: sampling.maxTokens,
+      temperature: sampling.temperature,
+      topP: sampling.topP,
+      topK: sampling.topK,
+      minP: sampling.minP,
+      repeatPenalty: sampling.repeatPenalty,
     );
-    final text = clean(result.text, name);
+    final text = result.text.trim();
     return text.isEmpty ? null : text;
   }
 

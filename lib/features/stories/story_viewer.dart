@@ -214,7 +214,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
     }
     final video = _video;
     if (video != null) {
-      return FittedContent(size: video.value.size, child: VideoPlayer(video));
+      // Размер кадра читается из контроллера при каждом его изменении:
+      // если плеер уточнит размер после запуска, раскладка обновится.
+      return ValueListenableBuilder<VideoPlayerValue>(
+        valueListenable: video,
+        builder: (context, value, _) => FittedContent(size: value.size, child: VideoPlayer(video)),
+      );
     }
     return FittedPhoto(image: FileImage(File(media.path)));
   }
@@ -235,9 +240,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
             onVerticalDragEnd: (details) {
               if ((details.primaryVelocity ?? 0) > 300) Navigator.of(context).maybePop();
             },
-            child: Stack(
-              children: [
-                Positioned.fill(child: SafeArea(child: _content())),
+            child: FullscreenStage(
+              content: SafeArea(child: _content()),
+              overlays: [
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(Space.s, Space.s, Space.xs, 0),

@@ -449,18 +449,40 @@ class WaveformPainter extends CustomPainter {
   final Color played;
   final Color idle;
 
+  /// Самый толстый столбик. Без предела ширина считалась от числа замеров:
+  /// при одном-двух замерах (первые доли секунды записи) столбик выходил
+  /// шириной в полпанели, а из-за скруглённых концов ещё и в разы выше её.
+  static const double maxBarWidth = 4;
+
+  /// Толщина столбика при [count] столбиках на ширине [width].
+  static double barWidthFor(double width, int count) {
+    if (count <= 0 || width <= 0) return 0;
+    return math.min(maxBarWidth, math.max(1.5, width / count * 0.55));
+  }
+
+  /// Высота столбика: вместе со скруглёнными концами не выше [height].
+  static double barHeightFor(double value, double height, double barWidth) {
+    final level = value.isFinite ? value.clamp(0.0, 1.0) : 0.0;
+    final room = math.max(0.0, height - barWidth);
+    return math.min(room, math.max(barWidth, level * height));
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
-    if (values.isEmpty) return;
+    if (values.isEmpty || size.isEmpty) return;
     final step = size.width / values.length;
-    final barWidth = math.max(1.5, step * 0.55);
+    final barWidth = barWidthFor(size.width, values.length);
     final paint = Paint()..strokeCap = StrokeCap.round..strokeWidth = barWidth;
+    // Ничего не рисуется за пределами отведённого места.
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
     for (var i = 0; i < values.length; i++) {
       final x = step * i + step / 2;
-      final h = math.max(barWidth, values[i] * size.height);
+      final h = barHeightFor(values[i], size.height, barWidth);
       paint.color = (i + 0.5) / values.length <= progress ? played : idle;
       canvas.drawLine(Offset(x, (size.height - h) / 2), Offset(x, (size.height + h) / 2), paint);
     }
+    canvas.restore();
   }
 
   @override

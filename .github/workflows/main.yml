@@ -24,7 +24,20 @@ jobs:
         run: bash tool/prepare_ai_ios.sh
 
       - name: Анализ кода слоя ИИ
-        run: flutter analyze lib --no-fatal-infos --no-fatal-warnings
+        run: |
+          set +e
+          flutter analyze lib --no-fatal-infos --no-fatal-warnings > analyze_ai.txt 2>&1
+          code=$?
+          cat analyze_ai.txt
+          # Ошибки видны в сводке запуска, а не только в журнале.
+          python3 - <<'PY'
+          text = open('analyze_ai.txt', encoding='utf-8', errors='replace').read()
+          errors = [l for l in text.splitlines() if ' • ' in l and l.lstrip().startswith('error')]
+          body = '\n'.join(errors) or 'ошибок нет'
+          enc = body[:3500].replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+          print(f"::notice title=analyze AI - ошибок {len(errors)}::{enc}")
+          PY
+          exit $code
 
       - name: Сборка iOS (release)
         run: flutter build ios --release --no-codesign -t lib/main_ai.dart

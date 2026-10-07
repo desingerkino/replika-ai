@@ -87,3 +87,31 @@ class FittedContent extends StatelessWidget {
     );
   }
 }
+
+/// Сцена просмотра на весь экран: содержимое под элементами управления.
+///
+/// Зачем отдельный виджет. Scaffold даёт своему body «свободные» ограничения
+/// (от нуля до размера экрана), а Stack, у которого есть обычные, не
+/// Positioned дети, принимает размер самого большого из них. Раньше таким
+/// ребёнком была кнопка «Закрыть» (в историях — шапка с именем), поэтому
+/// весь Stack сжимался до неё, и фото/видео из Positioned.fill получали этот
+/// крошечный размер в левом верхнем углу. SizedBox.expand даёт Stack жёсткий
+/// размер экрана; [overlays] по-прежнему встают слева сверху по своему размеру.
+class FullscreenStage extends StatelessWidget {
+  const FullscreenStage({super.key, required this.content, this.overlays = const []});
+
+  final Widget content;
+  final List<Widget> overlays;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          Positioned.fill(child: content),
+          ...overlays,
+        ],
+      ),
+    );
+  }
+}

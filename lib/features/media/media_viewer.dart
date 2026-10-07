@@ -74,9 +74,9 @@ class _ViewerFrameState extends State<_ViewerFrame> {
         body: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => setState(() => _chrome = !_chrome),
-          child: Stack(
-            children: [
-              Positioned.fill(child: widget.child),
+          child: FullscreenStage(
+            content: widget.child,
+            overlays: [
               AnimatedOpacity(
                 opacity: _chrome ? 1 : 0,
                 duration: Motion.fast,
