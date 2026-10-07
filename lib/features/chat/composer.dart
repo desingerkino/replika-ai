@@ -278,14 +278,12 @@ class SendButton extends StatelessWidget {
 /// Цвет заливки меняется плавно, когда кнопка становится доступной.
 class _CircleButton extends StatefulWidget {
   const _CircleButton({
-    super.key,
     required this.label,
     required this.icon,
     required this.enabled,
     required this.fill,
     required this.iconColor,
     required this.onPressed,
-    this.moveIconOnPress = true,
   });
 
   final String label;
@@ -295,8 +293,6 @@ class _CircleButton extends StatefulWidget {
   final Color iconColor;
   final VoidCallback? onPressed;
 
-  /// Стрелка отправки при нажатии чуть уходит вверх; у микрофона — нет.
-  final bool moveIconOnPress;
 
   @override
   State<_CircleButton> createState() => _CircleButtonState();
@@ -342,7 +338,7 @@ class _CircleButtonState extends State<_CircleButton> {
             decoration: BoxDecoration(color: widget.fill, shape: BoxShape.circle),
             child: Center(
               child: AnimatedSlide(
-                offset: pressed && widget.moveIconOnPress ? const Offset(0, -0.1) : Offset.zero,
+                offset: pressed ? const Offset(0, -0.1) : Offset.zero,
                 duration: duration,
                 curve: Curves.easeOut,
                 child: Icon(widget.icon, size: 22, color: widget.iconColor),
