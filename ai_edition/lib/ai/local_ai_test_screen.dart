@@ -128,7 +128,11 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
       final part = File('${target.path}.part');
       final src = file.path;
       final temp = (await getTemporaryDirectory()).path;
-      _totalBytes = file.size > 0 ? file.size : null;
+      // Размер берём у самого файла на диске (dart:io), не у объекта выбора.
+      if (src != null) {
+        final length = await File(src).length();
+        _totalBytes = length > 0 ? length : null;
+      }
 
       var moved = false;
       if (src != null && p.isWithin(temp, src)) {
