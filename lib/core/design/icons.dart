@@ -74,4 +74,15 @@ abstract final class AppIcons {
   static const IconData notificationsOn = Icons.notifications_active_outlined;
   static const IconData groupAdd = Icons.group_add_outlined;
   static const IconData plus = Icons.add_rounded;
+
+  // Медиа в чате и просмотре.
+  static const IconData play = Icons.play_arrow_rounded;
+  static const IconData pause = Icons.pause_rounded;
+  static const IconData volume = Icons.volume_up_rounded;
+  static const IconData file = Icons.insert_drive_file_rounded;
+
+  // Настройки и карточка контакта.
+  static const IconData addPhoto = Icons.add_a_photo_rounded;
+  static const IconData device = Icons.phone_android_rounded;
+  static const IconData addons = Icons.extension_outlined;
 }

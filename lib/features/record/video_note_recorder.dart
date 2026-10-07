@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/services.dart';
 import '../../core/design/colors.dart';
+import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../data/models/media_item.dart';
 import '../call/camera_cover.dart';
@@ -144,7 +145,7 @@ class _VideoNoteRecorderState extends State<_VideoNoteRecorder> {
               child: IconButton(
                 tooltip: 'Отмена',
                 onPressed: _busy ? null : () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                icon: const Icon(AppIcons.clear, color: Colors.white),
               ),
             ),
             const Spacer(),

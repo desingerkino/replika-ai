@@ -7,6 +7,7 @@ import 'package:record/record.dart';
 
 import '../../app/services.dart';
 import '../../core/design/context.dart';
+import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../data/models/media_item.dart';
 import '../media/media_content.dart';
@@ -200,7 +201,7 @@ class _VoiceRecorderState extends State<_VoiceRecorder> {
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: _path == null ? null : _send,
-                      icon: const Icon(Icons.arrow_upward_rounded),
+                      icon: const Icon(AppIcons.send),
                       label: const Text('Отправить'),
                     ),
                   ),

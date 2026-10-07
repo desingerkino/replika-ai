@@ -341,7 +341,7 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
           children: [
             TextButton.icon(
               onPressed: _saving ? null : _pickPhoto,
-              icon: const Icon(Icons.add_a_photo_rounded, size: 20),
+              icon: const Icon(AppIcons.addPhoto, size: 20),
               label: Text(_avatarMediaId == null ? 'Выбрать фото' : 'Другое фото'),
             ),
             if (_avatarMediaId != null)
@@ -434,7 +434,7 @@ class _ContactEditScreenState extends State<ContactEditScreen> {
             onTap: () => _pickCallMedia(video: false),
           ),
           SettingsTile(
-            icon: Icons.videocam_outlined,
+            icon: AppIcons.videoOutlined,
             title: 'Видео собеседника',
             subtitle: _callVideoId == null ? 'Не выбрано — в видеозвонке его аватар' : (_callVideoName ?? 'Выбрано'),
             onTap: () => _pickCallMedia(video: true),

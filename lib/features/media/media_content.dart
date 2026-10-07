@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../app/services.dart';
 import '../../core/design/context.dart';
+import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../data/models/media_item.dart';
 import 'media_kinds.dart';
@@ -143,7 +144,7 @@ class VideoContent extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: const BoxDecoration(color: Color(0x88000000), shape: BoxShape.circle),
-            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34),
+            child: const Icon(AppIcons.play, color: Colors.white, size: 34),
           ),
           if (duration != null)
             Positioned(
@@ -254,7 +255,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
                   width: 44,
                   height: 44,
                   decoration: const BoxDecoration(color: Color(0x66000000), shape: BoxShape.circle),
-                  child: const Icon(Icons.volume_up_rounded, color: Colors.white, size: 24),
+                  child: const Icon(AppIcons.volume, color: Colors.white, size: 24),
                 ),
               ),
           ],
@@ -366,7 +367,7 @@ class AudioContent extends StatelessWidget {
                   height: 42,
                   decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
                   child: Icon(
-                    playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    playing ? AppIcons.pause : AppIcons.play,
                     color: onAccent,
                     size: 28,
                   ),
@@ -480,7 +481,7 @@ class FileContent extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.insert_drive_file_rounded, size: 36, color: muted),
+        Icon(AppIcons.file, size: 36, color: muted),
         const SizedBox(width: Space.s),
         Flexible(
           child: Column(

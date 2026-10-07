@@ -4,6 +4,7 @@ import '../../app/live_query.dart';
 import '../../app/navigator.dart';
 import '../../app/services.dart';
 import '../../core/design/context.dart';
+import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../core/design/widgets/dialogs.dart';
@@ -290,7 +291,7 @@ class GroupInfoScreen extends StatelessWidget {
               ),
               const SectionLabel('Участники'),
               SettingsTile(
-                icon: Icons.person_add_alt_rounded,
+                icon: AppIcons.add,
                 title: 'Добавить участников',
                 onTap: () => _add(context, data),
               ),
@@ -310,7 +311,7 @@ class GroupInfoScreen extends StatelessWidget {
                       if (m.characterId != data.ownerId)
                         IconButton(
                           tooltip: 'Удалить из группы',
-                          icon: const Icon(Icons.remove_circle_outline_rounded),
+                          icon: const Icon(AppIcons.removeContact),
                           onPressed: () => _remove(context, m),
                         ),
                     ],

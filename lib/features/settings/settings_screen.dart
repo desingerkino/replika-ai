@@ -112,7 +112,7 @@ class SettingsScreen extends StatelessWidget {
                           onTap: () => AppNavigator.openFavorites(deviceId),
                         ),
                         if (!kino) SettingsTile(
-                          icon: Icons.perm_media_outlined,
+                          icon: AppIcons.attachLibrary,
                           title: 'Медиатека',
                           subtitle: 'Фото, видео, аудио и голосовые для переписок',
                           onTap: AppNavigator.openMediaLibrary,
@@ -127,14 +127,14 @@ class SettingsScreen extends StatelessWidget {
                         if (!kino) const SectionLabel('Профили телефона'),
                         if (!kino)
                           const SettingsTile(
-                            icon: Icons.phone_android_rounded,
+                            icon: AppIcons.device,
                             title: 'Профили телефона',
                             subtitle: 'Сменить, создать, импорт и экспорт',
                             onTap: AppNavigator.openProfiles,
                           ),
                         if (!kino) const SectionLabel('Дополнения'),
                         if (!kino) const SettingsTile(
-                          icon: Icons.extension_outlined,
+                          icon: AppIcons.addons,
                           title: 'Дополнения',
                           subtitle: 'Операторский режим, кнопки громкости',
                           onTap: AppNavigator.openAddons,

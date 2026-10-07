@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../app/services.dart';
+import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../data/models/media_item.dart';
 import 'media_kinds.dart';
@@ -84,7 +85,7 @@ class _ViewerFrameState extends State<_ViewerFrame> {
                     child: IconButton(
                       tooltip: 'Закрыть',
                       onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                      icon: const Icon(AppIcons.clear, color: Colors.white, size: 28),
                     ),
                   ),
                 ),
@@ -221,7 +222,7 @@ class _VideoViewerScreenState extends State<VideoViewerScreen> {
                   tooltip: value.isPlaying ? 'Пауза' : 'Воспроизвести',
                   onPressed: _togglePlay,
                   icon: Icon(
-                    value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    value.isPlaying ? AppIcons.pause : AppIcons.play,
                     color: Colors.white,
                     size: 32,
                   ),
