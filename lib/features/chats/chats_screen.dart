@@ -20,6 +20,7 @@ import '../../data/db/tables.dart';
 import '../../data/models/chat.dart';
 import 'chat_filter.dart';
 import 'chat_tile.dart';
+import 'contact_story_bar.dart';
 import '../search/message_hit_tile.dart';
 
 enum _ChatAction { pin, read, mute, delete }
@@ -134,86 +135,97 @@ class _ChatsScreenState extends State<ChatsScreen> {
       color: cs.surface,
       child: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            const ScreenHeader(
-              title: 'Чаты',
-              onTitleHold: AppNavigator.openOperator,
-              actions: [
-                IconButton(
-                  tooltip: 'Новая группа',
-                  icon: Icon(AppIcons.groupAdd),
-                  onPressed: AppNavigator.openNewGroup,
+        child: LiveQuery<List<ChatListItem>>(
+          tables: const {
+            Tables.chats,
+            Tables.messages,
+            Tables.deviceContacts,
+            Tables.characters,
+            Tables.media,
+            Tables.devices,
+          },
+          queryKey: widget.deviceId,
+          load: () => services.chats.listForDevice(widget.deviceId),
+          builder: (context, snapshot) {
+            final all = snapshot.data;
+            final searching = _query.trim().isNotEmpty;
+            return Column(
+              children: [
+                const ScreenHeader(
+                  title: 'Чаты',
+                  onTitleHold: AppNavigator.openOperator,
+                  actions: [
+                    IconButton(
+                      tooltip: 'Новая группа',
+                      icon: Icon(AppIcons.groupAdd),
+                      onPressed: AppNavigator.openNewGroup,
+                    ),
+                  ],
                 ),
+                // Лента контактов: при поиске сворачивается, из дерева не уходит.
+                ContactStoryBar(
+                  items: all ?? const <ChatListItem>[],
+                  visible: !searching && all != null && all.isNotEmpty,
+                  onNewChat: () => AppNavigator.homeTab.value = 2,
+                  onOpen: AppNavigator.openChat,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.s),
+                  child: SearchField(
+                    controller: _search,
+                    hint: 'Поиск',
+                    onChanged: (value) => setState(() => _query = value),
+                  ),
+                ),
+                Expanded(child: _list(context, services, snapshot)),
               ],
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.s),
-              child: SearchField(
-                controller: _search,
-                hint: 'Поиск',
-                onChanged: (value) => setState(() => _query = value),
-              ),
-            ),
-            Expanded(
-              child: LiveQuery<List<ChatListItem>>(
-                tables: const {
-                  Tables.chats,
-                  Tables.messages,
-                  Tables.deviceContacts,
-                  Tables.characters,
-                  Tables.media,
-                  Tables.devices,
-                },
-                queryKey: widget.deviceId,
-                load: () => services.chats.listForDevice(widget.deviceId),
-                builder: (context, snapshot) {
-                  final all = snapshot.data;
-                  if (all == null) {
-                    return snapshot.error != null
-                        ? ErrorState(
-                            message: 'Не удалось загрузить список чатов.',
-                            onRetry: snapshot.reload,
-                          )
-                        : const LoadingState();
-                  }
-                  if (all.isEmpty) {
-                    return const EmptyState(
-                      icon: AppIcons.emptyChats,
-                      title: 'Чатов пока нет',
-                      message: 'Откройте контакт, чтобы начать переписку.',
-                    );
-                  }
-                  final items = filterChats(all, _query);
-                  final now = DateTime.now();
-                  if (_query.trim().isEmpty) {
-                    return ListenableBuilder(
-                      listenable: services.typing,
-                      builder: (context, _) => ListView.builder(
-                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: const EdgeInsets.only(bottom: Space.s),
-                        itemCount: items.length,
-                        itemBuilder: (context, index) => _tile(
-                          items[index],
-                          now,
-                          showDivider: index < items.length - 1,
-                        ),
-                      ),
-                    );
-                  }
-                  return _SearchResults(
-                    deviceId: widget.deviceId,
-                    query: _query,
-                    chats: items,
-                    now: now,
-                    chatTile: (item, divider) => _tile(item, now, showDivider: divider),
-                  );
-                },
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
+    );
+  }
+
+  Widget _list(BuildContext context, AppServices services, LiveSnapshot<List<ChatListItem>> snapshot) {
+    final all = snapshot.data;
+    if (all == null) {
+      return snapshot.error != null
+          ? ErrorState(
+              message: 'Не удалось загрузить список чатов.',
+              onRetry: snapshot.reload,
+            )
+          : const LoadingState();
+    }
+    if (all.isEmpty) {
+      return const EmptyState(
+        icon: AppIcons.emptyChats,
+        title: 'Чатов пока нет',
+        message: 'Откройте контакт, чтобы начать переписку.',
+      );
+    }
+    final items = filterChats(all, _query);
+    final now = DateTime.now();
+    if (_query.trim().isEmpty) {
+      return ListenableBuilder(
+        listenable: services.typing,
+        builder: (context, _) => ListView.builder(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.only(bottom: Space.s),
+          itemCount: items.length,
+          itemBuilder: (context, index) => _tile(
+            items[index],
+            now,
+            showDivider: index < items.length - 1,
+          ),
+        ),
+      );
+    }
+    return _SearchResults(
+      deviceId: widget.deviceId,
+      query: _query,
+      chats: items,
+      now: now,
+      chatTile: (item, divider) => _tile(item, now, showDivider: divider),
     );
   }
 

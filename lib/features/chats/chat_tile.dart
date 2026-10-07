@@ -4,6 +4,7 @@ import '../../core/design/context.dart';
 import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
+import '../../core/design/widgets/pressable.dart';
 import '../../core/design/widgets/unread_badge.dart';
 import '../../core/util/time_format.dart';
 import '../../data/models/chat.dart';
@@ -43,7 +44,10 @@ class ChatTile extends StatelessWidget {
     final unread = chat.unreadCount;
     final time = formatChatListTime(item.sortTime, now);
 
-    final previewStyle = tt.bodyMedium?.copyWith(color: rc.textSecondary);
+    // Непрочитанное превью чуть темнее: иерархия имя → превью → время.
+    final previewStyle = tt.bodyMedium?.copyWith(
+      color: unread > 0 && !chat.muted ? rc.textPrimary : rc.textSecondary,
+    );
     final Widget preview;
     if (typing) {
       preview = Text(
@@ -79,87 +83,85 @@ class ChatTile extends StatelessWidget {
       );
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: Sizes.chatRowMinHeight),
-          child: Padding(
-            padding: const EdgeInsets.only(left: Space.l),
-            child: Row(
-              children: [
-                Avatar(
-                  name: item.displayName,
-                  imagePath: item.peer.avatarPath,
-                  tone: item.peer.avatarTone,
-                  online: item.peer.isOnline,
-                ),
-                const SizedBox(width: Space.m),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(0, Space.m, Space.l, Space.m),
-                    decoration: BoxDecoration(
-                      border: showDivider
-                          ? Border(bottom: BorderSide(color: rc.divider, width: Sizes.line))
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: tt.titleMedium,
-                              ),
+    // Мягкая подсветка вместо Material-волны (Pressable, 120 мс).
+    return Pressable(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: Sizes.chatRowMinHeight),
+        child: Padding(
+          padding: const EdgeInsets.only(left: Space.l),
+          child: Row(
+            children: [
+              Avatar(
+                name: item.displayName,
+                imagePath: item.peer.avatarPath,
+                tone: item.peer.avatarTone,
+                online: item.peer.isOnline,
+              ),
+              const SizedBox(width: Space.m),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(0, Space.m, Space.l, Space.m),
+                  decoration: BoxDecoration(
+                    border: showDivider
+                        ? Border(bottom: BorderSide(color: rc.divider, width: Sizes.line))
+                        : null,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: tt.titleMedium,
                             ),
-                            if (chat.muted) ...[
-                              const SizedBox(width: Space.xs),
-                              Icon(AppIcons.muted, size: 15, color: rc.textTertiary),
-                            ],
-                            if (item.lastIsOutgoing && !hasDraft && last?.deleted != true) ...[
-                              const SizedBox(width: Space.s),
-                              MessageTicks(
-                                state: last!.state,
-                                color: rc.textTertiary,
-                                readColor: rc.badge,
-                              ),
-                            ],
+                          ),
+                          if (chat.muted) ...[
                             const SizedBox(width: Space.xs),
-                            Text(
-                              time,
-                              style: tt.labelMedium?.copyWith(
-                                color: unread > 0 && !chat.muted ? rc.badge : rc.textTertiary,
-                                fontWeight: unread > 0 ? FontWeight.w600 : FontWeight.w500,
-                              ),
+                            Icon(AppIcons.muted, size: 15, color: rc.textTertiary),
+                          ],
+                          if (item.lastIsOutgoing && !hasDraft && last?.deleted != true) ...[
+                            const SizedBox(width: Space.s),
+                            MessageTicks(
+                              state: last!.state,
+                              color: rc.textTertiary,
+                              readColor: rc.badge,
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            Expanded(child: preview),
-                            if (unread > 0) ...[
-                              const SizedBox(width: Space.s),
-                              UnreadBadge(count: unread, muted: chat.muted),
-                            ] else if (chat.isPinned) ...[
-                              const SizedBox(width: Space.s),
-                              Icon(AppIcons.pin, size: 16, color: rc.textTertiary),
-                            ],
+                          const SizedBox(width: Space.xs),
+                          Text(
+                            time,
+                            style: tt.labelMedium?.copyWith(
+                              color: unread > 0 && !chat.muted ? rc.badge : rc.textTertiary,
+                              fontWeight: unread > 0 ? FontWeight.w600 : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Expanded(child: preview),
+                          if (unread > 0) ...[
+                            const SizedBox(width: Space.s),
+                            UnreadBadge(count: unread, muted: chat.muted),
+                          ] else if (chat.isPinned) ...[
+                            const SizedBox(width: Space.s),
+                            Icon(AppIcons.pin, size: 16, color: rc.textTertiary),
                           ],
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

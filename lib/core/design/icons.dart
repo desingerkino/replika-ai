@@ -73,4 +73,5 @@ abstract final class AppIcons {
   // Чаты.
   static const IconData notificationsOn = Icons.notifications_active_outlined;
   static const IconData groupAdd = Icons.group_add_outlined;
+  static const IconData plus = Icons.add_rounded;
 }

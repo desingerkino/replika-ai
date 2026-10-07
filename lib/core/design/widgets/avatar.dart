@@ -19,7 +19,15 @@ String initialsOf(String name) {
   return first(parts[0]) + first(parts[1]);
 }
 
+/// Кольцо вокруг аватара в ленте контактов.
+/// [none] — без кольца, [unviewed] — голубое (есть новое),
+/// [viewed] — спокойное серо-голубое.
+enum StoryRing { none, unviewed, viewed }
+
 /// Аватар: фото из медиатеки или инициалы на фирменном тоне.
+///
+/// Кольцо ([ring]) рисуется снаружи [size] и не меняет размер аватара:
+/// вокруг нужно оставить [ringExtent] свободного места.
 class Avatar extends StatelessWidget {
   const Avatar({
     super.key,
@@ -28,7 +36,15 @@ class Avatar extends StatelessWidget {
     this.imagePath,
     this.tone,
     this.online = false,
+    this.ring = StoryRing.none,
   });
+
+  /// Толщина кольца и зазор между кольцом и фото.
+  static const double ringWidth = 2.5;
+  static const double ringGap = 2;
+
+  /// Сколько места кольцо занимает снаружи фото с каждой стороны.
+  static const double ringExtent = ringWidth + ringGap;
 
   final String name;
   final double size;
@@ -37,6 +53,7 @@ class Avatar extends StatelessWidget {
   /// Индекс тона из AvatarTones; если не задан — выбирается по имени.
   final int? tone;
   final bool online;
+  final StoryRing ring;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +101,26 @@ class Avatar extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
+            if (ring != StoryRing.none)
+              Positioned(
+                left: -ringExtent,
+                top: -ringExtent,
+                right: -ringExtent,
+                bottom: -ringExtent,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: ring == StoryRing.unviewed
+                            ? context.rc.badge
+                            : context.rc.storyViewed,
+                        width: ringWidth,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             Positioned.fill(child: picture),
             if (online)
               Positioned(

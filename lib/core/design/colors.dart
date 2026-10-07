@@ -32,6 +32,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     required this.warning,
     required this.danger,
     required this.selection,
+    required this.storyViewed,
   });
 
   final Color chatBackground;
@@ -67,6 +68,9 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
   final Color danger;
   final Color selection;
 
+  /// Кольцо аватара «просмотрено» в ленте контактов: спокойный серо-голубой.
+  final Color storyViewed;
+
   /// «Чистый воздух», светлая тема: белые панели, очень светлый холодный
   /// фон чата, графитовый текст, один спокойный синий.
   static const ReplikaColors light = ReplikaColors(
@@ -98,6 +102,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     warning: Color(0xFFD08A1E),
     danger: Color(0xFFC8372D),
     selection: Color(0x1F1F6FA8),
+    storyViewed: Color(0xFFA9B8C6),
   );
 
   /// Тёмная тема: слои синего графита, а не инверсия светлой. Текст не
@@ -131,6 +136,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     warning: Color(0xFFF0A43A),
     danger: Color(0xFFF06A5F),
     selection: Color(0x335AA9DE),
+    storyViewed: Color(0xFF506273),
   );
 
   @override
@@ -163,6 +169,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     Color? warning,
     Color? danger,
     Color? selection,
+    Color? storyViewed,
   }) {
     return ReplikaColors(
       chatBackground: chatBackground ?? this.chatBackground,
@@ -193,6 +200,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
       warning: warning ?? this.warning,
       danger: danger ?? this.danger,
       selection: selection ?? this.selection,
+      storyViewed: storyViewed ?? this.storyViewed,
     );
   }
 
@@ -229,6 +237,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
       warning: mix(warning, other.warning),
       danger: mix(danger, other.danger),
       selection: mix(selection, other.selection),
+      storyViewed: mix(storyViewed, other.storyViewed),
     );
   }
 }
