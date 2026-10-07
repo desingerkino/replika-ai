@@ -494,7 +494,7 @@ class SceneDataEffects implements SceneEffects, SceneProgressStore {
               senderId: info.ownerId, type: MessageType.text, text: _text(action), state: MessageState.sending);
           _actionMessages[action.id] = id;
           if (flag == false) await services.messages.setReadHold(id, true);
-          unawaited(_progress(id, action, cancelled, allowRead: flag == null));
+          unawaited(_trackMessageState(id, action, cancelled, allowRead: flag == null));
         }
 
       case ActionType.startTyping:
@@ -979,7 +979,7 @@ class SceneDataEffects implements SceneEffects, SceneProgressStore {
   /// Статусы отправки: отправлено → доставлено → (если разрешено) прочитано.
   /// [allowRead] false — «Прочитано: OFF»: дальше «доставлено» сообщение не
   /// идёт; а если ответ контакта уже прочитал его, статус не откатывается.
-  Future<void> _progress(String id, SceneAction action, bool Function() cancelled, {bool allowRead = true}) async {
+  Future<void> _trackMessageState(String id, SceneAction action, bool Function() cancelled, {bool allowRead = true}) async {
     try {
       await _wait(700, cancelled);
       if (cancelled() || await _isRead(id)) return;

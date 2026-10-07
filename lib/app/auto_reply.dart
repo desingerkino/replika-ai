@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../data/models/message.dart';
@@ -123,8 +122,10 @@ class AutoReplyController extends ChangeNotifier {
       ];
       final recent = history.length > 12 ? history.sublist(history.length - 12) : history;
 
-      final contact = await _services.contacts
-          .view(_services.currentDeviceId.value, header.chat.peerCharacterId);
+      final peerId = header.chat.peerCharacterId;
+      final contact = peerId == null
+          ? null
+          : await _services.contacts.view(_services.currentDeviceId.value, peerId);
       final reply = await ai.reply(
         personaName: header.peer.displayName,
         persona: contact?.character.description ?? '',

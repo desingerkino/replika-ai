@@ -300,7 +300,7 @@ class SceneEngine extends ChangeNotifier {
     final loaded = _info;
     if (store is SceneProgressStore && loaded != null) {
       try {
-        final resumed = await store.resumeTake(loaded);
+        final resumed = await (store as SceneProgressStore).resumeTake(loaded);
         if (resumed != null) {
           _restore(resumed);
           return;
@@ -353,7 +353,7 @@ class SceneEngine extends ChangeNotifier {
     final info = _info;
     if (store is! SceneProgressStore || info == null || !hasTake) return;
     try {
-      await store.saveProgress(info, {
+      await (store as SceneProgressStore).saveProgress(info, {
         'executed': _executed.toList(),
         'history': List<int>.of(_history),
         'index': _index,
