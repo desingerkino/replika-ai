@@ -67,9 +67,7 @@ class _TypingBubbleState extends State<TypingBubble>
                   ExcludeSemantics(
                     child: SizedBox.square(
                       dimension: 30,
-                      child: OverflowBox(
-                        maxWidth: ReplikaOrb.sideFor(24),
-                        maxHeight: ReplikaOrb.sideFor(24),
+                      child: Center(
                         child: ReplikaOrb(
                           diameter: 24,
                           glow: _still ? 1 : 0.5 + 0.5 * math.sin(_controller.value * 2 * math.pi),

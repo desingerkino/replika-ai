@@ -86,8 +86,9 @@ class ChatGlassHeader extends StatelessWidget {
     this.onMore,
   });
 
-  static const double side = 20;
+  static const double side = 16;
   static const double avatarSize = 48;
+  static const double buttonSize = 38;
 
   final ChatPeer peer;
   final bool typing;
@@ -113,9 +114,10 @@ class ChatGlassHeader extends StatelessWidget {
             GlassIconButton(
               icon: AppIcons.back,
               label: 'Назад',
+              size: buttonSize,
               onPressed: () => Navigator.of(context).maybePop(),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
           ],
           Expanded(
             child: Pressable(
@@ -142,8 +144,8 @@ class ChatGlassHeader extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: glass.textPrimary,
-                            fontSize: 17,
-                            height: 22 / 17,
+                            fontSize: 16.5,
+                            height: 22 / 16.5,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -183,16 +185,16 @@ class ChatGlassHeader extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           if (onCall != null) ...[
-            GlassIconButton(icon: AppIcons.callOutlined, label: 'Аудиозвонок', onPressed: onCall),
-            const SizedBox(width: 8),
+            GlassIconButton(icon: AppIcons.callOutlined, label: 'Аудиозвонок', size: buttonSize, onPressed: onCall),
+            const SizedBox(width: 6),
           ],
           if (onVideo != null) ...[
-            GlassIconButton(icon: AppIcons.videoOutlined, label: 'Видеозвонок', onPressed: onVideo),
-            const SizedBox(width: 8),
+            GlassIconButton(icon: AppIcons.videoOutlined, label: 'Видеозвонок', size: buttonSize, onPressed: onVideo),
+            const SizedBox(width: 6),
           ],
-          GlassIconButton(icon: AppIcons.more, label: 'Ещё', onPressed: onMore),
+          GlassIconButton(icon: AppIcons.more, label: 'Ещё', size: buttonSize, onPressed: onMore),
         ],
       ),
     );

@@ -168,9 +168,9 @@ class MessageBubble extends StatelessWidget {
       constraints: BoxConstraints(maxWidth: maxWidth),
       padding: EdgeInsets.fromLTRB(
         14 - borderWidth,
-        9 - borderWidth,
+        7 - borderWidth,
         12 - borderWidth,
-        8 - borderWidth,
+        6 - borderWidth,
       ),
       decoration: deleted
           ? BoxDecoration(
@@ -241,7 +241,7 @@ class MessageBubble extends StatelessWidget {
 
     return AnimatedContainer(
       duration: Motion.fast,
-      margin: EdgeInsets.only(top: row.joinsPrevious ? 3 : 12),
+      margin: EdgeInsets.only(top: row.joinsPrevious ? 3 : 8),
       padding: EdgeInsets.fromLTRB(withAvatar ? 14 : 20, 1, 20, 1),
       decoration: BoxDecoration(
         color: selected ? rc.selection : Colors.transparent,
@@ -296,7 +296,7 @@ class MessageBubble extends StatelessWidget {
 
     Widget padded(Widget child) => Container(
           constraints: BoxConstraints(maxWidth: maxWidth),
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+          padding: const EdgeInsets.fromLTRB(10, 7, 12, 6),
           decoration: ChatGlass.bubble(context, outgoing: outgoing, radius: radius),
           child: _withQuote(context, outgoing, child),
         );
@@ -323,7 +323,7 @@ class MessageBubble extends StatelessWidget {
     switch (message.type) {
       case MessageType.photo:
       case MessageType.video:
-        final width = math.min(maxWidth, 270.0);
+        final width = math.min(maxWidth, 236.0);
         final bare = caption.isEmpty && quote == null;
         final inner = bare ? BorderRadius.circular(ChatGlass.cardRadius) : BorderRadius.circular(ChatGlass.cardRadius - 4);
         final visual = message.type == MessageType.photo
@@ -408,26 +408,37 @@ class MessageBubble extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Flexible(
-                  child: AudioContent(
-                    media: media,
-                    voice: message.type == MessageType.voice,
-                    foreground: foreground,
-                    accent: accent,
-                    onAccent: onAccent,
-                    muted: muted,
+            if (message.type == MessageType.voice && caption.isEmpty)
+              AudioContent(
+                media: media,
+                voice: true,
+                foreground: foreground,
+                accent: accent,
+                onAccent: onAccent,
+                muted: muted,
+                trailing: metaIn(metaColor, Colors.white),
+              )
+            else
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: AudioContent(
+                      media: media,
+                      voice: message.type == MessageType.voice,
+                      foreground: foreground,
+                      accent: accent,
+                      onAccent: onAccent,
+                      muted: muted,
+                    ),
                   ),
-                ),
-                if (caption.isEmpty) ...[
-                  const SizedBox(width: Space.s),
-                  metaIn(metaColor, Colors.white),
+                  if (caption.isEmpty) ...[
+                    const SizedBox(width: Space.s),
+                    metaIn(metaColor, Colors.white),
+                  ],
                 ],
-              ],
-            ),
+              ),
             if (caption.isNotEmpty) ...[
               const SizedBox(height: Space.xs),
               captionBlock(),

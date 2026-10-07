@@ -361,6 +361,7 @@ class AudioContent extends StatelessWidget {
     required this.accent,
     required this.onAccent,
     required this.muted,
+    this.trailing,
   });
 
   final MediaItem media;
@@ -369,6 +370,9 @@ class AudioContent extends StatelessWidget {
   final Color accent;
   final Color onAccent;
   final Color muted;
+
+  /// Время сообщения и галочки: у голосового стоят под длительностью.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -383,102 +387,126 @@ class AudioContent extends StatelessWidget {
         final time = current && playback.position > Duration.zero
             ? formatDuration(playback.position)
             : (total == null ? '' : formatDuration(total));
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Semantics(
-              button: true,
-              label: playing ? 'Пауза' : 'Воспроизвести',
-              child: GestureDetector(
-                onTap: () async {
-                  try {
-                    await playback.toggle(media);
-                  } catch (_) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Не удалось воспроизвести файл')),
-                      );
-                    }
-                  }
-                },
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: accent,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0x66FFFFFF), width: 1),
-                    boxShadow: const [BoxShadow(color: Color(0x225667FF), blurRadius: 8, offset: Offset(0, 2))],
-                  ),
-                  child: Icon(
-                    playing ? AppIcons.pause : AppIcons.play,
-                    color: onAccent,
-                    size: 28,
+        final button = Semantics(
+          button: true,
+          label: playing ? 'Пауза' : 'Воспроизвести',
+          child: GestureDetector(
+            onTap: () async {
+              try {
+                await playback.toggle(media);
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Не удалось воспроизвести файл')),
+                  );
+                }
+              }
+            },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accent,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0x66FFFFFF), width: 1),
+                boxShadow: const [BoxShadow(color: Color(0x225667FF), blurRadius: 8, offset: Offset(0, 2))],
+              ),
+              child: Icon(
+                playing ? AppIcons.pause : AppIcons.play,
+                color: onAccent,
+                size: 26,
+              ),
+            ),
+          ),
+        );
+        // Проигранная часть «волны» набегает плавно, а не рывками.
+        Widget wave(double height) => SizedBox(
+              height: height,
+              width: double.infinity,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(end: progress),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                builder: (context, shown, _) => CustomPaint(
+                  painter: WaveformPainter(
+                    values: media.waveform.isEmpty ? decorativeWaveform(media.id) : media.waveform,
+                    progress: shown,
+                    played: accent,
+                    idle: muted,
                   ),
                 ),
               ),
-            ),
+            );
+        final timeStyle = TextStyle(
+          color: muted,
+          fontSize: 12,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        );
+
+        // Голосовое без подписи: кнопка, волна, справа длительность и время сообщения.
+        if (voice && trailing != null) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              button,
+              const SizedBox(width: 10),
+              Flexible(child: SizedBox(width: 104, child: wave(28))),
+              const SizedBox(width: 10),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(time, style: timeStyle.copyWith(color: foreground.withValues(alpha: 0.85))),
+                  const SizedBox(height: 3),
+                  trailing!,
+                ],
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            button,
             const SizedBox(width: Space.m - 2),
             // Ширина сжимается при крупном шрифте, чтобы время и галочки
             // оставались внутри пузыря.
             Flexible(
               child: SizedBox(
-              width: 150,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (voice)
-                    SizedBox(
-                      height: 28,
-                      width: double.infinity,
-                      // Проигранная часть «волны» набегает плавно, а не рывками.
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween<double>(end: progress),
-                        duration: MediaQuery.disableAnimationsOf(context)
-                            ? Duration.zero
-                            : const Duration(milliseconds: 220),
-                        curve: Curves.easeOut,
-                        builder: (context, shown, _) => CustomPaint(
-                          painter: WaveformPainter(
-                            values: media.waveform.isEmpty ? decorativeWaveform(media.id) : media.waveform,
-                            progress: shown,
-                            played: accent,
-                            idle: muted,
-                          ),
+                width: 150,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (voice)
+                      wave(28)
+                    else ...[
+                      Text(
+                        media.originalName ?? 'Аудио',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: foreground, fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 3,
+                          color: accent,
+                          backgroundColor: muted,
                         ),
                       ),
-                    )
-                  else ...[
-                    Text(
-                      media.originalName ?? 'Аудио',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: foreground, fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 3,
-                        color: accent,
-                        backgroundColor: muted,
-                      ),
-                    ),
+                    ],
+                    const SizedBox(height: 3),
+                    Text(time, style: timeStyle),
                   ],
-                  const SizedBox(height: 3),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      color: muted,
-                      fontSize: 12,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
             ),
           ],
         );

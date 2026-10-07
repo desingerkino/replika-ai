@@ -337,7 +337,7 @@ class _CircleButtonState extends State<_CircleButton> {
         child: Padding(
           padding: const EdgeInsets.all((Sizes.minTouch - Sizes.sendButton) / 2),
           child: AnimatedOpacity(
-          opacity: widget.enabled ? 1 : 0.5,
+          opacity: widget.enabled ? 1 : 0.6,
           duration: Motion.normal,
           child: AnimatedScale(
           scale: pressed ? 0.92 : 1,
