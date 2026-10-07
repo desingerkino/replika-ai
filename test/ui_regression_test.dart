@@ -201,8 +201,10 @@ void main() {
 
       // «Завершить» кладёт трубку; таймеры движка гасим до конца теста.
       await tester.tap(find.text('Завершить'));
-      await tester.pump(const Duration(seconds: 3));
+      await tester.pump(const Duration(milliseconds: 100));
       expect(engine.phase, CallPhase.ended);
+      // Движок сам уходит в idle после паузы «Звонок завершён».
+      await tester.pump(const Duration(seconds: 3));
     });
 
     testWidgets('в аудиозвонке нет кнопки камеры, а значки завершения на месте', (tester) async {

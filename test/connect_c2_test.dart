@@ -69,7 +69,23 @@ Future<Map<String, Object?>> discoverOne(int port) async {
     );
     if (found.isNotEmpty) return found.first;
   }
-  fail('UDP-поиск на 127.0.0.1:$port не получил ответ за 3 попытки');
+  fail('UDP-поиск на 127.0.0.1:$port не получил ответ за 3 попытки; '
+      'простой UDP-обмен на loopback: ${await _plainUdpLoopback() ? "работает" : "НЕ работает (среда)"}');
+}
+
+/// Диагностика: доходит ли вообще UDP-пакет до сокета на 127.0.0.1 в этой среде.
+Future<bool> _plainUdpLoopback() async {
+  final receiver = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+  final sender = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+  final got = Completer<bool>();
+  receiver.listen((event) {
+    if (event == RawSocketEvent.read && receiver.receive() != null && !got.isCompleted) got.complete(true);
+  });
+  sender.send(utf8.encode('ping'), InternetAddress.loopbackIPv4, receiver.port);
+  final ok = await got.future.timeout(const Duration(milliseconds: 800), onTimeout: () => false);
+  receiver.close();
+  sender.close();
+  return ok;
 }
 
 void main() {
