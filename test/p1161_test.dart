@@ -14,7 +14,7 @@ const _landscape =
 Widget _host(Widget child) => MaterialApp(
       home: Scaffold(
         backgroundColor: Colors.black,
-        body: Center(child: SizedBox(width: 400, height: 800, child: child)),
+        body: Center(child: SizedBox(width: 400, height: 600, child: child)),
       ),
     );
 
@@ -38,7 +38,7 @@ void main() {
       final render = await _pumpPhoto(tester, _portrait);
       expect(render.image!.width, 20);
       expect(render.image!.height, 30);
-      expect(render.size, const Size(400, 800), reason: 'область = ограничения экрана');
+      expect(render.size, const Size(400, 600), reason: 'область = ограничения экрана');
       final painted = _painted(render);
       expect(painted.width, closeTo(400, 0.5));
       expect(painted.height, closeTo(600, 0.5));
@@ -47,7 +47,7 @@ void main() {
 
     testWidgets('альбомное маленькое фото вписывается по ширине', (tester) async {
       final render = await _pumpPhoto(tester, _landscape);
-      expect(render.size, const Size(400, 800));
+      expect(render.size, const Size(400, 600));
       final painted = _painted(render);
       expect(painted.width, closeTo(400, 0.5));
       expect(painted.height, closeTo(400 * 20 / 30, 0.5));
@@ -56,7 +56,7 @@ void main() {
     testWidgets('с увеличением (просмотр сообщений) раскладка та же', (tester) async {
       final render = await _pumpPhoto(tester, _portrait, zoomable: true);
       expect(find.byType(InteractiveViewer), findsOneWidget);
-      expect(render.size, const Size(400, 800));
+      expect(render.size, const Size(400, 600));
       expect(_painted(render).width, closeTo(400, 0.5));
     });
 
@@ -89,8 +89,8 @@ void main() {
       ));
       final size = shown(tester, find.byKey(const Key('frame')));
       expect(size.width / size.height, closeTo(1080 / 1920, 0.01));
-      expect(size.width, closeTo(400, 0.5));
-      expect(size.height, lessThanOrEqualTo(800.5));
+      expect(size.height, closeTo(600, 0.5), reason: 'вписано по высоте области');
+      expect(size.width, closeTo(337.5, 0.5));
     });
 
     testWidgets('неизвестный размер (до инициализации) — 16:9 на всю ширину', (tester) async {
