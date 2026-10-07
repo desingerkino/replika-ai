@@ -145,9 +145,11 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 100)); // 2500
       expect(progressOf(tester), 1);
+      // Завершение сообщается на следующем кадре после последнего значения.
+      await tester.pump(const Duration(milliseconds: 16));
       expect(finished, 1);
 
-      await tester.pump(const Duration(milliseconds: 500)); // 3000 — пик яркости
+      await tester.pump(const Duration(milliseconds: 484)); // 3000 — пик яркости
       expect(orbOf(tester).glow, closeTo(1, 0.001));
       await tester.pump(const Duration(milliseconds: 1500)); // 4500 — гаснет
       expect(orbOf(tester).glow, closeTo(0.5, 0.02));

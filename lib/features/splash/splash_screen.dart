@@ -201,13 +201,13 @@ class SplashLogotype extends StatelessWidget {
   static const String text = 'REPLIKA';
   static const double nameSize = 32.3;
   static const double subSize = 17.3;
-  static const double spacing = 19.8;
+  static const double spacing = 20.1;
 
   static const TextStyle _base = TextStyle(
     inherit: false,
     fontFamily: 'Inter',
     fontSize: nameSize,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w400,
     letterSpacing: spacing,
     height: 1,
     decoration: TextDecoration.none,
@@ -230,8 +230,8 @@ class SplashLogotype extends StatelessWidget {
             style: _base.copyWith(
               color: const Color(0x00000000),
               shadows: const [
-                Shadow(color: Color(0x994678FF), blurRadius: 11),
-                Shadow(color: Color(0x554678FF), blurRadius: 4),
+                Shadow(color: Color(0x704678FF), blurRadius: 11),
+                Shadow(color: Color(0x384678FF), blurRadius: 4),
               ],
             ),
           ),
@@ -283,10 +283,10 @@ class SplashSubtitle extends StatelessWidget {
           fontWeight: FontWeight.w400,
           letterSpacing: spacing,
           height: 1,
-          color: Color(0xFF5098E8),
+          color: Color(0xFF4A94E6),
           decoration: TextDecoration.none,
           textBaseline: TextBaseline.alphabetic,
-          shadows: [Shadow(color: Color(0x662864FF), blurRadius: 7)],
+          shadows: [Shadow(color: Color(0x552864FF), blurRadius: 7)],
         ),
       ),
     );

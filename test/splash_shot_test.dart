@@ -27,7 +27,7 @@ void main() {
     // Настоящий шрифт приложения вместо тестового.
     await tester.runAsync(() async {
       final loader = FontLoader('Inter');
-      for (final name in ['Regular', 'Medium']) {
+      for (final name in ['Regular']) {
         final bytes = File('assets/fonts/Inter-$name.ttf').readAsBytesSync();
         loader.addFont(Future.value(ByteData.view(bytes.buffer)));
       }

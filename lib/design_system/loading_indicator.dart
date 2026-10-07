@@ -89,12 +89,18 @@ class _FillPainter extends CustomPainter {
     final rect = Rect.fromLTWH(left, top, filled, barHeight);
     final shape = RRect.fromRectAndRadius(rect, Radius.circular(barHeight / 2));
 
-    // Свечение: размытая копия заполнения.
+    // Свечение: широкая синяя дымка и плотный ореол у самой полосы.
     canvas.drawRRect(
-      shape.inflate(1.5),
+      shape.inflate(3),
       Paint()
-        ..color = const Color(0xD03A5BFF)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+        ..color = const Color(0xCC2F55FF)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+    );
+    canvas.drawRRect(
+      shape.inflate(1),
+      Paint()
+        ..color = const Color(0xE64A6BFF)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
     );
     canvas.drawRRect(
       shape,
@@ -107,10 +113,10 @@ class _FillPainter extends CustomPainter {
     // «Искра» на конце заполнения.
     canvas.drawCircle(
       Offset(rect.right - barHeight / 2, rect.center.dy),
-      barHeight * 0.9,
+      barHeight * 0.62,
       Paint()
-        ..color = const Color(0x99D8FBFF)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+        ..color = const Color(0xB3E6FDFF)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.8),
     );
   }
 
