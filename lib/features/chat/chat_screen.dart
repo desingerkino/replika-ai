@@ -13,13 +13,15 @@ import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/avatar.dart';
-import '../../core/design/widgets/pressable.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../data/db/tables.dart';
 import '../../data/models/chat.dart';
 import '../../data/models/message.dart';
 import '../chats/chat_filter.dart';
+import '../../design_system/glass_theme.dart';
+import '../../design_system/glass_wallpaper.dart';
+import 'chat_glass.dart';
 import 'chat_rows.dart';
 import 'composer.dart';
 import 'message_bubble.dart';
@@ -78,6 +80,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   QuotedMessage? _replyTo;
   ChatHeader? _header;
   bool _importing = false;
+
+  /// Сообщения, уже показанные на экране: новые появляются с анимацией.
+  Set<String>? _seenIds;
 
   /// Запись голосового жестом на микрофоне (создаётся при первом показе).
   VoiceRecordingController? _voice;
@@ -546,61 +551,61 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         _unreadAtOpen ??= header.chat.unreadCount;
         _markReadIfNeeded(header);
         final peerId = header.chat.peerCharacterId;
+        void openInfo() {
+          if (header.chat.isGroup) {
+            AppNavigator.openGroupInfo(widget.chatId);
+          } else if (peerId != null) {
+            AppNavigator.openProfile(deviceId: header.chat.deviceId, characterId: peerId);
+          }
+        }
+
         return Scaffold(
-          backgroundColor: context.rc.chatBackground,
-          appBar: ReplikaTopBar(
-            leading: const BackIconButton(),
-            actions: [
-              if (peerId != null) ...[
-                IconButton(
-                  tooltip: 'Видеозвонок',
-                  style: quietButtonStyle,
-                  icon: const Icon(AppIcons.videoOutlined),
-                  onPressed: () => startOutgoingCall(context,
-                      deviceId: header.chat.deviceId, characterId: peerId, kind: CallKind.video, chatId: widget.chatId),
+          backgroundColor: GlassTheme.of(context).background.first,
+          body: GlassWallpaper(
+            child: SafeArea(
+              bottom: false,
+              child: ContentWidth(
+                child: Column(
+                  children: [
+                    ListenableBuilder(
+                      listenable: _s.typing,
+                      builder: (context, _) => ChatGlassHeader(
+                        peer: header.peer,
+                        typing: _s.typing.isTyping(widget.chatId),
+                        subtitle: header.chat.isGroup ? membersLabel(_groupCount) : null,
+                        onTitleTap: header.chat.isGroup || peerId != null ? openInfo : null,
+                        onMore: header.chat.isGroup || peerId != null ? openInfo : null,
+                        onCall: peerId == null
+                            ? null
+                            : () => startOutgoingCall(context,
+                                deviceId: header.chat.deviceId,
+                                characterId: peerId,
+                                kind: CallKind.audio,
+                                chatId: widget.chatId),
+                        onVideo: peerId == null
+                            ? null
+                            : () => startOutgoingCall(context,
+                                deviceId: header.chat.deviceId,
+                                characterId: peerId,
+                                kind: CallKind.video,
+                                chatId: widget.chatId),
+                      ),
+                    ),
+                    VoiceMiniPlayer(playback: _s.audio),
+                    Expanded(child: _buildMessages(header)),
+                    Composer(
+                      controller: _composer,
+                      focusNode: _focus,
+                      onSend: () => _send(header),
+                      reply: _replyTo,
+                      onCancelReply: () => setState(() => _replyTo = null),
+                      onAttach: () => _attach(header),
+                      voice: _voice,
+                      busy: _importing,
+                    ),
+                  ],
                 ),
-                IconButton(
-                  tooltip: 'Аудиозвонок',
-                  style: quietButtonStyle,
-                  icon: const Icon(AppIcons.callOutlined),
-                  onPressed: () => startOutgoingCall(context,
-                      deviceId: header.chat.deviceId, characterId: peerId, kind: CallKind.audio, chatId: widget.chatId),
-                ),
-              ],
-            ],
-            title: ListenableBuilder(
-              listenable: _s.typing,
-              builder: (context, _) => _ChatTitle(
-                peer: header.peer,
-                typing: _s.typing.isTyping(widget.chatId),
-                subtitle: header.chat.isGroup ? membersLabel(_groupCount) : null,
-                onTap: header.chat.isGroup
-                    ? () => AppNavigator.openGroupInfo(widget.chatId)
-                    : peerId == null
-                        ? null
-                        : () => AppNavigator.openProfile(
-                              deviceId: header.chat.deviceId,
-                              characterId: peerId,
-                            ),
               ),
-            ),
-          ),
-          body: ContentWidth(
-            child: Column(
-              children: [
-                VoiceMiniPlayer(playback: _s.audio),
-                Expanded(child: _buildMessages(header)),
-                Composer(
-                  controller: _composer,
-                  focusNode: _focus,
-                  onSend: () => _send(header),
-                  reply: _replyTo,
-                  onCancelReply: () => setState(() => _replyTo = null),
-                  onAttach: () => _attach(header),
-                  voice: _voice,
-                  busy: _importing,
-                ),
-              ],
             ),
           ),
         );
@@ -637,6 +642,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               );
             }
             final byId = {for (final m in messages) m.id: m};
+            final seen = _seenIds;
+            final fresh = seen == null
+                ? const <String>{}
+                : {for (final m in messages) if (!seen.contains(m.id)) m.id};
+            _seenIds = byId.keys.toSet();
             final rows = buildChatRows(
               messages,
               ownerId: header.ownerCharacterId,
@@ -648,7 +658,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               controller: _scroll,
               reverse: true,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(Space.xs, Space.s, Space.xs, Space.m),
+              padding: const EdgeInsets.fromLTRB(0, Space.s, 0, Space.s),
               itemCount: rows.length + extra,
               itemBuilder: (context, index) {
                 if (typing && index == 0) return const TypingBubble(key: ValueKey('typing'));
@@ -659,7 +669,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       label: separator.label,
                     ),
                   UnreadSeparatorRow _ => const _UnreadSeparator(key: ValueKey('unread')),
-                  MessageRow messageRow => _buildBubble(messageRow, byId),
+                  MessageRow messageRow => _buildBubble(messageRow, byId, fresh.contains(messageRow.message.id), header),
                 };
               },
             );
@@ -669,7 +679,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildBubble(MessageRow row, Map<String, Message> byId) {
+  Widget _buildBubble(MessageRow row, Map<String, Message> byId, bool fresh, ChatHeader header) {
     final message = row.message;
     final quoted = message.replyToId == null ? null : byId[message.replyToId];
     final bubble = MessageBubble(
@@ -682,9 +692,21 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       onQuoteTap: quoted == null ? null : () => _requestReveal(quoted.id),
       senderName: _groupNames?[message.senderId],
       senderTone: _groupTones?[message.senderId],
+      avatar: row.outgoing ? null : _avatarFor(message, header),
     );
-    if (message.id != _revealId) return bubble;
-    return KeyedSubtree(key: _revealKey, child: bubble);
+    final Widget shown = message.id != _revealId ? bubble : KeyedSubtree(key: _revealKey, child: bubble);
+    return MessageEntrance(key: ValueKey('entrance-${message.id}'), animate: fresh, child: shown);
+  }
+
+  /// Маленький аватар отправителя (рядом с входящими фото, видео и файлами).
+  Widget _avatarFor(Message message, ChatHeader header) {
+    final groupName = _groupNames?[message.senderId];
+    return Avatar(
+      name: groupName ?? header.peer.displayName,
+      size: 30,
+      imagePath: groupName == null ? header.peer.avatarPath : null,
+      tone: groupName == null ? header.peer.avatarTone : _groupTones?[message.senderId],
+    );
   }
 }
 
@@ -693,78 +715,19 @@ class _UnreadSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: Space.s),
-      padding: const EdgeInsets.symmetric(vertical: Space.xs + 2),
-      color: rc.surfaceMuted.withValues(alpha: 0.9),
-      alignment: Alignment.center,
-      child: Text(
-        'Непрочитанные сообщения',
-        style: context.tt.labelMedium?.copyWith(
-          color: context.cs.primary,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _ChatTitle extends StatelessWidget {
-  const _ChatTitle({required this.peer, required this.typing, this.onTap, this.subtitle});
-
-  final ChatPeer peer;
-  final bool typing;
-  final VoidCallback? onTap;
-
-  /// Вместо статуса собеседника (у группы — «3 участника»).
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final rc = context.rc;
-    final tt = context.tt;
-    final status = typing ? 'печатает…' : (subtitle ?? peer.statusText.trim());
-    final highlight = typing || (subtitle == null && peer.isOnline);
-    return Pressable(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(Radii.control),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: Space.xs),
-        child: Row(
-          children: [
-            Avatar(
-              name: peer.displayName,
-              size: Sizes.avatarHeader,
-              imagePath: peer.avatarPath,
-              tone: peer.avatarTone,
-              online: subtitle == null && peer.isOnline,
-            ),
-            const SizedBox(width: Space.m - 2),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    peer.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.titleMedium,
-                  ),
-                  if (status.isNotEmpty)
-                    Text(
-                      status,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tt.bodySmall?.copyWith(
-                        color: highlight ? context.cs.primary : rc.textSecondary,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Space.s),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Radii.pill),
+            gradient: ChatGlass.outgoing,
+          ),
+          child: const Text(
+            'Непрочитанные сообщения',
+            style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600),
+          ),
         ),
       ),
     );

@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
-import '../../core/design/context.dart';
-import '../../core/design/tokens.dart';
+import '../../design_system/glass_theme.dart';
+import '../../design_system/replika_logo.dart';
+import 'chat_glass.dart';
 
-/// Входящий пузырь с тремя «дышащими» точками — собеседник печатает.
+/// Входящий стеклянный пузырь: сфера Replika и «печатает...».
 class TypingBubble extends StatefulWidget {
   const TypingBubble({super.key});
 
@@ -41,43 +44,53 @@ class _TypingBubbleState extends State<TypingBubble>
 
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
+    final glass = GlassTheme.of(context);
     return Semantics(
       label: 'Собеседник печатает',
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(Space.xs, Space.s, Space.xs, 1),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 1),
         child: Align(
           alignment: Alignment.centerLeft,
-          child: Container(
-            // Как у обычного входящего пузыря: заливка и рамка 1 px; отступы
-            // уменьшены на её ширину, размер прежний.
-            padding: const EdgeInsets.symmetric(horizontal: 14 - Sizes.line, vertical: 12 - Sizes.line),
-            decoration: BoxDecoration(
-              color: rc.bubbleIn,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(Radii.bubble),
-                topRight: Radius.circular(Radii.bubble),
-                bottomRight: Radius.circular(Radii.bubble),
-                bottomLeft: Radius.circular(Radii.tail),
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) => Container(
+              padding: const EdgeInsets.fromLTRB(10, 7, 16, 7),
+              decoration: ChatGlass.bubble(
+                context,
+                outgoing: false,
+                radius: ChatGlass.bubbleRadius(outgoing: false, joinsPrevious: false, joinsNext: false),
               ),
-              border: Border.all(color: rc.bubbleInBorder, width: Sizes.line),
-            ),
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) => Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (var i = 0; i < 3; i++) ...[
-                    if (i > 0) const SizedBox(width: 5),
-                    Opacity(
-                      opacity: _still ? 0.65 : _dotOpacity(_controller.value, i),
-                      child: Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(color: rc.metaIn, shape: BoxShape.circle),
+                  // Маленькая сфера Replika «дышит» вместе с точками.
+                  ExcludeSemantics(
+                    child: SizedBox.square(
+                      dimension: 30,
+                      child: OverflowBox(
+                        maxWidth: ReplikaOrb.sideFor(24),
+                        maxHeight: ReplikaOrb.sideFor(24),
+                        child: ReplikaOrb(
+                          diameter: 24,
+                          glow: _still ? 1 : 0.5 + 0.5 * math.sin(_controller.value * 2 * math.pi),
+                        ),
                       ),
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'печатает',
+                    style: TextStyle(color: glass.textSecondary, fontSize: 14.5, height: 20 / 14.5),
+                  ),
+                  const SizedBox(width: 2),
+                  for (var i = 0; i < 3; i++)
+                    Opacity(
+                      opacity: _still ? 0.65 : _dotOpacity(_controller.value, i),
+                      child: Text(
+                        '.',
+                        style: TextStyle(color: glass.textSecondary, fontSize: 14.5, height: 20 / 14.5),
+                      ),
+                    ),
                 ],
               ),
             ),

@@ -7,9 +7,11 @@ import '../../core/design/context.dart';
 import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/typography.dart';
+import '../../design_system/glass_theme.dart';
 import '../../core/util/time_format.dart';
 import '../../data/models/message.dart';
 import '../media/media_content.dart';
+import 'chat_glass.dart';
 import 'chat_rows.dart';
 import 'message_labels.dart';
 import 'message_ticks.dart';
@@ -56,6 +58,7 @@ class MessageBubble extends StatelessWidget {
     this.selected = false,
     this.senderName,
     this.senderTone,
+    this.avatar,
   });
 
   final MessageRow row;
@@ -73,6 +76,9 @@ class MessageBubble extends StatelessWidget {
   /// Цвет отправителя в этой группе (индекс AvatarTones). Без него —
   /// цвет по имени.
   final int? senderTone;
+
+  /// Маленький аватар отправителя слева от входящих медиа и файлов.
+  final Widget? avatar;
 
   bool get _showSender => senderName != null && !row.outgoing && !row.joinsPrevious;
 
@@ -111,9 +117,10 @@ class MessageBubble extends StatelessWidget {
     final deleted = message.deleted;
     // Удалённое — отдельное состояние мессенджера: без заливки, с рамкой и
     // спокойным серо-голубым текстом, одинаково для входящих и исходящих.
-    final background = deleted ? Colors.transparent : (outgoing ? rc.bubbleOut : rc.bubbleIn);
-    final foreground = deleted ? rc.deletedText : (outgoing ? rc.onBubbleOut : rc.onBubbleIn);
-    final metaColor = deleted ? rc.deletedText : (outgoing ? rc.metaOut : rc.metaIn);
+    final glass = GlassTheme.of(context);
+    final background = deleted ? Colors.transparent : (outgoing ? ChatGlass.outgoingText : ChatGlass.incomingFill(context));
+    final foreground = deleted ? rc.deletedText : (outgoing ? ChatGlass.outgoingText : glass.textPrimary);
+    final metaColor = deleted ? rc.deletedText : (outgoing ? ChatGlass.outgoingMeta : glass.textTertiary);
 
     final String content;
     if (deleted) {
@@ -137,7 +144,7 @@ class MessageBubble extends StatelessWidget {
     );
 
     final maxWidth = math.min(MediaQuery.sizeOf(context).width * Sizes.bubbleMaxWidthFactor, Sizes.bubbleMaxWidthCap);
-    final radius = bubbleRadius(
+    final radius = ChatGlass.bubbleRadius(
       outgoing: outgoing,
       joinsPrevious: row.joinsPrevious,
       joinsNext: row.joinsNext,
@@ -146,7 +153,6 @@ class MessageBubble extends StatelessWidget {
     // у входящего она видимая, у исходящего сливается с заливкой, у
     // удалённого — толще (1.5 px). Отступы внутри уменьшены на её ширину.
     final borderWidth = deleted ? Sizes.lineStrong : Sizes.line;
-    final borderColor = deleted ? rc.deletedBorder : (outgoing ? background : rc.bubbleInBorder);
     final Widget bubble = !deleted && message.isMedia
         ? (_showSender
             ? Column(
@@ -161,23 +167,17 @@ class MessageBubble extends StatelessWidget {
         : Container(
       constraints: BoxConstraints(maxWidth: maxWidth),
       padding: EdgeInsets.fromLTRB(
-        Space.m - borderWidth,
-        7 - borderWidth,
-        Space.s + 2 - borderWidth,
-        7 - borderWidth,
+        14 - borderWidth,
+        9 - borderWidth,
+        12 - borderWidth,
+        8 - borderWidth,
       ),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: bubbleRadius(
-          outgoing: outgoing,
-          joinsPrevious: row.joinsPrevious,
-          joinsNext: row.joinsNext,
-        ),
-        border: Border.all(color: borderColor, width: borderWidth),
-        boxShadow: (outgoing || deleted)
-            ? null
-            : const [BoxShadow(color: Color(0x14000000), blurRadius: 1, offset: Offset(0, 1))],
-      ),
+      decoration: deleted
+          ? BoxDecoration(
+              borderRadius: radius,
+              border: Border.all(color: rc.deletedBorder, width: borderWidth),
+            )
+          : ChatGlass.bubble(context, outgoing: outgoing, radius: radius),
       child: _withSenderInside(_withQuote(context, outgoing, Stack(
         children: [
           Text.rich(
@@ -218,7 +218,7 @@ class MessageBubble extends StatelessWidget {
             child: BubbleMeta(
               time: time,
               color: metaColor,
-              readColor: rc.tickRead,
+              readColor: Colors.white,
               state: state,
               favorite: message.favorite,
               edited: message.edited && !deleted,
@@ -232,25 +232,36 @@ class MessageBubble extends StatelessWidget {
     final failed = outgoing && !deleted && message.state == MessageState.failed;
     final Widget shown = failed ? _FailedMarker(child: bubble) : bubble;
 
+    final withAvatar = avatar != null && !outgoing && !deleted && message.isMedia;
+    final Widget tappable = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress: onLongPress,
+      child: onReply == null ? shown : SwipeToReply(onReply: onReply!, child: shown),
+    );
+
     return AnimatedContainer(
       duration: Motion.fast,
-      margin: EdgeInsets.only(top: row.joinsPrevious ? 2 : Space.s),
-      padding: const EdgeInsets.symmetric(horizontal: Space.xs, vertical: 1),
+      margin: EdgeInsets.only(top: row.joinsPrevious ? 3 : 12),
+      padding: EdgeInsets.fromLTRB(withAvatar ? 14 : 20, 1, 20, 1),
       decoration: BoxDecoration(
         color: selected ? rc.selection : Colors.transparent,
-        borderRadius: BorderRadius.circular(Radii.control),
+        borderRadius: BorderRadius.circular(ChatGlass.radius),
       ),
       child: Align(
         alignment: outgoing ? Alignment.centerRight : Alignment.centerLeft,
         child: Semantics(
           label: outgoing ? 'Исходящее сообщение' : 'Входящее сообщение',
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onLongPress: onLongPress,
-            child: onReply == null
-                ? shown
-                : SwipeToReply(onReply: onReply!, child: shown),
-          ),
+          child: withAvatar
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(width: 30, child: avatar),
+                    const SizedBox(width: 4),
+                    Flexible(child: tappable),
+                  ],
+                )
+              : tappable,
         ),
       ),
     );
@@ -285,27 +296,15 @@ class MessageBubble extends StatelessWidget {
 
     Widget padded(Widget child) => Container(
           constraints: BoxConstraints(maxWidth: maxWidth),
-          padding: const EdgeInsets.fromLTRB(
-            Space.m - 2 - Sizes.line,
-            Space.s - Sizes.line,
-            Space.s + 2 - Sizes.line,
-            7 - Sizes.line,
-          ),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: radius,
-            border: Border.all(color: outgoing ? background : rc.bubbleInBorder, width: Sizes.line),
-            boxShadow: outgoing
-                ? null
-                : const [BoxShadow(color: Color(0x14000000), blurRadius: 1, offset: Offset(0, 1))],
-          ),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+          decoration: ChatGlass.bubble(context, outgoing: outgoing, radius: radius),
           child: _withQuote(context, outgoing, child),
         );
 
     Widget captionBlock() => _CaptionText(
           text: caption,
           color: foreground,
-          meta: metaIn(metaColor, rc.tickRead),
+          meta: metaIn(metaColor, Colors.white),
           metaWidth: metaWidth,
         );
 
@@ -316,7 +315,7 @@ class MessageBubble extends StatelessWidget {
         children: [
           MissingMedia(color: metaColor),
           const SizedBox(width: Space.m),
-          metaIn(metaColor, rc.tickRead),
+          metaIn(metaColor, Colors.white),
         ],
       ));
     }
@@ -324,17 +323,44 @@ class MessageBubble extends StatelessWidget {
     switch (message.type) {
       case MessageType.photo:
       case MessageType.video:
-        final width = math.min(maxWidth, 280.0) - 6;
-        final inner = radius - BorderRadius.circular(3);
+        final width = math.min(maxWidth, 270.0);
+        final bare = caption.isEmpty && quote == null;
+        final inner = bare ? BorderRadius.circular(ChatGlass.cardRadius) : BorderRadius.circular(ChatGlass.cardRadius - 4);
         final visual = message.type == MessageType.photo
-            ? PhotoContent(media: media, width: width)
-            : VideoContent(media: media, width: width);
+            ? PhotoContent(media: media, width: width - (bare ? 0 : 8), minAspect: 1.0, maxAspect: 16 / 9)
+            : VideoContent(media: media, width: width - (bare ? 0 : 8), minAspect: 1.0, maxAspect: 16 / 9, bareTime: bare ? metaIn(Colors.white, Colors.white) : null);
+        final picture = ClipRRect(
+          borderRadius: caption.isEmpty
+              ? inner
+              : BorderRadius.only(topLeft: inner.topLeft, topRight: inner.topRight, bottomLeft: const Radius.circular(8), bottomRight: const Radius.circular(8)),
+          child: Stack(
+            children: [
+              visual,
+              if (bare && message.type == MessageType.photo)
+                Positioned(
+                  right: 12,
+                  bottom: 10,
+                  child: _TimePill(child: metaIn(Colors.white, Colors.white)),
+                ),
+            ],
+          ),
+        );
+        if (bare) {
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: inner,
+              border: Border.all(color: outgoing ? const Color(0x4DFFFFFF) : ChatGlass.incomingBorder(context), width: 1),
+              boxShadow: [BoxShadow(color: GlassTheme.of(context).shadow, blurRadius: 14, offset: const Offset(0, 4))],
+            ),
+            child: picture,
+          );
+        }
         return Container(
-          padding: const EdgeInsets.all(3 - Sizes.line),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: radius,
-            border: Border.all(color: outgoing ? background : rc.bubbleInBorder, width: Sizes.line),
+          padding: const EdgeInsets.all(4),
+          decoration: ChatGlass.bubble(
+            context,
+            outgoing: outgoing,
+            radius: BorderRadius.circular(ChatGlass.cardRadius),
           ),
           child: _withQuote(
             context,
@@ -343,34 +369,12 @@ class MessageBubble extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: caption.isEmpty
-                      ? inner
-                      : BorderRadius.only(topLeft: inner.topLeft, topRight: inner.topRight),
-                  child: Stack(
-                    children: [
-                      visual,
-                      if (caption.isEmpty)
-                        Positioned(
-                          right: Space.s - 2,
-                          bottom: Space.s - 2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0x80000000),
-                              borderRadius: BorderRadius.circular(Radii.pill),
-                            ),
-                            child: metaIn(Colors.white, Colors.white),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+                picture,
                 if (caption.isNotEmpty)
                   SizedBox(
-                    width: width,
+                    width: width - 8,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(Space.s, 6, Space.xs, 4),
+                      padding: const EdgeInsets.fromLTRB(10, 8, 6, 5),
                       child: captionBlock(),
                     ),
                   ),
@@ -397,9 +401,9 @@ class MessageBubble extends StatelessWidget {
         );
       case MessageType.voice:
       case MessageType.audio:
-        final accent = outgoing ? rc.onBubbleOut : cs.primary;
-        final onAccent = outgoing ? rc.bubbleOut : Colors.white;
-        final muted = outgoing ? rc.metaOut : rc.metaIn;
+        final accent = outgoing ? Colors.white : GlassTheme.accentBlue;
+        final onAccent = outgoing ? const Color(0xFF5667FF) : Colors.white;
+        final muted = outgoing ? const Color(0x73FFFFFF) : const Color(0x4D5667FF);
         return padded(Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,7 +424,7 @@ class MessageBubble extends StatelessWidget {
                 ),
                 if (caption.isEmpty) ...[
                   const SizedBox(width: Space.s),
-                  metaIn(metaColor, rc.tickRead),
+                  metaIn(metaColor, Colors.white),
                 ],
               ],
             ),
@@ -437,7 +441,7 @@ class MessageBubble extends StatelessWidget {
           children: [
             FileContent(media: media, foreground: foreground, muted: metaColor),
             const SizedBox(height: Space.xs),
-            if (caption.isNotEmpty) captionBlock() else metaIn(metaColor, rc.tickRead),
+            if (caption.isNotEmpty) captionBlock() else metaIn(metaColor, Colors.white),
           ],
         ));
     }
@@ -458,6 +462,23 @@ class MessageBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Тёмная капсула с временем поверх фото.
+class _TimePill extends StatelessWidget {
+  const _TimePill({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0x66000000),
+          borderRadius: BorderRadius.circular(Radii.pill),
+        ),
+        child: child,
+      );
 }
 
 /// Подпись к медиа с временем в последней строке.
@@ -613,10 +634,11 @@ class _SwipeToReplyState extends State<SwipeToReply> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: context.rc.daySeparator,
+                  color: ChatGlass.incomingFill(context),
                   shape: BoxShape.circle,
+                  border: Border.all(color: ChatGlass.incomingBorder(context), width: 1),
                 ),
-                child: Icon(AppIcons.reply, size: 20, color: context.rc.onDaySeparator),
+                child: Icon(AppIcons.reply, size: 20, color: GlassTheme.accentBlue),
               ),
             ),
           ),
@@ -747,7 +769,7 @@ class _FailedMarker extends StatelessWidget {
   }
 }
 
-/// Плашка дня («Сегодня», «10 сентября») и системных событий.
+/// Плашка дня («Сегодня», «10 сентября») и системных событий: капсула стекла.
 class DaySeparator extends StatelessWidget {
   const DaySeparator({super.key, required this.label});
 
@@ -755,21 +777,24 @@ class DaySeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
+    final glass = GlassTheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: Space.m),
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Space.m, vertical: Space.xs),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
           decoration: BoxDecoration(
-            color: rc.daySeparator,
+            color: glass.dark ? const Color(0x24FFFFFF) : const Color(0x99FFFFFF),
             borderRadius: BorderRadius.circular(Radii.pill),
+            border: Border.all(color: ChatGlass.incomingBorder(context), width: 1),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: context.tt.labelMedium?.copyWith(
-              color: rc.onDaySeparator,
+            style: TextStyle(
+              color: glass.textSecondary,
+              fontSize: 12.5,
+              height: 16 / 12.5,
               fontWeight: FontWeight.w600,
             ),
           ),

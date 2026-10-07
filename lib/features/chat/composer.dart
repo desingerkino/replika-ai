@@ -7,6 +7,11 @@ import '../../core/design/typography.dart';
 import '../../core/design/widgets/pressable.dart';
 import '../record/recording_bar.dart';
 import '../record/voice_recording.dart';
+import '../../design_system/glass_controls.dart';
+import '../../design_system/glass_surface.dart';
+import '../../design_system/glass_theme.dart';
+import 'chat_glass.dart';
+import 'emoji_sheet.dart';
 import 'message_bubble.dart';
 
 /// Поле ввода сообщения с кнопкой отправки.
@@ -41,123 +46,126 @@ class Composer extends StatelessWidget {
   /// Идёт добавление файла — тонкая полоса прогресса над полем.
   final bool busy;
 
+  /// Высота стеклянной капсулы.
+  static const double capsuleHeight = 60;
+  static const double capsuleRadius = 30;
+
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
-    final cs = context.cs;
-    return Material(
-      color: cs.surface,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: rc.divider, width: Sizes.line)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (busy) const LinearProgressIndicator(minHeight: 2),
-              if (reply != null) _ReplyBar(reply: reply!, onCancel: onCancelReply),
-              ListenableBuilder(
-                listenable: voice ?? _noVoice,
-                builder: (context, _) => Padding(
-            padding: EdgeInsets.fromLTRB(onAttach == null ? Space.m : Space.xs, Space.s - 2, Space.s - 2, Space.s - 2),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (voice?.active ?? false)
-                  Expanded(child: RecordingBar(controller: voice!))
-                else ...[
-                if (onAttach != null)
-                  IconButton(
-                    tooltip: 'Прикрепить',
-                    style: quietButtonStyle,
-                    onPressed: busy ? null : onAttach,
-                    icon: Icon(AppIcons.attachment, color: rc.textSecondary),
-                  ),
-                Expanded(
-                  // 2 px сверху и снизу: поле на одной линии с 48-пиксельной областью кнопки.
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: (Sizes.minTouch - Sizes.sendButton) / 2),
-                    child: Container(
-                    constraints: const BoxConstraints(minHeight: Sizes.sendButton),
-                    // Рамка 1 px: край поля читается в крупном плане; отступы
-                    // уменьшены на её ширину, размер поля прежний.
-                    padding: const EdgeInsets.symmetric(horizontal: Space.l - Sizes.line, vertical: 11 - Sizes.line),
-                    decoration: BoxDecoration(
-                      color: rc.surfaceMuted,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: rc.divider, width: Sizes.line),
-                    ),
-                    child: TextField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      minLines: 1,
-                      maxLines: 6,
-                      keyboardType: TextInputType.multiline,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: AppType.message.copyWith(color: rc.textPrimary),
-                      decoration: InputDecoration.collapsed(
-                        hintText: 'Сообщение',
-                        hintStyle: AppType.message.copyWith(color: rc.textTertiary),
-                      ),
-                    ),
-                    ),
-                  ),
-                ),
-                ],
-                const SizedBox(width: Space.s - 2),
-                ValueListenableBuilder<TextEditingValue>(
-                  // Ключ: кнопка справа не пересоздаётся, когда строка записи
-                  // заменяет поле ввода, — палец на микрофоне не теряется.
-                  key: const ValueKey('composer-trailing'),
-                  valueListenable: controller,
-                  builder: (context, value, _) {
-                    final hasText = value.text.trim().isNotEmpty;
-                    final showMic = !hasText && voice != null;
-                    final lockedRecording = voice?.locked ?? false;
-                    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-                    // Микрофон и «отправить» сменяют друг друга плавно:
-                    // короткое затухание с лёгким масштабом.
-                    return AnimatedSwitcher(
-                      duration: reduceMotion ? Duration.zero : Motion.swap,
-                      reverseDuration: reduceMotion ? Duration.zero : Motion.swap,
-                      switchInCurve: Motion.curve,
-                      switchOutCurve: Curves.easeIn,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.85, end: 1).animate(animation),
-                          child: child,
-                        ),
-                      ),
-                      child: lockedRecording
-                          ? SendButton(
-                              key: const ValueKey('composer-send-locked'),
-                              enabled: true,
-                              onPressed: voice!.sendLocked,
-                            )
-                          : showMic
-                              ? _MicHoldButton(
-                                  key: const ValueKey('composer-mic'),
-                                  voice: voice!,
-                                  enabled: !busy,
-                                )
-                              : SendButton(
-                                  key: const ValueKey('composer-send'),
-                                  enabled: hasText,
-                                  onPressed: onSend,
-                                ),
-                    );
-                  },
-                ),
-              ],
+    final glass = GlassTheme.of(context);
+    return SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (busy)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 28),
+              child: LinearProgressIndicator(minHeight: 2),
             ),
-                ),
-              ),
-            ],
+          if (reply != null) _ReplyBar(reply: reply!, onCancel: onCancelReply),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
+            child: ListenableBuilder(
+              listenable: voice ?? _noVoice,
+              builder: (context, _) {
+                final recording = voice?.active ?? false;
+                return GlassSurface(
+                  radius: capsuleRadius,
+                  strong: true,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: capsuleHeight),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (recording)
+                            Expanded(child: RecordingBar(controller: voice!))
+                          else ...[
+                            if (onAttach != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 2),
+                                child: GlassIconButton(
+                                  icon: AppIcons.plus,
+                                  label: 'Прикрепить',
+                                  size: 44,
+                                  onPressed: busy ? null : onAttach,
+                                ),
+                              ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                                child: TextField(
+                                  controller: controller,
+                                  focusNode: focusNode,
+                                  minLines: 1,
+                                  maxLines: 6,
+                                  keyboardType: TextInputType.multiline,
+                                  textCapitalization: TextCapitalization.sentences,
+                                  cursorColor: GlassTheme.accentBlue,
+                                  style: AppType.message.copyWith(color: glass.textPrimary),
+                                  decoration: InputDecoration.collapsed(
+                                    hintText: 'Сообщение',
+                                    hintStyle: AppType.message.copyWith(color: glass.textTertiary),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: GlassIconButton(
+                                icon: AppIcons.emoji,
+                                label: 'Эмодзи',
+                                size: 40,
+                                onPressed: () => showEmojiSheet(context, controller),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          ValueListenableBuilder<TextEditingValue>(
+                            // Ключ: кнопки справа не пересоздаются, когда строка записи
+                            // заменяет поле ввода, — палец на микрофоне не теряется.
+                            key: const ValueKey('composer-trailing'),
+                            valueListenable: controller,
+                            builder: (context, value, _) {
+                              final hasText = value.text.trim().isNotEmpty;
+                              final lockedRecording = voice?.locked ?? false;
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (voice != null && !lockedRecording)
+                                    _MicHoldButton(
+                                      key: const ValueKey('composer-mic'),
+                                      voice: voice!,
+                                      enabled: !busy && !hasText,
+                                    ),
+                                  if (lockedRecording)
+                                    SendButton(
+                                      key: const ValueKey('composer-send-locked'),
+                                      enabled: true,
+                                      onPressed: voice!.sendLocked,
+                                    )
+                                  else
+                                    SendButton(
+                                      key: const ValueKey('composer-send'),
+                                      enabled: hasText,
+                                      onPressed: onSend,
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -183,7 +191,6 @@ class _MicHoldButtonState extends State<_MicHoldButton> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = context.cs;
     final voice = widget.voice;
     final holding = voice.state == VoiceRecState.holding;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -194,8 +201,8 @@ class _MicHoldButtonState extends State<_MicHoldButton> {
       excludeSemantics: true,
       onTap: widget.enabled ? () => voice.onProblem(voiceHoldHint) : null,
       child: SizedBox(
-        width: Sizes.minTouch,
-        height: Sizes.minTouch,
+        width: 44,
+        height: 48,
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.center,
@@ -232,14 +239,22 @@ class _MicHoldButtonState extends State<_MicHoldButton> {
                   scale: holding ? 1.25 : 1,
                   duration: reduceMotion ? Duration.zero : Motion.press,
                   curve: Curves.easeOut,
-                  child: Container(
-                    width: Sizes.sendButton,
-                    height: Sizes.sendButton,
-                    decoration: BoxDecoration(
-                      color: widget.enabled ? cs.primary : context.rc.surfaceMuted,
-                      shape: BoxShape.circle,
+                  child: AnimatedOpacity(
+                    opacity: widget.enabled ? 1 : 0.45,
+                    duration: Motion.normal,
+                    child: GlassSurface(
+                      radius: 20,
+                      gradient: holding ? ChatGlass.outgoing : null,
+                      glow: holding ? GlassTheme.accentGlow.withValues(alpha: 0.4) : null,
+                      child: SizedBox.square(
+                        dimension: 40,
+                        child: Icon(
+                          AppIcons.microphone,
+                          size: 22,
+                          color: holding ? Colors.white : GlassTheme.of(context).textPrimary,
+                        ),
+                      ),
                     ),
-                    child: Icon(AppIcons.microphone, size: 22, color: cs.onPrimary),
                   ),
                 ),
               ),
@@ -261,14 +276,11 @@ class SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
-    final cs = context.cs;
     return _CircleButton(
       label: 'Отправить',
       icon: AppIcons.send,
       enabled: enabled,
-      fill: enabled ? cs.primary : rc.surfaceMuted,
-      iconColor: enabled ? cs.onPrimary : rc.textTertiary,
+      iconColor: Colors.white,
       onPressed: onPressed,
     );
   }
@@ -281,7 +293,6 @@ class _CircleButton extends StatefulWidget {
     required this.label,
     required this.icon,
     required this.enabled,
-    required this.fill,
     required this.iconColor,
     required this.onPressed,
   });
@@ -289,7 +300,6 @@ class _CircleButton extends StatefulWidget {
   final String label;
   final IconData icon;
   final bool enabled;
-  final Color fill;
   final Color iconColor;
   final VoidCallback? onPressed;
 
@@ -326,6 +336,9 @@ class _CircleButtonState extends State<_CircleButton> {
         // Область нажатия 48 px (Sizes.minTouch), сама кнопка — 44.
         child: Padding(
           padding: const EdgeInsets.all((Sizes.minTouch - Sizes.sendButton) / 2),
+          child: AnimatedOpacity(
+          opacity: widget.enabled ? 1 : 0.5,
+          duration: Motion.normal,
           child: AnimatedScale(
           scale: pressed ? 0.92 : 1,
           duration: duration,
@@ -335,7 +348,14 @@ class _CircleButtonState extends State<_CircleButton> {
             curve: Motion.curve,
             width: Sizes.sendButton,
             height: Sizes.sendButton,
-            decoration: BoxDecoration(color: widget.fill, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              gradient: ChatGlass.outgoing,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0x66FFFFFF), width: 1),
+              boxShadow: widget.enabled
+                  ? const [BoxShadow(color: Color(0x665667FF), blurRadius: 12, offset: Offset(0, 4))]
+                  : null,
+            ),
             child: Center(
               child: AnimatedSlide(
                 offset: pressed ? const Offset(0, -0.1) : Offset.zero,
@@ -344,6 +364,7 @@ class _CircleButtonState extends State<_CircleButton> {
                 child: Icon(widget.icon, size: 22, color: widget.iconColor),
               ),
             ),
+          ),
           ),
           ),
         ),
@@ -360,15 +381,15 @@ class _ReplyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
-    final cs = context.cs;
+    final glass = GlassTheme.of(context);
+    const accent = GlassTheme.accentBlue;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.l, Space.s, Space.xs, 0),
+      padding: const EdgeInsets.fromLTRB(28, Space.s, 20, 0),
       child: Row(
         children: [
-          Icon(AppIcons.reply, size: 22, color: cs.primary),
+          const Icon(AppIcons.reply, size: 22, color: accent),
           const SizedBox(width: Space.m),
-          Container(width: 2, height: 34, color: cs.primary),
+          Container(width: 2, height: 34, color: accent),
           const SizedBox(width: Space.s),
           Expanded(
             child: Column(
@@ -379,13 +400,13 @@ class _ReplyBar extends StatelessWidget {
                   'Ответ: ${reply.author}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.tt.labelLarge?.copyWith(color: cs.primary),
+                  style: context.tt.labelLarge?.copyWith(color: accent),
                 ),
                 Text(
                   reply.text,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.tt.bodyMedium?.copyWith(color: rc.textSecondary),
+                  style: context.tt.bodyMedium?.copyWith(color: glass.textSecondary),
                 ),
               ],
             ),
@@ -394,7 +415,7 @@ class _ReplyBar extends StatelessWidget {
             tooltip: 'Отменить ответ',
             style: quietButtonStyle,
             onPressed: onCancel,
-            icon: Icon(AppIcons.clear, color: rc.textSecondary),
+            icon: Icon(AppIcons.clear, color: glass.textSecondary),
           ),
         ],
       ),

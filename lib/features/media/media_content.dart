@@ -38,14 +38,24 @@ bool mediaFileExists(MediaItem? media) => media != null && File(media.path).exis
 
 /// Фото в пузыре. Нажатие — полноэкранный просмотр.
 class PhotoContent extends StatelessWidget {
-  const PhotoContent({super.key, required this.media, required this.width});
+  const PhotoContent({
+    super.key,
+    required this.media,
+    required this.width,
+    this.minAspect = 0.62,
+    this.maxAspect = 1.8,
+  });
 
   final MediaItem media;
   final double width;
 
+  /// Границы соотношения сторон превью (ширина / высота).
+  final double minAspect;
+  final double maxAspect;
+
   @override
   Widget build(BuildContext context) {
-    final height = width / media.aspectRatio.clamp(0.62, 1.8);
+    final height = width / media.aspectRatio.clamp(minAspect, maxAspect);
     final dpr = MediaQuery.devicePixelRatioOf(context);
     return GestureDetector(
       onTap: () => openPhotoViewer(context, media),
@@ -125,14 +135,26 @@ class _VideoFrameState extends State<VideoFrame> {
 
 /// Видео в пузыре: кадр, кнопка воспроизведения и длительность.
 class VideoContent extends StatelessWidget {
-  const VideoContent({super.key, required this.media, required this.width});
+  const VideoContent({
+    super.key,
+    required this.media,
+    required this.width,
+    this.minAspect = 0.62,
+    this.maxAspect = 1.8,
+    this.bareTime,
+  });
 
   final MediaItem media;
   final double width;
+  final double minAspect;
+  final double maxAspect;
+
+  /// Время сообщения поверх кадра (справа внизу), если подписи нет.
+  final Widget? bareTime;
 
   @override
   Widget build(BuildContext context) {
-    final height = width / media.aspectRatio.clamp(0.62, 1.8);
+    final height = width / media.aspectRatio.clamp(minAspect, maxAspect);
     final duration = media.duration;
     return GestureDetector(
       onTap: () => openVideoViewer(context, media),
@@ -141,16 +163,33 @@ class VideoContent extends StatelessWidget {
         children: [
           VideoFrame(media: media, width: width, height: height),
           Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(color: Color(0x88000000), shape: BoxShape.circle),
-            child: const Icon(AppIcons.play, color: Colors.white, size: 34),
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0x66000000),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xB3FFFFFF), width: 1.5),
+            ),
+            child: const Icon(AppIcons.play, color: Colors.white, size: 32),
           ),
           if (duration != null)
             Positioned(
-              left: Space.s,
-              top: Space.s,
+              left: 12,
+              bottom: 10,
               child: _Pill(text: formatDuration(duration)),
+            ),
+          if (bareTime != null)
+            Positioned(
+              right: 12,
+              bottom: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0x66000000),
+                  borderRadius: BorderRadius.circular(Radii.pill),
+                ),
+                child: bareTime,
+              ),
             ),
         ],
       ),
@@ -363,9 +402,14 @@ class AudioContent extends StatelessWidget {
                   }
                 },
                 child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: accent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0x66FFFFFF), width: 1),
+                    boxShadow: const [BoxShadow(color: Color(0x225667FF), blurRadius: 8, offset: Offset(0, 2))],
+                  ),
                   child: Icon(
                     playing ? AppIcons.pause : AppIcons.play,
                     color: onAccent,
@@ -386,14 +430,22 @@ class AudioContent extends StatelessWidget {
                 children: [
                   if (voice)
                     SizedBox(
-                      height: 26,
+                      height: 28,
                       width: double.infinity,
-                      child: CustomPaint(
-                        painter: WaveformPainter(
-                          values: media.waveform.isEmpty ? decorativeWaveform(media.id) : media.waveform,
-                          progress: progress,
-                          played: accent,
-                          idle: muted,
+                      // Проигранная часть «волны» набегает плавно, а не рывками.
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween<double>(end: progress),
+                        duration: MediaQuery.disableAnimationsOf(context)
+                            ? Duration.zero
+                            : const Duration(milliseconds: 220),
+                        curve: Curves.easeOut,
+                        builder: (context, shown, _) => CustomPaint(
+                          painter: WaveformPainter(
+                            values: media.waveform.isEmpty ? decorativeWaveform(media.id) : media.waveform,
+                            progress: shown,
+                            played: accent,
+                            idle: muted,
+                          ),
                         ),
                       ),
                     )
@@ -490,7 +542,7 @@ class WaveformPainter extends CustomPainter {
       oldDelegate.progress != progress || oldDelegate.values != values;
 }
 
-/// Прочий файл: значок, имя, размер.
+/// Прочий файл: цветная плитка с расширением, имя, размер.
 class FileContent extends StatelessWidget {
   const FileContent({super.key, required this.media, required this.foreground, required this.muted});
 
@@ -498,26 +550,60 @@ class FileContent extends StatelessWidget {
   final Color foreground;
   final Color muted;
 
+  /// Цвет плитки по расширению: PDF красный, документы синие, таблицы зелёные.
+  static Color tileColor(String ext) => switch (ext) {
+        'pdf' => const Color(0xFFFF4D4F),
+        'doc' || 'docx' || 'rtf' || 'txt' => const Color(0xFF4A7BFF),
+        'xls' || 'xlsx' || 'csv' => const Color(0xFF2FB36B),
+        'ppt' || 'pptx' => const Color(0xFFFF8A3D),
+        'zip' || 'rar' || '7z' => const Color(0xFF8E63FF),
+        _ => const Color(0xFF6C7BFF),
+      };
+
   @override
   Widget build(BuildContext context) {
+    final name = media.originalName ?? 'Файл';
+    final raw = fileExtension(name).toLowerCase();
+    final ext = raw.startsWith('.') ? raw.substring(1) : raw;
+    final label = ext.isEmpty ? 'ФАЙЛ' : (ext.length > 4 ? ext.substring(0, 4) : ext).toUpperCase();
+    final color = tileColor(ext);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(AppIcons.file, size: 36, color: muted),
-        const SizedBox(width: Space.s),
+        Container(
+          width: 46,
+          height: 54,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [color, Color.lerp(color, Colors.black, 0.12)!],
+            ),
+            boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 3))],
+          ),
+          alignment: Alignment.bottomCenter,
+          padding: const EdgeInsets.only(bottom: 7),
+          child: Text(
+            label,
+            maxLines: 1,
+            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700, height: 1),
+          ),
+        ),
+        const SizedBox(width: 14),
         Flexible(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                media.originalName ?? 'Файл',
+                name,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: foreground, fontSize: 15, fontWeight: FontWeight.w600),
+                style: TextStyle(color: foreground, fontSize: 16, fontWeight: FontWeight.w600),
               ),
               if (media.sizeBytes != null)
-                Text(formatBytes(media.sizeBytes!), style: TextStyle(color: muted, fontSize: 12)),
+                Text(formatBytes(media.sizeBytes!), style: TextStyle(color: muted, fontSize: 13.5)),
             ],
           ),
         ),

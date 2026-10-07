@@ -96,6 +96,7 @@ abstract final class AppIcons {
 
   // Главный экран (светлое стекло).
   static const IconData more = Icons.more_horiz_rounded;
+  static const IconData emoji = Icons.mood_outlined;
   static const IconData waveform = Icons.graphic_eq_rounded;
   static const IconData photo = Icons.image_rounded;
   static const IconData group = Icons.groups_rounded;
