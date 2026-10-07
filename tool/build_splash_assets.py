@@ -44,9 +44,13 @@ for cx, cy in ((RC, RC), (W - 1 - RC, RC), (RC, H - 1 - RC), (W - 1 - RC, H - 1 
     zone = ((xx < RC) if cx == RC else (xx > W - 1 - RC)) & ((yy < RC) if cy == RC else (yy > H - 1 - RC))
     mask[zone & ((xx - cx) ** 2 + (yy - cy) ** 2 > (RC - 5) ** 2)] = 255
 
-# Dynamic Island — чёрная «пилюля» целиком.
-r = rect(400, 66, 624, 140)
-mask[r] = 255
+# Dynamic Island — только сама чёрная «пилюля»: волна, которая проходит под
+# её нижним краем, остаётся нетронутой.
+r = rect(396, 62, 628, 142)
+pill = np.zeros((H, W), np.uint8)
+pill[r] = (S[r].max(-1) < 14).astype(np.uint8) * 255
+pill = cv2.morphologyEx(pill, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (41, 41)))
+mask[grow(pill, 2) > 0] = 255
 
 def bright(x0, y0, x1, y1, test, px):
     r = rect(x0, y0, x1, y1)

@@ -20,8 +20,9 @@ void main() {
     tester.view.physicalSize = screen * ratio;
     tester.view.devicePixelRatio = ratio;
     addTearDown(tester.view.reset);
+    // В тестах размытые тени по умолчанию отключены; для снимка включаем и
+    // возвращаем до конца теста (иначе тест считается изменившим настройки).
     debugDisableShadows = false;
-    addTearDown(() => debugDisableShadows = true);
 
     // Настоящий шрифт приложения вместо тестового.
     await tester.runAsync(() async {
@@ -61,6 +62,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1500));
     await save('splash_shot_b.png');
 
+    debugDisableShadows = true;
     expect(File('build/splash_shot_a.png').lengthSync(), greaterThan(10000));
     expect(tester.takeException(), isNull);
   });

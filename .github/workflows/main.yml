@@ -103,7 +103,7 @@ jobs:
           code=$?
           python3 - <<'PY'
           import json
-          tests, errors = {}, {}
+          tests, errors, prints = {}, {}, {}
           passed = failed = skipped = 0
           for line in open('test_results.json', encoding='utf-8', errors='replace'):
               try:
@@ -115,6 +115,9 @@ jobs:
                   tests[e['test']['id']] = e['test']['name']
               elif t == 'error':
                   errors.setdefault(e['testID'], []).append(e.get('error', ''))
+              elif t == 'print':
+                  # У виджет-тестов подробности падения приходят печатью.
+                  prints.setdefault(e.get('testID'), []).append(e.get('message', ''))
               elif t == 'testDone' and not e.get('hidden'):
                   if e.get('skipped'):
                       skipped += 1
@@ -129,6 +132,10 @@ jobs:
                   name = 'ЗАГРУЗКА ' + name[len('loading '):]
               lines.append('FAIL: ' + name)
               lines.append('   ' + ' | '.join(x.strip() for x in errs)[:600].replace('\n', ' / '))
+              detail = '\n'.join(prints.get(tid, []))
+              if 'EXCEPTION CAUGHT' in detail:
+                  detail = detail[detail.index('EXCEPTION CAUGHT'):]
+                  lines.append('   ' + detail[:900].replace('\n', ' / '))
           def emit(level, title, body, limit=3500, max_chunks=10):
               chunks = [body[i:i + limit] for i in range(0, len(body), limit)][:max_chunks]
               for n, c in enumerate(chunks, 1):
