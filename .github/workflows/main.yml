@@ -2,6 +2,11 @@ name: Сборка iOS AI (без подписи)
 
 on:
   workflow_dispatch:
+    inputs:
+      splash_shot:
+        description: 'Показать в сводке снимок стартового экрана (для сверки с эталоном)'
+        type: boolean
+        default: false
 
 jobs:
   ios-ai:
@@ -133,3 +138,20 @@ jobs:
           emit(level, f'tests - упало {failed} прошло {passed}', '\n'.join(lines))
           PY
           exit $code
+
+      # Снимок стартового экрана из автотеста — в сводку запуска (см.
+      # tool/ci_emit_image.py). Только когда запуск просит об этом.
+      - name: Снимок стартового экрана (1)
+        if: ${{ always() && inputs.splash_shot }}
+        run: |
+          pip install --quiet pillow
+          python3 tool/ci_emit_image.py splash 0 build/splash_shot_a.png build/splash_shot_b.png
+      - name: Снимок стартового экрана (2)
+        if: ${{ always() && inputs.splash_shot }}
+        run: python3 tool/ci_emit_image.py splash 1 build/splash_shot_a.png build/splash_shot_b.png
+      - name: Снимок стартового экрана (3)
+        if: ${{ always() && inputs.splash_shot }}
+        run: python3 tool/ci_emit_image.py splash 2 build/splash_shot_a.png build/splash_shot_b.png
+      - name: Снимок стартового экрана (4)
+        if: ${{ always() && inputs.splash_shot }}
+        run: python3 tool/ci_emit_image.py splash 3 build/splash_shot_a.png build/splash_shot_b.png

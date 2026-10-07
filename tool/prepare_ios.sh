@@ -48,6 +48,14 @@ if [ -f ios/Podfile ]; then
   fi
 fi
 
+# Системный экран запуска (до первого кадра Flutter) — того же тёмно-синего
+# цвета #070A18, что и фон стартового экрана: без белой вспышки.
+LAUNCH="ios/Runner/Base.lproj/LaunchScreen.storyboard"
+if [ -f "$LAUNCH" ]; then
+  echo "→ Экран запуска: фон #070A18"
+  perl -pi -e 's/<color key="backgroundColor"[^>]*\/>/<color key="backgroundColor" red="0.0275" green="0.0392" blue="0.0941" alpha="1" colorSpace="custom" customColorSpace="sRGB"\/>/g' "$LAUNCH"
+fi
+
 echo "→ Разрешения (только для реальных функций приложения)"
 # Камера: своё изображение в постановочном видеозвонке, запись видеосообщений.
 plist_set NSCameraUsageDescription string \

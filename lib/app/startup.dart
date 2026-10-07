@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/brand/brand.dart';
-import '../core/brand/logo.dart';
 import '../core/design/context.dart';
 import '../core/design/icons.dart';
 import '../core/design/theme.dart';
 import '../core/design/tokens.dart';
+import '../features/splash/splash_screen.dart';
 import 'app.dart';
 import 'services.dart';
 
@@ -23,6 +23,9 @@ class _StartupAppState extends State<StartupApp> {
   AppServices? _services;
   Object? _error;
   bool _opening = false;
+
+  /// Стартовый экран доиграл полосу загрузки.
+  bool _splashDone = false;
 
   @override
   void initState() {
@@ -58,32 +61,43 @@ class _StartupAppState extends State<StartupApp> {
   @override
   Widget build(BuildContext context) {
     final services = _services;
-    if (services != null) return ReplikaApp(services: services);
-    return MaterialApp(
-      title: Brand.name,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
-      locale: appLocale,
-      supportedLocales: const [appLocale],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: _error == null
-          ? const _Splash()
-          : _StartupError(error: _error!, retrying: _opening, onRetry: _retry),
+    // Приложение открывается, когда и данные готовы, и стартовый экран
+    // закончил; переход — плавное перекрытие, без вспышки.
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 450),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      // Оба слоя на весь экран (выше MaterialApp нет Directionality, поэтому
+      // выравнивание задано явно).
+      layoutBuilder: (current, previous) => Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
+        children: [...previous, if (current != null) current],
+      ),
+      child: services != null && _splashDone
+          ? KeyedSubtree(key: const ValueKey('app'), child: ReplikaApp(services: services))
+          : KeyedSubtree(
+              key: const ValueKey('startup'),
+              child: MaterialApp(
+                title: Brand.name,
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.light,
+                darkTheme: AppTheme.dark,
+                themeMode: ThemeMode.system,
+                locale: appLocale,
+                supportedLocales: const [appLocale],
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                home: _error == null
+                    ? SplashScreen(onFinished: _onSplashFinished)
+                    : _StartupError(error: _error!, retrying: _opening, onRetry: _retry),
+              ),
+            ),
     );
   }
-}
 
-class _Splash extends StatelessWidget {
-  const _Splash();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
-      body: Center(child: ReplikaLogo(size: 88, onDark: isDark)),
-    );
+  void _onSplashFinished() {
+    if (!mounted || _splashDone) return;
+    setState(() => _splashDone = true);
   }
 }
 

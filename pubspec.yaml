@@ -43,6 +43,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+    # Стартовый экран: фон и сфера (собираются tool/build_splash_assets.py).
+    - assets/splash/
     - assets/fonts/Inter-LICENSE-OFL.txt
 
   # Inter (SIL OFL 1.1), локальные файлы: без загрузки из сети и без пакетов.
