@@ -313,6 +313,9 @@ class AutoReplyController extends ChangeNotifier {
   }
 
   Future<void> setEnabled(bool value) async {
+    // Сначала дочитываем сохранённое значение: иначе запоздавшее чтение
+    // перезапишет только что сделанный выбор.
+    await _loaded;
     enabled.value = value;
     await _services.settings.setValue(settingKey, value ? '1' : '0');
     if (!value) cancel();

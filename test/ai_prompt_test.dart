@@ -256,6 +256,8 @@ void main() {
       engine = _FakeEngine();
       AutoReplyController.engine = engine;
       await s.autoReply.setEnabled(true);
+      expect(s.autoReply.enabled.value, isTrue);
+      expect(s.autoReply.available, isTrue);
     });
 
     tearDown(() async {
@@ -335,6 +337,13 @@ void main() {
       await s.messages.sendText(chatId: id, senderId: maxim, text: 'Всем привет');
       await s.autoReply.onOwnerMessage(id);
       expect(engine.prompts, isEmpty);
+      expect(s.autoReply.lastError, isNull, reason: 'это решение маршрутизации, а не сбой');
+
+      // Тот же движок в личном чате отвечает: запрет именно на группу.
+      s.openChatId.value = mamaChat;
+      await s.messages.sendText(chatId: mamaChat, senderId: maxim, text: 'Мам, привет');
+      await s.autoReply.onOwnerMessage(mamaChat);
+      expect(engine.prompts, hasLength(1));
       final texts = (await s.messages.forChat(id)).where((m) => m.type == MessageType.text);
       expect(texts.map((m) => m.text), ['Всем привет']);
     });
