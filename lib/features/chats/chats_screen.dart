@@ -84,7 +84,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         ),
         SheetAction(
           value: _ChatAction.mute,
-          icon: item.chat.muted ? Icons.notifications_active_outlined : AppIcons.muted,
+          icon: item.chat.muted ? AppIcons.notificationsOn : AppIcons.muted,
           label: item.chat.muted ? 'Включить уведомления' : 'Без звука',
         ),
         const SheetAction(
@@ -142,7 +142,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
               actions: [
                 IconButton(
                   tooltip: 'Новая группа',
-                  icon: Icon(Icons.group_add_outlined),
+                  icon: Icon(AppIcons.groupAdd),
                   onPressed: AppNavigator.openNewGroup,
                 ),
               ],

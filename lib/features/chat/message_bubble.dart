@@ -108,10 +108,12 @@ class MessageBubble extends StatelessWidget {
       return DaySeparator(label: message.text);
     }
 
-    final background = outgoing ? rc.bubbleOut : rc.bubbleIn;
-    final foreground = outgoing ? rc.onBubbleOut : rc.onBubbleIn;
-    final metaColor = outgoing ? rc.metaOut : rc.metaIn;
     final deleted = message.deleted;
+    // Удалённое — отдельное состояние мессенджера: без заливки, с рамкой и
+    // спокойным серо-голубым текстом, одинаково для входящих и исходящих.
+    final background = deleted ? Colors.transparent : (outgoing ? rc.bubbleOut : rc.bubbleIn);
+    final foreground = deleted ? rc.deletedText : (outgoing ? rc.onBubbleOut : rc.onBubbleIn);
+    final metaColor = deleted ? rc.deletedText : (outgoing ? rc.metaOut : rc.metaIn);
 
     final String content;
     if (deleted) {
@@ -140,6 +142,11 @@ class MessageBubble extends StatelessWidget {
       joinsPrevious: row.joinsPrevious,
       joinsNext: row.joinsNext,
     );
+    // Рамка есть у всех пузырей, чтобы размер не зависел от состояния:
+    // у входящего она видимая, у исходящего сливается с заливкой, у
+    // удалённого — толще (1.5 px). Отступы внутри уменьшены на её ширину.
+    final borderWidth = deleted ? Sizes.lineStrong : Sizes.line;
+    final borderColor = deleted ? rc.deletedBorder : (outgoing ? background : rc.bubbleInBorder);
     final Widget bubble = !deleted && message.isMedia
         ? (_showSender
             ? Column(
@@ -153,7 +160,12 @@ class MessageBubble extends StatelessWidget {
             : _mediaBubble(context, background, foreground, metaColor, radius, maxWidth, time, state, metaWidth))
         : Container(
       constraints: BoxConstraints(maxWidth: maxWidth),
-      padding: const EdgeInsets.fromLTRB(Space.m, 7, Space.s + 2, 7),
+      padding: EdgeInsets.fromLTRB(
+        Space.m - borderWidth,
+        7 - borderWidth,
+        Space.s + 2 - borderWidth,
+        7 - borderWidth,
+      ),
       decoration: BoxDecoration(
         color: background,
         borderRadius: bubbleRadius(
@@ -161,7 +173,8 @@ class MessageBubble extends StatelessWidget {
           joinsPrevious: row.joinsPrevious,
           joinsNext: row.joinsNext,
         ),
-        boxShadow: outgoing
+        border: Border.all(color: borderColor, width: borderWidth),
+        boxShadow: (outgoing || deleted)
             ? null
             : const [BoxShadow(color: Color(0x14000000), blurRadius: 1, offset: Offset(0, 1))],
       ),
@@ -174,7 +187,7 @@ class MessageBubble extends StatelessWidget {
                   alignment: PlaceholderAlignment.middle,
                   child: Padding(
                     padding: const EdgeInsets.only(right: Space.xs),
-                    child: Icon(AppIcons.markDeleted, size: 15, color: metaColor),
+                    child: Icon(AppIcons.markDeleted, size: 16, color: rc.deletedText),
                   ),
                 ),
               if (message.type == MessageType.call && !deleted)
@@ -183,7 +196,7 @@ class MessageBubble extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(right: Space.xs + 2),
                     child: Icon(
-                      message.text.startsWith('Пропущ') ? Icons.phone_missed_rounded : Icons.call_rounded,
+                      message.text.startsWith('Пропущ') ? AppIcons.callMissed : AppIcons.call,
                       size: 17,
                       color: message.text.startsWith('Пропущ') ? rc.danger : foreground,
                     ),
@@ -215,6 +228,10 @@ class MessageBubble extends StatelessWidget {
       ))),
     );
 
+    // «Не отправлено»: красный маркер повтора рядом с пузырём и подпись под ним.
+    final failed = outgoing && !deleted && message.state == MessageState.failed;
+    final Widget shown = failed ? _FailedMarker(child: bubble) : bubble;
+
     return AnimatedContainer(
       duration: Motion.fast,
       margin: EdgeInsets.only(top: row.joinsPrevious ? 2 : Space.s),
@@ -231,8 +248,8 @@ class MessageBubble extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onLongPress: onLongPress,
             child: onReply == null
-                ? bubble
-                : SwipeToReply(onReply: onReply!, child: bubble),
+                ? shown
+                : SwipeToReply(onReply: onReply!, child: shown),
           ),
         ),
       ),
@@ -268,10 +285,16 @@ class MessageBubble extends StatelessWidget {
 
     Widget padded(Widget child) => Container(
           constraints: BoxConstraints(maxWidth: maxWidth),
-          padding: const EdgeInsets.fromLTRB(Space.m - 2, Space.s, Space.s + 2, 7),
+          padding: const EdgeInsets.fromLTRB(
+            Space.m - 2 - Sizes.line,
+            Space.s - Sizes.line,
+            Space.s + 2 - Sizes.line,
+            7 - Sizes.line,
+          ),
           decoration: BoxDecoration(
             color: background,
             borderRadius: radius,
+            border: Border.all(color: outgoing ? background : rc.bubbleInBorder, width: Sizes.line),
             boxShadow: outgoing
                 ? null
                 : const [BoxShadow(color: Color(0x14000000), blurRadius: 1, offset: Offset(0, 1))],
@@ -307,8 +330,12 @@ class MessageBubble extends StatelessWidget {
             ? PhotoContent(media: media, width: width)
             : VideoContent(media: media, width: width);
         return Container(
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(color: background, borderRadius: radius),
+          padding: const EdgeInsets.all(3 - Sizes.line),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: radius,
+            border: Border.all(color: outgoing ? background : rc.bubbleInBorder, width: Sizes.line),
+          ),
           child: _withQuote(
             context,
             outgoing,
@@ -663,8 +690,58 @@ class BubbleMeta extends StatelessWidget {
         Text(_label(time, edited), style: AppType.meta.copyWith(color: color)),
         if (state != null) ...[
           const SizedBox(width: 3),
-          MessageTicks(state: state!, color: color, readColor: readColor, size: tickSize),
+          MessageTicks(
+            state: state!,
+            // До прочтения галочки спокойнее, «прочитано» — ярче и другого оттенка.
+            color: color.withValues(alpha: 0.8),
+            readColor: readColor,
+            failedColor: color,
+            size: tickSize,
+          ),
         ],
+      ],
+    );
+  }
+}
+
+/// Состояние «не отправлено»: красный круглый значок повтора слева от
+/// пузыря и подпись под ним. Только оформление: повторной отправки в
+/// приложении нет, значок ничего не запускает.
+class _FailedMarker extends StatelessWidget {
+  const _FailedMarker({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final rc = context.rc;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Semantics(
+              label: messageStateLabel(MessageState.failed),
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(color: rc.danger, shape: BoxShape.circle),
+                child: Icon(AppIcons.retry, size: 16, color: context.cs.onError),
+              ),
+            ),
+            const SizedBox(width: Space.s),
+            Flexible(child: child),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 2, right: Space.xs),
+          child: Text(
+            messageStateLabel(MessageState.failed),
+            style: context.tt.labelMedium?.copyWith(color: rc.danger, fontWeight: FontWeight.w600),
+          ),
+        ),
       ],
     );
   }

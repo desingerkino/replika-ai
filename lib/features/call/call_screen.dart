@@ -10,6 +10,7 @@ import '../../app/call_engine.dart';
 import '../../app/call_video_recording.dart';
 import '../../app/operator_toast.dart';
 import '../../app/services.dart';
+import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../data/models/call_record.dart';
@@ -346,20 +347,20 @@ class _Controls extends StatelessWidget {
     if (phase == CallPhase.incoming) {
       buttons
         ..add(_RoundButton(
-          icon: Icons.call_end_rounded,
+          icon: AppIcons.callEnd,
           label: 'Отклонить',
           color: const Color(0xFFE5483E),
           onTap: engine.decline,
         ))
         ..add(_RoundButton(
-          icon: video ? Icons.videocam_rounded : Icons.call_rounded,
+          icon: video ? AppIcons.video : AppIcons.call,
           label: 'Принять',
           color: const Color(0xFF34B36B),
           onTap: engine.accept,
         ));
     } else {
       buttons.add(_RoundButton(
-        icon: engine.muted ? Icons.mic_off_rounded : Icons.mic_rounded,
+        icon: engine.muted ? AppIcons.microphoneOff : AppIcons.microphone,
         label: engine.muted ? 'Включить' : 'Микрофон',
         color: engine.muted ? Colors.white : Colors.white24,
         iconColor: engine.muted ? const Color(0xFF0B1115) : Colors.white,
@@ -367,7 +368,7 @@ class _Controls extends StatelessWidget {
       ));
       if (video) {
         buttons.add(_RoundButton(
-          icon: engine.cameraOff ? Icons.videocam_off_rounded : Icons.videocam_rounded,
+          icon: engine.cameraOff ? AppIcons.videoOff : AppIcons.video,
           label: 'Камера',
           color: engine.cameraOff ? Colors.white : Colors.white24,
           iconColor: engine.cameraOff ? const Color(0xFF0B1115) : Colors.white,
@@ -376,14 +377,14 @@ class _Controls extends StatelessWidget {
       }
       if (video && onFlip != null && phase != CallPhase.incoming) {
         buttons.add(_RoundButton(
-          icon: Icons.cameraswitch_rounded,
+          icon: AppIcons.cameraSwitch,
           label: 'Перевернуть',
           color: Colors.white24,
           onTap: onFlip!,
         ));
       }
       buttons.add(_RoundButton(
-        icon: Icons.call_end_rounded,
+        icon: AppIcons.callEnd,
         label: 'Завершить',
         color: const Color(0xFFE5483E),
         onTap: engine.hangUp,

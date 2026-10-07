@@ -45,7 +45,7 @@ class Composer extends StatelessWidget {
       color: cs.surface,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: rc.divider, width: 0.6)),
+          border: Border(top: BorderSide(color: rc.divider, width: Sizes.line)),
         ),
         child: SafeArea(
           top: false,
@@ -63,15 +63,18 @@ class Composer extends StatelessWidget {
                   IconButton(
                     tooltip: 'Прикрепить',
                     onPressed: busy ? null : onAttach,
-                    icon: Icon(Icons.attach_file_rounded, color: rc.textSecondary),
+                    icon: Icon(AppIcons.attachment, color: rc.textSecondary),
                   ),
                 Expanded(
                   child: Container(
                     constraints: const BoxConstraints(minHeight: Sizes.sendButton),
-                    padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: 11),
+                    // Рамка 1 px: край поля читается в крупном плане; отступы
+                    // уменьшены на её ширину, размер поля прежний.
+                    padding: const EdgeInsets.symmetric(horizontal: Space.l - Sizes.line, vertical: 11 - Sizes.line),
                     decoration: BoxDecoration(
                       color: rc.surfaceMuted,
                       borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: rc.divider, width: Sizes.line),
                     ),
                     child: TextField(
                       controller: controller,
@@ -93,26 +96,39 @@ class Composer extends StatelessWidget {
                   valueListenable: controller,
                   builder: (context, value, _) {
                     final hasText = value.text.trim().isNotEmpty;
-                    if (!hasText && onVoice != null) {
-                      return Semantics(
-                        button: true,
-                        label: 'Записать голосовое',
-                        child: SizedBox(
-                          width: Sizes.sendButton,
-                          height: Sizes.sendButton,
-                          child: Material(
-                            color: cs.primary,
-                            shape: const CircleBorder(),
-                            clipBehavior: Clip.antiAlias,
-                            child: InkWell(
-                              onTap: busy ? null : onVoice,
-                              child: Icon(Icons.mic_rounded, color: cs.onPrimary, size: 22),
-                            ),
-                          ),
+                    final showMic = !hasText && onVoice != null;
+                    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+                    // Микрофон и «отправить» сменяют друг друга плавно:
+                    // короткое затухание с лёгким масштабом.
+                    return AnimatedSwitcher(
+                      duration: reduceMotion ? Duration.zero : Motion.swap,
+                      reverseDuration: reduceMotion ? Duration.zero : Motion.swap,
+                      switchInCurve: Motion.curve,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.85, end: 1).animate(animation),
+                          child: child,
                         ),
-                      );
-                    }
-                    return SendButton(enabled: hasText, onPressed: onSend);
+                      ),
+                      child: showMic
+                          ? _CircleButton(
+                              key: const ValueKey('composer-mic'),
+                              label: 'Записать голосовое',
+                              icon: AppIcons.microphone,
+                              enabled: !busy,
+                              fill: cs.primary,
+                              iconColor: cs.onPrimary,
+                              onPressed: onVoice,
+                              moveIconOnPress: false,
+                            )
+                          : SendButton(
+                              key: const ValueKey('composer-send'),
+                              enabled: hasText,
+                              onPressed: onSend,
+                            ),
+                    );
                   },
                 ),
               ],
@@ -126,6 +142,8 @@ class Composer extends StatelessWidget {
   }
 }
 
+/// Кнопка «Отправить». При нажатии коротко уменьшается (до 0.92) и стрелка
+/// чуть сдвигается вверх, на отпускании возвращается: без отскока.
 class SendButton extends StatelessWidget {
   const SendButton({super.key, required this.enabled, required this.onPressed});
 
@@ -136,28 +154,86 @@ class SendButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final rc = context.rc;
     final cs = context.cs;
+    return _CircleButton(
+      label: 'Отправить',
+      icon: AppIcons.send,
+      enabled: enabled,
+      fill: enabled ? cs.primary : rc.surfaceMuted,
+      iconColor: enabled ? cs.onPrimary : rc.textTertiary,
+      onPressed: onPressed,
+    );
+  }
+}
+
+/// Круглая кнопка действия с откликом на нажатие (масштаб + сдвиг значка).
+/// Цвет заливки меняется плавно, когда кнопка становится доступной.
+class _CircleButton extends StatefulWidget {
+  const _CircleButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.enabled,
+    required this.fill,
+    required this.iconColor,
+    required this.onPressed,
+    this.moveIconOnPress = true,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool enabled;
+  final Color fill;
+  final Color iconColor;
+  final VoidCallback? onPressed;
+
+  /// Стрелка отправки при нажатии чуть уходит вверх; у микрофона — нет.
+  final bool moveIconOnPress;
+
+  @override
+  State<_CircleButton> createState() => _CircleButtonState();
+}
+
+class _CircleButtonState extends State<_CircleButton> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value || !mounted) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = widget.enabled && widget.onPressed != null;
+    final duration = MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.press;
+    final pressed = active && _pressed;
     return Semantics(
       button: true,
-      enabled: enabled,
-      label: 'Отправить',
-      child: AnimatedContainer(
-        duration: Motion.normal,
-        curve: Motion.curve,
-        width: Sizes.sendButton,
-        height: Sizes.sendButton,
-        decoration: BoxDecoration(
-          color: enabled ? cs.primary : rc.surfaceMuted,
-          shape: BoxShape.circle,
-        ),
-        child: ClipOval(
-          child: Material(
-            type: MaterialType.transparency,
-            child: InkWell(
-              onTap: enabled ? onPressed : null,
-              child: Icon(
-                AppIcons.send,
-                size: 22,
-                color: enabled ? cs.onPrimary : rc.textTertiary,
+      enabled: active,
+      label: widget.label,
+      excludeSemantics: true,
+      onTap: active ? widget.onPressed : null,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: active ? (_) => _setPressed(true) : null,
+        onTapUp: active ? (_) => _setPressed(false) : null,
+        onTapCancel: active ? () => _setPressed(false) : null,
+        onTap: active ? widget.onPressed : null,
+        child: AnimatedScale(
+          scale: pressed ? 0.92 : 1,
+          duration: duration,
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: Motion.normal,
+            curve: Motion.curve,
+            width: Sizes.sendButton,
+            height: Sizes.sendButton,
+            decoration: BoxDecoration(color: widget.fill, shape: BoxShape.circle),
+            child: Center(
+              child: AnimatedSlide(
+                offset: pressed && widget.moveIconOnPress ? const Offset(0, -0.1) : Offset.zero,
+                duration: duration,
+                curve: Curves.easeOut,
+                child: Icon(widget.icon, size: 22, color: widget.iconColor),
               ),
             ),
           ),

@@ -102,7 +102,7 @@ class ChatTile extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(0, Space.m, Space.l, Space.m),
                     decoration: BoxDecoration(
                       border: showDivider
-                          ? Border(bottom: BorderSide(color: rc.divider, width: 0.6))
+                          ? Border(bottom: BorderSide(color: rc.divider, width: Sizes.line))
                           : null,
                     ),
                     child: Column(

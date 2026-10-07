@@ -95,7 +95,11 @@ class _FakeStatusBarState extends State<FakeStatusBar> {
     final color = widget.lightIcons || Theme.of(context).brightness == Brightness.dark
         ? Colors.white
         : const Color(0xFF15202B);
+    // inherit: false — строка состояния остаётся системным шрифтом телефона
+    // (на iPhone SF, на Android Roboto), а не Inter интерфейса мессенджера:
+    // в кадре она должна выглядеть как настоящая системная.
     final text = TextStyle(
+      inherit: false,
       color: color,
       fontSize: 13.5,
       fontWeight: FontWeight.w600,

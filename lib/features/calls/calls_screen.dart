@@ -4,6 +4,7 @@ import '../../app/call_engine.dart';
 import '../../app/live_query.dart';
 import '../../app/services.dart';
 import '../../core/design/context.dart';
+import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/avatar.dart';
@@ -59,9 +60,9 @@ class CallsScreen extends StatelessWidget {
       context,
       header: Text(item.displayName, style: context.tt.titleMedium),
       actions: const [
-        SheetAction(value: 'audio', icon: Icons.call_rounded, label: 'Аудиозвонок'),
-        SheetAction(value: 'video', icon: Icons.videocam_rounded, label: 'Видеозвонок'),
-        SheetAction(value: 'delete', icon: Icons.delete_outline_rounded, label: 'Удалить из истории', destructive: true),
+        SheetAction(value: 'audio', icon: AppIcons.call, label: 'Аудиозвонок'),
+        SheetAction(value: 'video', icon: AppIcons.video, label: 'Видеозвонок'),
+        SheetAction(value: 'delete', icon: AppIcons.delete, label: 'Удалить из истории', destructive: true),
       ],
     );
     if (choice == null || !context.mounted) return;
@@ -102,7 +103,7 @@ class CallsScreen extends StatelessWidget {
                   }
                   if (items.isEmpty) {
                     return const EmptyState(
-                      icon: Icons.call_outlined,
+                      icon: AppIcons.callOutlined,
                       title: 'Звонков пока нет',
                       message: 'Позвоните из чата или профиля — звонок появится здесь.',
                     );
@@ -167,7 +168,7 @@ class _CallTile extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        incoming ? Icons.call_received_rounded : Icons.call_made_rounded,
+                        incoming ? AppIcons.callIncoming : AppIcons.callOutgoing,
                         size: 16,
                         color: missed ? rc.danger : rc.textSecondary,
                       ),

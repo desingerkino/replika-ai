@@ -7,6 +7,11 @@ abstract final class Palette {
   static const Color petrol = Color(0xFF155E75);
   static const Color petrolDeep = Color(0xFF0E4658);
   static const Color petrolBright = Color(0xFF3E9BB5);
+
+  /// Основной синий интерфейса («Чистый воздух»). Петроль остаётся цветом
+  /// логотипа (core/brand/logo.dart).
+  static const Color blue = Color(0xFF1F6FA8);
+  static const Color blueBright = Color(0xFF5AA9DE);
   static const Color tungsten = Color(0xFFE3A13B);
   static const Color ink = Color(0xFF15202B);
   static const Color white = Color(0xFFFFFFFF);
@@ -66,6 +71,13 @@ abstract final class Sizes {
   static const double bubbleMaxWidthCap = 520;
   static const double sendButton = 44;
   static const double minTouch = 48;
+
+  /// Линии интерфейса (разделители, рамки): не тоньше 1 px, иначе в крупном
+  /// плане они пропадают или дают муар.
+  static const double line = 1;
+
+  /// Рамка удалённого сообщения.
+  static const double lineStrong = 1.5;
 }
 
 /// Длительности и кривые анимаций.
@@ -73,6 +85,12 @@ abstract final class Motion {
   static const Duration fast = Duration(milliseconds: 120);
   static const Duration normal = Duration(milliseconds: 220);
   static const Duration slow = Duration(milliseconds: 320);
+
+  /// Нажатие кнопки (отправить, микрофон): быстро, без отскока.
+  static const Duration press = Duration(milliseconds: 100);
+
+  /// Смена микрофона и «отправить».
+  static const Duration swap = Duration(milliseconds: 160);
   static const Curve curve = Curves.easeOutCubic;
 }
 

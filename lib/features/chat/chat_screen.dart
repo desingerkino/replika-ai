@@ -215,12 +215,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final choice = await showActionSheet<_Attach>(
       context,
       actions: const [
-        SheetAction(value: _Attach.photoVideo, icon: Icons.photo_library_rounded, label: 'Фото или видео'),
-        SheetAction(value: _Attach.recordVideoNote, icon: Icons.radio_button_checked_rounded, label: 'Записать видеосообщение'),
-        SheetAction(value: _Attach.voice, icon: Icons.mic_rounded, label: 'Голосовое сообщение (файл)'),
-        SheetAction(value: _Attach.videoNote, icon: Icons.video_camera_front_rounded, label: 'Видеосообщение (файл)'),
-        SheetAction(value: _Attach.audio, icon: Icons.music_note_rounded, label: 'Аудиофайл'),
-        SheetAction(value: _Attach.library, icon: Icons.perm_media_outlined, label: 'Из медиатеки'),
+        SheetAction(value: _Attach.photoVideo, icon: AppIcons.attachPhotoVideo, label: 'Фото или видео'),
+        SheetAction(value: _Attach.recordVideoNote, icon: AppIcons.attachVideoNoteRecord, label: 'Записать видеосообщение'),
+        SheetAction(value: _Attach.voice, icon: AppIcons.microphone, label: 'Голосовое сообщение (файл)'),
+        SheetAction(value: _Attach.videoNote, icon: AppIcons.attachVideoNoteFile, label: 'Видеосообщение (файл)'),
+        SheetAction(value: _Attach.audio, icon: AppIcons.attachAudio, label: 'Аудиофайл'),
+        SheetAction(value: _Attach.library, icon: AppIcons.attachLibrary, label: 'Из медиатеки'),
       ],
     );
     if (choice == null || !mounted) return;
@@ -523,13 +523,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               if (peerId != null) ...[
                 IconButton(
                   tooltip: 'Видеозвонок',
-                  icon: const Icon(Icons.videocam_outlined),
+                  icon: const Icon(AppIcons.videoOutlined),
                   onPressed: () => startOutgoingCall(context,
                       deviceId: header.chat.deviceId, characterId: peerId, kind: CallKind.video, chatId: widget.chatId),
                 ),
                 IconButton(
                   tooltip: 'Аудиозвонок',
-                  icon: const Icon(Icons.call_outlined),
+                  icon: const Icon(AppIcons.callOutlined),
                   onPressed: () => startOutgoingCall(context,
                       deviceId: header.chat.deviceId, characterId: peerId, kind: CallKind.audio, chatId: widget.chatId),
                 ),

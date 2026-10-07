@@ -34,7 +34,7 @@ class ReplikaTopBar extends StatelessWidget implements PreferredSizeWidget {
         child: Container(
           constraints: const BoxConstraints(minHeight: Sizes.topBar),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: context.rc.divider, width: 0.6)),
+            border: Border(bottom: BorderSide(color: context.rc.divider, width: Sizes.line)),
           ),
           padding: EdgeInsets.only(
             left: leading == null ? Space.l : Space.xs,

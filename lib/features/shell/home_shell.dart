@@ -96,9 +96,9 @@ class _HomeShellState extends State<HomeShell> {
                           onSelect: (selected) => AppNavigator.homeTab.value = selected,
                         ),
                       ),
-                      VerticalDivider(width: 1, thickness: 0.6, color: context.rc.divider),
+                      VerticalDivider(width: Sizes.line, thickness: Sizes.line, color: context.rc.divider),
                       SizedBox(width: listPaneWidth, child: tabs),
-                      VerticalDivider(width: 1, thickness: 0.6, color: context.rc.divider),
+                      VerticalDivider(width: Sizes.line, thickness: Sizes.line, color: context.rc.divider),
                       Expanded(child: _DetailPane(deviceId: deviceId)),
                     ],
                   )
@@ -214,8 +214,8 @@ class _Rail extends StatelessWidget {
             label: const Text('Чаты'),
           ),
           const NavigationRailDestination(
-            icon: Icon(Icons.call_outlined),
-            selectedIcon: Icon(Icons.call_rounded),
+            icon: Icon(AppIcons.callOutlined),
+            selectedIcon: Icon(AppIcons.call),
             label: Text('Звонки'),
           ),
           const NavigationRailDestination(
@@ -253,7 +253,7 @@ class _NavBar extends StatelessWidget {
         );
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: rc.divider, width: 0.6)),
+        border: Border(top: BorderSide(color: rc.divider, width: Sizes.line)),
       ),
       child: NavigationBar(
         // 64 при обычном шрифте; при крупном — выше, чтобы подписи не обрезались.
@@ -267,8 +267,8 @@ class _NavBar extends StatelessWidget {
             label: 'Чаты',
           ),
           const NavigationDestination(
-            icon: Icon(Icons.call_outlined),
-            selectedIcon: Icon(Icons.call_rounded),
+            icon: Icon(AppIcons.callOutlined),
+            selectedIcon: Icon(AppIcons.call),
             label: 'Звонки',
           ),
           const NavigationDestination(
