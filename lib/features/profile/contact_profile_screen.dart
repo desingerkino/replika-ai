@@ -9,6 +9,7 @@ import '../../core/design/context.dart';
 import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
+import '../../core/design/widgets/pressable.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../data/db/tables.dart';
@@ -101,6 +102,10 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
             actions: [
               if (contact != null)
                 TextButton(
+                  style: TextButton.styleFrom(
+                    splashFactory: NoSplash.splashFactory,
+                    minimumSize: const Size(Sizes.minTouch, Sizes.minTouch),
+                  ),
                   onPressed: () => AppNavigator.openContactEditor(
                     deviceId: widget.deviceId,
                     characterId: widget.characterId,
@@ -138,10 +143,17 @@ class _ProfileBody extends StatelessWidget {
             size: 104,
             imagePath: contact.avatarPath,
             tone: character.avatarTone,
+            online: character.isOnline,
           ),
         ),
         const SizedBox(height: Space.l),
-        Text(contact.shownName, textAlign: TextAlign.center, style: tt.headlineSmall),
+        Text(
+          contact.shownName,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: tt.headlineSmall,
+        ),
         if (status.isNotEmpty) ...[
           const SizedBox(height: Space.xs),
           Text(
@@ -153,27 +165,39 @@ class _ProfileBody extends StatelessWidget {
           ),
         ],
         const SizedBox(height: Space.xl),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: Space.s,
-          runSpacing: Space.s,
-          children: [
-            FilledButton.icon(
-              onPressed: onWrite,
-              icon: const Icon(AppIcons.message, size: 20),
-              label: const Text('Написать'),
+        // Три действия в ряд: значок над подписью, область нажатия не меньше 48 px.
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ProfileAction(
+                    icon: AppIcons.message,
+                    label: 'Написать',
+                    primary: true,
+                    onTap: onWrite,
+                  ),
+                ),
+                const SizedBox(width: Space.s),
+                Expanded(
+                  child: _ProfileAction(
+                    icon: AppIcons.call,
+                    label: 'Позвонить',
+                    onTap: () => onCall(CallKind.audio),
+                  ),
+                ),
+                const SizedBox(width: Space.s),
+                Expanded(
+                  child: _ProfileAction(
+                    icon: AppIcons.video,
+                    label: 'Видео',
+                    onTap: () => onCall(CallKind.video),
+                  ),
+                ),
+              ],
             ),
-            FilledButton.tonalIcon(
-              onPressed: () => onCall(CallKind.audio),
-              icon: const Icon(Icons.call_rounded, size: 20),
-              label: const Text('Позвонить'),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: () => onCall(CallKind.video),
-              icon: const Icon(Icons.videocam_rounded, size: 20),
-              label: const Text('Видео'),
-            ),
-          ],
+          ),
         ),
         const SizedBox(height: Space.xl),
         if (character.phone.trim().isNotEmpty)
@@ -208,22 +232,75 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rc = context.rc;
-    return Material(
-      color: rc.surfaceMuted,
+    return Pressable(
+      onTap: null,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(Radii.card),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.card),
-        onLongPress: onLongPress,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: Space.m),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: context.tt.labelMedium),
-              const SizedBox(height: 2),
-              Text(value, style: context.tt.bodyLarge),
-            ],
-          ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: rc.surfaceMuted,
+          borderRadius: BorderRadius.circular(Radii.card),
+          border: Border.all(color: rc.divider, width: Sizes.line),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: Space.l - Sizes.line, vertical: Space.m - Sizes.line),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: context.tt.labelMedium),
+            const SizedBox(height: 2),
+            Text(value, style: context.tt.bodyLarge),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Действие профиля: значок над подписью. «Написать» — основное (заливка),
+/// остальные — спокойные, с рамкой 1 px. Нажатие без Material-волны.
+class _ProfileAction extends StatelessWidget {
+  const _ProfileAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.primary = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final rc = context.rc;
+    final cs = context.cs;
+    final foreground = primary ? cs.onPrimary : cs.primary;
+    return Pressable(
+      tint: false,
+      scale: 0.97,
+      onTap: onTap,
+      semanticsLabel: label,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 68),
+        padding: const EdgeInsets.symmetric(horizontal: Space.xs, vertical: Space.s),
+        decoration: BoxDecoration(
+          color: primary ? cs.primary : rc.surfaceMuted,
+          borderRadius: BorderRadius.circular(Radii.card),
+          border: Border.all(color: primary ? cs.primary : rc.divider, width: Sizes.line),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 24, color: foreground),
+            const SizedBox(height: Space.xs),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.tt.labelLarge?.copyWith(color: foreground),
+            ),
+          ],
         ),
       ),
     );

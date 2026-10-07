@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/design/context.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
+import '../../core/design/widgets/pressable.dart';
 import '../../core/util/text.dart';
 import '../../core/util/time_format.dart';
 import '../../data/models/chat.dart';
@@ -52,7 +53,7 @@ class MessageHitTile extends StatelessWidget {
       ],
     ];
 
-    return InkWell(
+    return Pressable(
       onTap: onTap,
       onLongPress: onLongPress,
       child: Padding(
@@ -65,6 +66,7 @@ class MessageHitTile extends StatelessWidget {
               size: Sizes.avatarContact,
               imagePath: hit.peer.avatarPath,
               tone: hit.peer.avatarTone,
+              online: hit.peer.isOnline,
             ),
             const SizedBox(width: Space.m),
             Expanded(
