@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../context.dart';
 import '../icons.dart';
 import '../tokens.dart';
+import 'pressable.dart';
 
 /// Пункт нижнего меню действий.
 class SheetAction<T> {
@@ -87,7 +88,7 @@ class _SheetTile<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final rc = context.rc;
     final color = action.destructive ? rc.danger : rc.textPrimary;
-    return InkWell(
+    return Pressable(
       onTap: onTap,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 52),

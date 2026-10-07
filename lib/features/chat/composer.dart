@@ -4,10 +4,8 @@ import '../../core/design/context.dart';
 import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/typography.dart';
+import '../../core/design/widgets/pressable.dart';
 import 'message_bubble.dart';
-
-/// Кнопки-значки без Material-волны: только мягкая подсветка при касании.
-final ButtonStyle _quietButton = IconButton.styleFrom(splashFactory: NoSplash.splashFactory);
 
 /// Поле ввода сообщения с кнопкой отправки.
 class Composer extends StatelessWidget {
@@ -65,7 +63,7 @@ class Composer extends StatelessWidget {
                 if (onAttach != null)
                   IconButton(
                     tooltip: 'Прикрепить',
-                    style: _quietButton,
+                    style: quietButtonStyle,
                     onPressed: busy ? null : onAttach,
                     icon: Icon(AppIcons.attachment, color: rc.textSecondary),
                   ),
@@ -295,7 +293,7 @@ class _ReplyBar extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'Отменить ответ',
-            style: _quietButton,
+            style: quietButtonStyle,
             onPressed: onCancel,
             icon: Icon(AppIcons.clear, color: rc.textSecondary),
           ),

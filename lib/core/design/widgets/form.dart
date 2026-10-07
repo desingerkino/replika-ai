@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../context.dart';
+import '../icons.dart';
 import '../tokens.dart';
+import 'pressable.dart';
 
 /// Поле формы в стиле «Реплики»: заливка без подчёркивания.
 class ReplikaTextField extends StatelessWidget {
@@ -105,7 +107,7 @@ class SettingsTile extends StatelessWidget {
     final rc = context.rc;
     final tt = context.tt;
     final color = destructive ? rc.danger : rc.textPrimary;
-    return InkWell(
+    return Pressable(
       onTap: onTap,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 56),
@@ -137,7 +139,7 @@ class SettingsTile extends StatelessWidget {
                   ),
                 ),
               if (onTap != null && !destructive)
-                Icon(Icons.chevron_right_rounded, color: rc.textTertiary),
+                Icon(AppIcons.chevron, color: rc.textTertiary),
             ],
           ),
         ),
@@ -172,7 +174,7 @@ class SettingsSwitchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final rc = context.rc;
     final tt = context.tt;
-    return InkWell(
+    return Pressable(
       onTap: () => onChanged(!value),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: Space.l + 4, vertical: Space.m - 2),

@@ -5,6 +5,7 @@ import '../context.dart';
 import '../icons.dart';
 import '../tokens.dart';
 import '../adaptive.dart';
+import 'pressable.dart';
 
 /// Верхняя панель экрана. Своя, а не AppBar: полный контроль над видом.
 class ReplikaTopBar extends StatelessWidget implements PreferredSizeWidget {
@@ -65,6 +66,7 @@ class BackIconButton extends StatelessWidget {
     if (InDetailPane.of(context)) return const SizedBox.shrink();
     return IconButton(
       tooltip: 'Назад',
+      style: quietButtonStyle,
       icon: const Icon(AppIcons.back),
       onPressed: () => Navigator.of(context).maybePop(),
     );

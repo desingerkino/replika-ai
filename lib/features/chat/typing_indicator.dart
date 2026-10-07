@@ -16,7 +16,22 @@ class _TypingBubbleState extends State<TypingBubble>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1200),
-  )..repeat();
+  );
+
+  /// Системное «уменьшить движение»: точки стоят на месте, без бесконечной
+  /// анимации.
+  bool _still = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _still = MediaQuery.disableAnimationsOf(context);
+    if (_still) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
 
   @override
   void dispose() {
@@ -34,7 +49,9 @@ class _TypingBubbleState extends State<TypingBubble>
         child: Align(
           alignment: Alignment.centerLeft,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            // Как у обычного входящего пузыря: заливка и рамка 1 px; отступы
+            // уменьшены на её ширину, размер прежний.
+            padding: const EdgeInsets.symmetric(horizontal: 14 - Sizes.line, vertical: 12 - Sizes.line),
             decoration: BoxDecoration(
               color: rc.bubbleIn,
               borderRadius: const BorderRadius.only(
@@ -43,6 +60,7 @@ class _TypingBubbleState extends State<TypingBubble>
                 bottomRight: Radius.circular(Radii.bubble),
                 bottomLeft: Radius.circular(Radii.tail),
               ),
+              border: Border.all(color: rc.bubbleInBorder, width: Sizes.line),
             ),
             child: AnimatedBuilder(
               animation: _controller,
@@ -52,7 +70,7 @@ class _TypingBubbleState extends State<TypingBubble>
                   for (var i = 0; i < 3; i++) ...[
                     if (i > 0) const SizedBox(width: 5),
                     Opacity(
-                      opacity: _dotOpacity(_controller.value, i),
+                      opacity: _still ? 0.65 : _dotOpacity(_controller.value, i),
                       child: Container(
                         width: 7,
                         height: 7,

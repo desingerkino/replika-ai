@@ -29,13 +29,17 @@ Future<bool> showConfirmDialog(
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(foregroundColor: rc.textSecondary),
+            style: TextButton.styleFrom(
+              foregroundColor: rc.textSecondary,
+              splashFactory: NoSplash.splashFactory,
+            ),
             child: const Text('Отмена'),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: TextButton.styleFrom(
               foregroundColor: destructive ? rc.danger : cs.primary,
+              splashFactory: NoSplash.splashFactory,
             ),
             child: Text(confirmLabel),
           ),

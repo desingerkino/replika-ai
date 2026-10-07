@@ -10,6 +10,7 @@ import '../../core/design/tokens.dart';
 import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/dialogs.dart';
 import '../../core/design/widgets/avatar.dart';
+import '../../core/design/widgets/pressable.dart';
 import '../../core/design/widgets/search_field.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
@@ -117,6 +118,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
               actions: [
                 IconButton(
                   tooltip: 'Новый контакт',
+                  style: quietButtonStyle,
                   icon: const Icon(AppIcons.add),
                   onPressed: () => AppNavigator.openContactEditor(deviceId: widget.deviceId),
                 ),
@@ -261,7 +263,7 @@ class _ContactTile extends StatelessWidget {
     final tt = context.tt;
     final character = contact.character;
     final subtitle = character.isOnline ? 'в сети' : character.phone;
-    return InkWell(
+    return Pressable(
       onTap: onTap,
       onLongPress: onLongPress,
       child: Padding(

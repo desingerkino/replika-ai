@@ -203,7 +203,10 @@ class _Rail extends StatelessWidget {
         );
     return SafeArea(
       right: false,
-      child: NavigationRail(
+      // Без Material-волны: нажатие отмечает только мягкая подсветка (тема).
+      child: Theme(
+        data: Theme.of(context).copyWith(splashFactory: NoSplash.splashFactory),
+        child: NavigationRail(
         selectedIndex: index,
         onDestinationSelected: onSelect,
         labelType: NavigationRailLabelType.all,
@@ -230,6 +233,7 @@ class _Rail extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -255,7 +259,9 @@ class _NavBar extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: rc.divider, width: Sizes.line)),
       ),
-      child: NavigationBar(
+      child: Theme(
+        data: Theme.of(context).copyWith(splashFactory: NoSplash.splashFactory),
+        child: NavigationBar(
         // 64 при обычном шрифте; при крупном — выше, чтобы подписи не обрезались.
         height: 64 + (MediaQuery.textScalerOf(context).scale(12) - 12).clamp(0.0, 24.0) * 1.5,
         selectedIndex: index,
@@ -282,6 +288,7 @@ class _NavBar extends StatelessWidget {
             label: 'Настройки',
           ),
         ],
+      ),
       ),
     );
   }

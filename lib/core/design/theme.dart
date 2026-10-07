@@ -34,18 +34,25 @@ abstract final class AppTheme {
         selectionColor: cs.primary.withValues(alpha: 0.24),
         selectionHandleColor: cs.primary,
       ),
+      // Нижняя навигация и боковая панель iPad: спокойная подсветка выбранного
+      // раздела (мягкий прямоугольник вместо пилюли Material), тот же синий для
+      // значка и подписи, выбранный раздел — ещё и заполненный значок и жирнее подпись.
       navigationBarTheme: NavigationBarThemeData(
         height: 64,
         elevation: 0,
         backgroundColor: cs.surface,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: cs.primaryContainer,
+        indicatorColor: rc.selection,
+        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.control)),
+        overlayColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.pressed) ? rc.selection : Colors.transparent,
+        ),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
             size: 24,
-            color: selected ? cs.onPrimaryContainer : rc.textSecondary,
+            color: selected ? cs.primary : rc.textSecondary,
           );
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
@@ -54,9 +61,28 @@ abstract final class AppTheme {
             fontSize: 12,
             height: 16 / 12,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? rc.textPrimary : rc.textSecondary,
+            color: selected ? cs.primary : rc.textSecondary,
           );
         }),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: cs.surface,
+        indicatorColor: rc.selection,
+        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.control)),
+        selectedIconTheme: IconThemeData(size: 24, color: cs.primary),
+        unselectedIconTheme: IconThemeData(size: 24, color: rc.textSecondary),
+        selectedLabelTextStyle: TextStyle(
+          fontSize: 12,
+          height: 16 / 12,
+          fontWeight: FontWeight.w700,
+          color: cs.primary,
+        ),
+        unselectedLabelTextStyle: TextStyle(
+          fontSize: 12,
+          height: 16 / 12,
+          fontWeight: FontWeight.w500,
+          color: rc.textSecondary,
+        ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: cs.surface,

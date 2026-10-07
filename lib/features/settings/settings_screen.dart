@@ -10,6 +10,7 @@ import '../../core/design/tokens.dart';
 import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../core/design/widgets/form.dart';
+import '../../core/design/widgets/pressable.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../data/db/tables.dart';
 import '../../data/models/contact.dart';
@@ -184,7 +185,7 @@ class _OwnerCard extends StatelessWidget {
     final character = data.owner?.character;
     final name = character?.fullName ?? '';
     final shown = name.isEmpty ? data.deviceName : name;
-    return InkWell(
+    return Pressable(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(Space.l + 4, Space.s, Space.l, Space.m),

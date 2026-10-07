@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../context.dart';
 import '../tokens.dart';
 
+/// Стиль кнопок-значков без Material-волны: остаётся только мягкая подсветка
+/// состояния нажатия, область нажатия и подсказка не меняются.
+final ButtonStyle quietButtonStyle = IconButton.styleFrom(splashFactory: NoSplash.splashFactory);
+
 /// Касание без тяжёлой Material-волны: короткая мягкая подсветка фона
 /// (и, если нужно, лёгкое уменьшение) за [Motion.fast].
 ///

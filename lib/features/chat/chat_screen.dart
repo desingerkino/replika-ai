@@ -524,12 +524,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               if (peerId != null) ...[
                 IconButton(
                   tooltip: 'Видеозвонок',
+                  style: quietButtonStyle,
                   icon: const Icon(AppIcons.videoOutlined),
                   onPressed: () => startOutgoingCall(context,
                       deviceId: header.chat.deviceId, characterId: peerId, kind: CallKind.video, chatId: widget.chatId),
                 ),
                 IconButton(
                   tooltip: 'Аудиозвонок',
+                  style: quietButtonStyle,
                   icon: const Icon(AppIcons.callOutlined),
                   onPressed: () => startOutgoingCall(context,
                       deviceId: header.chat.deviceId, characterId: peerId, kind: CallKind.audio, chatId: widget.chatId),
