@@ -94,10 +94,24 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
     }
   }
 
+  /// Сколько всего байт копируется (для строки прогресса); null — неизвестно.
+  int? _totalBytes;
+
+  /// Переносит выбранный файл в папку моделей.
+  ///
+  /// Почему раньше вылетало на 2,5 ГБ: `sink.add` не ждёт записи на диск, а
+  /// чтение источника быстрее записи, поэтому данные копились в ОЗУ, пока iOS
+  /// не завершал приложение. Теперь:
+  ///  * файл из временной папки выбора просто переименовывается (без второй
+  ///    копии и без записи 2,5 ГБ ещё раз);
+  ///  * иначе копируется кусками с ожиданием каждой записи;
+  ///  * копия идёт в «.part» и становится моделью только после проверки;
+  ///    оборванное копирование того же файла продолжается с места обрыва.
   Future<void> _pickModel() async {
     setState(() {
       _error = null;
       _copiedBytes = 0;
+      _totalBytes = null;
     });
     try {
       final picked = await FilePicker.pickFiles(type: FileType.any);
@@ -111,44 +125,85 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
       }
       final dir = await _modelsDir();
       final target = File(p.join(dir.path, file.name));
+      final part = File('${target.path}.part');
+      final src = file.path;
+      final temp = (await getTemporaryDirectory()).path;
+      _totalBytes = file.size > 0 ? file.size : null;
 
-      // Копируем потоком: файл в 1,3 ГБ целиком в память не читаем.
-      final sink = target.openWrite();
-      var done = 0;
-      try {
-        await for (final part in file.readAsByteStream()) {
-          sink.add(part);
-          done += part.length;
-          if (mounted) setState(() => _copiedBytes = done);
+      var moved = false;
+      if (src != null && p.isWithin(temp, src)) {
+        try {
+          if (await target.exists()) await target.delete();
+          if (await part.exists()) await part.delete();
+          await File(src).rename(target.path);
+          moved = true;
+        } on FileSystemException {
+          // Другой раздел — копируем.
         }
-      } finally {
-        await sink.close();
+      }
+      if (!moved) {
+        await _copyWithResume(file, part);
+        if (await target.exists()) await target.delete();
+        await part.rename(target.path);
+        if (src != null && p.isWithin(temp, src)) {
+          try {
+            await File(src).delete();
+          } catch (_) {}
+        }
       }
 
       if (!await _looksLikeGguf(target)) {
         await target.delete();
         throw const LocalLlmException('Это не GGUF-файл (нет заголовка GGUF).');
       }
-      // Временную копию выбора файлов удаляем, чтобы не держать 1,3 ГБ дважды.
-      final temp = (await getTemporaryDirectory()).path;
-      final src = file.path;
-      if (src != null && p.isWithin(temp, src)) {
-        try {
-          await File(src).delete();
-        } catch (_) {}
-      }
       if (!mounted) return;
       setState(() {
         _modelPath = target.path;
         _copiedBytes = null;
+        _totalBytes = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = e.toString();
         _copiedBytes = null;
+        _totalBytes = null;
       });
     }
+  }
+
+  /// Копирует кусками; каждая запись ожидается, поэтому память не растёт.
+  /// Если «.part» от прерванного копирования этого же файла короче источника,
+  /// копирование продолжается с его конца.
+  Future<void> _copyWithResume(PlatformFile file, File part) async {
+    final src = file.path;
+    var offset = 0;
+    if (src != null && await part.exists()) {
+      final have = await part.length();
+      final total = await File(src).length();
+      if (have > 0 && have < total) offset = have;
+    }
+    if (offset == 0 && await part.exists()) await part.delete();
+    final Stream<List<int>> source =
+        src != null ? File(src).openRead(offset) : file.readAsByteStream();
+    final raf = await part.open(mode: offset > 0 ? FileMode.append : FileMode.write);
+    var done = offset;
+    var lastUi = DateTime.now();
+    try {
+      await for (final chunk in source) {
+        await raf.writeFrom(chunk);
+        done += chunk.length;
+        final now = DateTime.now();
+        if (mounted && now.difference(lastUi) > const Duration(milliseconds: 250)) {
+          lastUi = now;
+          setState(() => _copiedBytes = done);
+        }
+      }
+      await raf.flush();
+    } finally {
+      await raf.close();
+    }
+    if (mounted) setState(() => _copiedBytes = done);
   }
 
   Future<void> _load() async {
@@ -243,10 +298,16 @@ class _LocalAiTestScreenState extends State<LocalAiTestScreen> {
             ),
             const SizedBox(height: 8),
             if (_copiedBytes != null) ...[
-              const LinearProgressIndicator(),
+              LinearProgressIndicator(
+                value: _totalBytes == null || _totalBytes == 0
+                    ? null
+                    : (_copiedBytes! / _totalBytes!).clamp(0.0, 1.0),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text('Копирование модели: ${_mb(_copiedBytes!)}'),
+                child: Text(_totalBytes == null
+                    ? 'Копирование модели: ${_mb(_copiedBytes!)}'
+                    : 'Копирование модели: ${_mb(_copiedBytes!)} из ${_mb(_totalBytes!)}'),
               ),
             ],
             Wrap(
