@@ -200,6 +200,80 @@ def tick_double():
     return c, first | second
 
 
+# ---------------------------------------------------------------------------
+# Второй набор: отправка, поиск, трубка, видео, микрофон, правка
+# ---------------------------------------------------------------------------
+
+def send():
+    """Бумажный самолётик носом вправо-вверх: два крыла и щель сгиба."""
+    c = Canvas(24)
+    nose, left, fold, bottom = (22.0, 2.0), (1.6, 9.9), (10.2, 13.8), (14.1, 22.4)
+    plane = c.soften(c.polygon([nose, left, fold, bottom]), convex=0.9)
+    crease = c.stroke([fold, (17.6, 6.4)], 1.5)
+    return c, plane & ~crease
+
+
+def search():
+    c = Canvas(24)
+    ring = c.circle(10.6, 10.6, 7.3) & ~c.circle(10.6, 10.6, 5.2)
+    return c, ring | c.stroke([(15.9, 15.9), (20.2, 20.2)], 2.3)
+
+
+def _handset(c):
+    """Трубка по дуге: ручка и два утолщения, вогнутой стороной вправо-вверх."""
+    cx, cy, r = 21.0, 3.0, 15.6
+    shape = c.stroke(_arc(cx, cy, r, r, 171, 99), 4.3)
+    for angle in (169.5, 100.5):
+        a = math.radians(angle)
+        px, py = cx + (r - 1.25) * math.cos(a), cy + (r - 1.25) * math.sin(a)
+        shape |= c.rotated_box(px, py, 3.4, 2.9, 1.4, a)
+    return c.soften(shape, concave=1.2, convex=0.9)
+
+
+def call():
+    c = Canvas(24)
+    return c, _handset(c)
+
+
+def call_outlined():
+    c = Canvas(24)
+    return c, c.outline(_handset(c), 1.9)
+
+
+def _video_parts(c):
+    body = c.box(2.2, 5.8, 15.4, 18.2, r=3.4)
+    lens = c.soften(c.polygon([(17.0, 10.7), (22.0, 7.2), (22.0, 16.8), (17.0, 13.3)]), convex=0.8)
+    return body, lens
+
+
+def video():
+    c = Canvas(24)
+    body, lens = _video_parts(c)
+    return c, body | lens
+
+
+def video_outlined():
+    # Корпус контуром, объектив остаётся сплошным: он слишком мал для контура.
+    c = Canvas(24)
+    body, lens = _video_parts(c)
+    return c, c.outline(body, 2.0) | lens
+
+
+def microphone():
+    c = Canvas(24)
+    capsule = c.box(9.0, 2.6, 15.0, 13.8, r=3.0)
+    holder = c.stroke(_arc(12.0, 10.6, 6.1, 6.1, 0, 180), 2.0)
+    stem = c.stroke([(12.0, 16.7), (12.0, 20.4)], 2.0)
+    return c, capsule | holder | stem
+
+
+def edit():
+    """Карандаш контуром, остриём влево-вниз."""
+    c = Canvas(24)
+    pencil = c.polygon([(3.2, 20.8), (4.8, 15.0), (14.9, 4.9), (19.1, 9.1), (9.0, 19.2)])
+    return c, c.outline(c.soften(pencil, convex=0.9), 2.0)
+
+
 GLYPHS = [
     (0xE001, 'back', back),
     (0xE002, 'chats', chats),
@@ -210,6 +284,14 @@ GLYPHS = [
     (0xE007, 'settingsActive', settings_active),
     (0xE008, 'tickSent', tick_sent),
     (0xE009, 'tickDouble', tick_double),
+    (0xE00A, 'send', send),
+    (0xE00B, 'search', search),
+    (0xE00C, 'call', call),
+    (0xE00D, 'callOutlined', call_outlined),
+    (0xE00E, 'video', video),
+    (0xE00F, 'videoOutlined', video_outlined),
+    (0xE010, 'microphone', microphone),
+    (0xE011, 'edit', edit),
 ]
 
 

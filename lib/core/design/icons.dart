@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 /// отсюда: чтобы сменить значок, достаточно поменять значение в этом файле.
 ///
 /// Большая часть — скруглённый стиль Material. Самые заметные в кадре значки
-/// (нижняя навигация, «Назад», галочки статуса) — собственные, из шрифта
+/// (нижняя навигация, «Назад», галочки статуса, отправка, поиск, трубка,
+/// видео, микрофон, правка) — собственные, из шрифта
 /// assets/fonts/ReplikaIcons.ttf; он собирается скриптом
 /// tool/build_icon_font.py, коды символов заданы там же.
 abstract final class AppIcons {
@@ -14,10 +15,10 @@ abstract final class AppIcons {
   static const IconData chatsActive = IconData(0xE003, fontFamily: _own);
   static const IconData contacts = IconData(0xE004, fontFamily: _own);
   static const IconData contactsActive = IconData(0xE005, fontFamily: _own);
-  static const IconData search = Icons.search_rounded;
+  static const IconData search = IconData(0xE00B, fontFamily: _own);
   static const IconData searchOff = Icons.search_off_rounded;
   static const IconData back = IconData(0xE001, fontFamily: _own);
-  static const IconData send = Icons.arrow_upward_rounded;
+  static const IconData send = IconData(0xE00A, fontFamily: _own);
   static const IconData pin = Icons.push_pin_rounded;
   static const IconData pinOff = Icons.push_pin_outlined;
   static const IconData delete = Icons.delete_outline_rounded;
@@ -41,7 +42,7 @@ abstract final class AppIcons {
   static const IconData settingsActive = IconData(0xE007, fontFamily: _own);
   static const IconData reply = Icons.reply_rounded;
   static const IconData add = Icons.person_add_alt_rounded;
-  static const IconData edit = Icons.edit_rounded;
+  static const IconData edit = IconData(0xE011, fontFamily: _own);
   static const IconData profile = Icons.account_circle_rounded;
   static const IconData message = Icons.chat_rounded;
   static const IconData phone = Icons.phone_rounded;
@@ -56,7 +57,7 @@ abstract final class AppIcons {
 
   // Поле ввода и вложения.
   static const IconData attachment = Icons.attach_file_rounded;
-  static const IconData microphone = Icons.mic_rounded;
+  static const IconData microphone = IconData(0xE010, fontFamily: _own);
   static const IconData microphoneOff = Icons.mic_off_rounded;
   static const IconData attachPhotoVideo = Icons.photo_library_rounded;
   static const IconData attachVideoNoteRecord = Icons.radio_button_checked_rounded;
@@ -65,14 +66,14 @@ abstract final class AppIcons {
   static const IconData attachLibrary = Icons.perm_media_outlined;
 
   // Звонки и видео.
-  static const IconData call = Icons.call_rounded;
-  static const IconData callOutlined = Icons.call_outlined;
+  static const IconData call = IconData(0xE00C, fontFamily: _own);
+  static const IconData callOutlined = IconData(0xE00D, fontFamily: _own);
   static const IconData callEnd = Icons.call_end_rounded;
   static const IconData callMissed = Icons.phone_missed_rounded;
   static const IconData callIncoming = Icons.call_received_rounded;
   static const IconData callOutgoing = Icons.call_made_rounded;
-  static const IconData video = Icons.videocam_rounded;
-  static const IconData videoOutlined = Icons.videocam_outlined;
+  static const IconData video = IconData(0xE00E, fontFamily: _own);
+  static const IconData videoOutlined = IconData(0xE00F, fontFamily: _own);
   static const IconData videoOff = Icons.videocam_off_rounded;
   static const IconData cameraSwitch = Icons.cameraswitch_rounded;
 
