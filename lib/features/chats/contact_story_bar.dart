@@ -124,7 +124,7 @@ class _Cell extends StatelessWidget {
       onTap: onTap,
       semanticsLabel: semantics,
       child: SizedBox(
-        width: 68,
+        width: ContactStoryBar._cellWidth,
         child: Padding(
           padding: const EdgeInsets.only(top: Space.xs),
           child: Column(
