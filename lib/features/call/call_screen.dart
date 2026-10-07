@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:replika_recorder/replika_recorder.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../app/call_engine.dart';
@@ -12,6 +13,7 @@ import '../../app/operator_toast.dart';
 import '../../app/services.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/icons.dart';
+import 'two_finger_tap.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../core/design/widgets/pressable.dart';
@@ -51,6 +53,10 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
   String? _voicePath;
   String? _videoPath;
 
+  // Маршрут звука: разговорный динамик по умолчанию, громкая связь по кнопке.
+  bool _routeActive = false;
+  bool? _routeSpeaker;
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +65,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
     _engine.addListener(_onChange);
     _syncPeerMedia();
     _syncRecording();
+    _syncAudioRoute();
     _darkScreens = Services.read(context).darkScreens;
     final dark = _darkScreens!;
     scheduleMicrotask(() => dark.value++);
@@ -126,8 +133,27 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Маршрут применяется в разговоре (соединение и дальше); при звонке и
+  /// вызове звучат обычные сигналы. После завершения звук возвращается.
+  void _syncAudioRoute({bool force = false}) {
+    final phase = _engine.phase;
+    final live = phase == CallPhase.connecting || phase == CallPhase.active;
+    if (live) {
+      if (force || !_routeActive || _routeSpeaker != _engine.speakerOn) {
+        _routeActive = true;
+        _routeSpeaker = _engine.speakerOn;
+        unawaited(ReplikaRecorder.setSpeaker(_engine.speakerOn));
+      }
+    } else if (_routeActive) {
+      _routeActive = false;
+      _routeSpeaker = null;
+      unawaited(ReplikaRecorder.releaseAudioRoute());
+    }
+  }
+
   void _onChange() {
     _syncRecording();
+    _syncAudioRoute();
     if (_engine.phase == CallPhase.idle) {
       if (!_closing && mounted) {
         _closing = true;
@@ -154,7 +180,11 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
       if (audioPath != null && File(audioPath).existsSync()) {
         final player = AudioPlayer();
         _voice = player;
-        player.setFilePath(audioPath).then((_) => player.play()).catchError((Object error) {
+        player.setFilePath(audioPath).then((_) {
+          // Плеер мог сбросить маршрут звука: применяем его заново.
+          _syncAudioRoute(force: true);
+          return player.play();
+        }).catchError((Object error) {
           debugPrint('Голос собеседника не воспроизведён: $error');
         });
       }
@@ -181,6 +211,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     _closeRecording();
+    if (_routeActive) unawaited(ReplikaRecorder.releaseAudioRoute());
     WidgetsBinding.instance.removeObserver(this);
     _camera.removeListener(_onCameraChange);
     _camera.dispose();
@@ -231,7 +262,15 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
           backgroundColor: _callBackground,
           // expand: без него Scaffold даёт Stack «свободные» размеры, и он
           // сжимается до ширины самого широкого содержимого (полэкрана).
-          body: Stack(
+          body: TwoFingerTap(
+            // Двумя пальцами в любой момент звонка: разговорный динамик ↔ громкая связь.
+            onTap: () {
+              if (_engine.inCall) {
+                HapticFeedback.selectionClick();
+                _engine.toggleSpeaker();
+              }
+            },
+            child: Stack(
             fit: StackFit.expand,
             children: [
               // Фон: видео собеседника или мягкий свет цвета его аватара.
@@ -342,6 +381,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
                 ),
             ],
           ),
+          ),
         ),
       ),
     );
@@ -371,6 +411,9 @@ class CallControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final phase = engine.phase;
     if (phase == CallPhase.ended) return const SizedBox(height: 96);
+    // Пять кнопок (видео с переворотом камеры) не помещаются в ряд обычного
+    // размера на узком iPhone — тогда кнопки чуть компактнее.
+    final compact = video && onFlip != null && phase != CallPhase.incoming;
     final buttons = <Widget>[];
     if (phase == CallPhase.incoming) {
       buttons
@@ -393,6 +436,15 @@ class CallControls extends StatelessWidget {
         color: engine.muted ? Colors.white : Colors.white24,
         iconColor: engine.muted ? _callBackground : Colors.white,
         onTap: engine.toggleMute,
+        compact: compact,
+      ));
+      buttons.add(_RoundButton(
+        icon: AppIcons.volume,
+        label: 'Динамик',
+        color: engine.speakerOn ? Colors.white : Colors.white24,
+        iconColor: engine.speakerOn ? _callBackground : Colors.white,
+        onTap: engine.toggleSpeaker,
+        compact: compact,
       ));
       if (video) {
         buttons.add(_RoundButton(
@@ -401,6 +453,7 @@ class CallControls extends StatelessWidget {
           color: engine.cameraOff ? Colors.white : Colors.white24,
           iconColor: engine.cameraOff ? _callBackground : Colors.white,
           onTap: engine.toggleCamera,
+          compact: compact,
         ));
       }
       if (video && onFlip != null && phase != CallPhase.incoming) {
@@ -409,6 +462,7 @@ class CallControls extends StatelessWidget {
           label: 'Перевернуть',
           color: Colors.white24,
           onTap: onFlip!,
+          compact: compact,
         ));
       }
       buttons.add(_RoundButton(
@@ -416,6 +470,7 @@ class CallControls extends StatelessWidget {
         label: 'Завершить',
         color: _endColor,
         onTap: engine.hangUp,
+        compact: compact,
       ));
     }
     return Padding(
@@ -437,6 +492,7 @@ class _RoundButton extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.iconColor = Colors.white,
+    this.compact = false,
   });
 
   final IconData icon;
@@ -444,6 +500,7 @@ class _RoundButton extends StatelessWidget {
   final Color color;
   final Color iconColor;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -455,15 +512,15 @@ class _RoundButton extends StatelessWidget {
       onTap: onTap,
       semanticsLabel: label,
       child: SizedBox(
-        width: 88,
+        width: compact ? 70 : 88,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 68,
-              height: 68,
+              width: compact ? 58 : 68,
+              height: compact ? 58 : 68,
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: Icon(icon, color: iconColor, size: 30),
+              child: Icon(icon, color: iconColor, size: compact ? 26 : 30),
             ),
             const SizedBox(height: Space.s),
             Text(

@@ -92,4 +92,5 @@ abstract final class AppIcons {
   static const IconData addPhoto = Icons.add_a_photo_rounded;
   static const IconData device = Icons.phone_android_rounded;
   static const IconData addons = Icons.extension_outlined;
+  static const IconData lock = Icons.lock_outline_rounded;
 }

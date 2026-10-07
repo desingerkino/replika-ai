@@ -5,6 +5,8 @@ import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/typography.dart';
 import '../../core/design/widgets/pressable.dart';
+import '../record/recording_bar.dart';
+import '../record/voice_recording.dart';
 import 'message_bubble.dart';
 
 /// Поле ввода сообщения с кнопкой отправки.
@@ -17,7 +19,7 @@ class Composer extends StatelessWidget {
     this.reply,
     this.onCancelReply,
     this.onAttach,
-    this.onVoice,
+    this.voice,
     this.busy = false,
   });
 
@@ -32,8 +34,9 @@ class Composer extends StatelessWidget {
   /// Скрепка: прикрепить фото, видео, аудио.
   final VoidCallback? onAttach;
 
-  /// Микрофон: записать голосовое (вместо кнопки отправки при пустом поле).
-  final VoidCallback? onVoice;
+  /// Голосовое: микрофон вместо кнопки отправки при пустом поле. Держишь —
+  /// идёт запись, отпустил — отправка, вверх — фиксация, влево — отмена.
+  final VoiceRecordingController? voice;
 
   /// Идёт добавление файла — тонкая полоса прогресса над полем.
   final bool busy;
@@ -55,11 +58,16 @@ class Composer extends StatelessWidget {
             children: [
               if (busy) const LinearProgressIndicator(minHeight: 2),
               if (reply != null) _ReplyBar(reply: reply!, onCancel: onCancelReply),
-              Padding(
+              ListenableBuilder(
+                listenable: voice ?? _noVoice,
+                builder: (context, _) => Padding(
             padding: EdgeInsets.fromLTRB(onAttach == null ? Space.m : Space.xs, Space.s - 2, Space.s - 2, Space.s - 2),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                if (voice?.active ?? false)
+                  Expanded(child: RecordingBar(controller: voice!))
+                else ...[
                 if (onAttach != null)
                   IconButton(
                     tooltip: 'Прикрепить',
@@ -97,12 +105,17 @@ class Composer extends StatelessWidget {
                     ),
                   ),
                 ),
+                ],
                 const SizedBox(width: Space.s - 2),
                 ValueListenableBuilder<TextEditingValue>(
+                  // Ключ: кнопка справа не пересоздаётся, когда строка записи
+                  // заменяет поле ввода, — палец на микрофоне не теряется.
+                  key: const ValueKey('composer-trailing'),
                   valueListenable: controller,
                   builder: (context, value, _) {
                     final hasText = value.text.trim().isNotEmpty;
-                    final showMic = !hasText && onVoice != null;
+                    final showMic = !hasText && voice != null;
+                    final lockedRecording = voice?.locked ?? false;
                     final reduceMotion = MediaQuery.disableAnimationsOf(context);
                     // Микрофон и «отправить» сменяют друг друга плавно:
                     // короткое затухание с лёгким масштабом.
@@ -118,30 +131,120 @@ class Composer extends StatelessWidget {
                           child: child,
                         ),
                       ),
-                      child: showMic
-                          ? _CircleButton(
-                              key: const ValueKey('composer-mic'),
-                              label: 'Записать голосовое',
-                              icon: AppIcons.microphone,
-                              enabled: !busy,
-                              fill: cs.primary,
-                              iconColor: cs.onPrimary,
-                              onPressed: onVoice,
-                              moveIconOnPress: false,
+                      child: lockedRecording
+                          ? SendButton(
+                              key: const ValueKey('composer-send-locked'),
+                              enabled: true,
+                              onPressed: voice!.sendLocked,
                             )
-                          : SendButton(
-                              key: const ValueKey('composer-send'),
-                              enabled: hasText,
-                              onPressed: onSend,
-                            ),
+                          : showMic
+                              ? _MicHoldButton(
+                                  key: const ValueKey('composer-mic'),
+                                  voice: voice!,
+                                  enabled: !busy,
+                                )
+                              : SendButton(
+                                  key: const ValueKey('composer-send'),
+                                  enabled: hasText,
+                                  onPressed: onSend,
+                                ),
                     );
                   },
                 ),
               ],
             ),
+                ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  static final ValueNotifier<int> _noVoice = ValueNotifier<int>(0);
+}
+
+/// Микрофон-«держалка»: нажатие сразу начинает запись, подъём пальца
+/// отправляет, движение вверх фиксирует, влево — отменяет. События ведутся
+/// через Listener, поэтому палец можно уводить за пределы кнопки.
+class _MicHoldButton extends StatefulWidget {
+  const _MicHoldButton({super.key, required this.voice, required this.enabled});
+
+  final VoiceRecordingController voice;
+  final bool enabled;
+
+  @override
+  State<_MicHoldButton> createState() => _MicHoldButtonState();
+}
+
+class _MicHoldButtonState extends State<_MicHoldButton> {
+  int? _pointer;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.cs;
+    final voice = widget.voice;
+    final holding = voice.state == VoiceRecState.holding;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      button: true,
+      enabled: widget.enabled,
+      label: 'Записать голосовое. Удерживайте кнопку',
+      excludeSemantics: true,
+      onTap: widget.enabled ? () => voice.onProblem(voiceHoldHint) : null,
+      child: SizedBox(
+        width: Sizes.minTouch,
+        height: Sizes.minTouch,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            if (holding && voice.recording)
+              Positioned(
+                bottom: Sizes.minTouch + Space.xs,
+                child: LockHint(progress: voice.lockProgress),
+              ),
+            Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: widget.enabled
+                  ? (event) {
+                      if (_pointer != null) return;
+                      _pointer = event.pointer;
+                      voice.press(event.position);
+                    }
+                  : null,
+              onPointerMove: (event) {
+                if (event.pointer == _pointer) voice.drag(event.position);
+              },
+              onPointerUp: (event) {
+                if (event.pointer != _pointer) return;
+                _pointer = null;
+                voice.release();
+              },
+              onPointerCancel: (event) {
+                if (event.pointer != _pointer) return;
+                _pointer = null;
+                voice.cancel();
+              },
+              child: Center(
+                child: AnimatedScale(
+                  scale: holding ? 1.25 : 1,
+                  duration: reduceMotion ? Duration.zero : Motion.press,
+                  curve: Curves.easeOut,
+                  child: Container(
+                    width: Sizes.sendButton,
+                    height: Sizes.sendButton,
+                    decoration: BoxDecoration(
+                      color: widget.enabled ? cs.primary : context.rc.surfaceMuted,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(AppIcons.microphone, size: 22, color: cs.onPrimary),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

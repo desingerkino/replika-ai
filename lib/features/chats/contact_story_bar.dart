@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/story_store.dart';
 import '../../core/design/context.dart';
 import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
@@ -21,6 +22,8 @@ class ContactStoryBar extends StatelessWidget {
     required this.visible,
     required this.onNewChat,
     required this.onOpen,
+    required this.stories,
+    required this.onOpenStory,
   });
 
   /// Высота ленты вместе с отступами.
@@ -34,18 +37,29 @@ class ContactStoryBar extends StatelessWidget {
   final VoidCallback onNewChat;
   final ValueChanged<String> onOpen;
 
-  /// Состояние кольца: непрочитанное — голубое, непрочитанное без звука —
-  /// спокойное, остальное — без кольца.
-  static StoryRing ringFor(ChatListItem item) {
-    if (item.chat.unreadCount <= 0) return StoryRing.none;
-    return item.chat.muted ? StoryRing.viewed : StoryRing.unviewed;
+  /// Истории контактов: от них зависят кольца.
+  final StoryStore stories;
+
+  /// Нажатие на контакт с историей открывает её просмотр.
+  final ValueChanged<ChatListItem> onOpenStory;
+
+  /// Состояние кольца задают только истории: есть новая — живой градиент,
+  /// все просмотрены — спокойное кольцо, историй нет — без кольца.
+  static StoryRing ringFor(ChatListItem item, StoryStore stories) {
+    final id = item.chat.peerCharacterId;
+    if (id == null || !stories.has(id)) return StoryRing.none;
+    return stories.hasUnviewed(id) ? StoryRing.unviewed : StoryRing.viewed;
   }
 
-  /// Личные чаты: непрочитанные, затем «в сети», затем остальные.
-  static List<ChatListItem> ordered(List<ChatListItem> all) {
+  /// Личные чаты: с новой историей, затем непрочитанные, «в сети», остальные.
+  static List<ChatListItem> ordered(List<ChatListItem> all, [StoryStore? stories]) {
     final direct = all.where((item) => !item.chat.isGroup).toList();
-    int rank(ChatListItem item) =>
-        item.chat.unreadCount > 0 ? 0 : (item.peer.isOnline ? 1 : 2);
+    // С новой историей — первыми, дальше непрочитанные, «в сети», остальные.
+    int rank(ChatListItem item) {
+      final id = item.chat.peerCharacterId;
+      if (stories != null && id != null && stories.hasUnviewed(id)) return 0;
+      return item.chat.unreadCount > 0 ? 1 : (item.peer.isOnline ? 2 : 3);
+    }
     final indexed = [for (var i = 0; i < direct.length; i++) (i, direct[i])];
     indexed.sort((a, b) {
       final byRank = rank(a.$2).compareTo(rank(b.$2));
@@ -56,10 +70,17 @@ class ContactStoryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final contacts = ordered(items);
+    final contacts = ordered(items, stories);
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 180);
+    return ListenableBuilder(
+      listenable: stories,
+      builder: (context, _) => _buildBar(context, contacts, duration),
+    );
+  }
+
+  Widget _buildBar(BuildContext context, List<ChatListItem> contacts, Duration duration) {
     return ExcludeSemantics(
       excluding: !visible,
       child: IgnorePointer(
@@ -83,10 +104,12 @@ class ContactStoryBar extends StatelessWidget {
                   itemBuilder: (context, index) {
                     if (index == 0) return _NewChatCell(onTap: onNewChat);
                     final item = contacts[index - 1];
+                    final ring = ringFor(item, stories);
                     return _ContactCell(
                       key: ValueKey('story-${item.chat.id}'),
                       item: item,
-                      onTap: () => onOpen(item.chat.id),
+                      ring: ring,
+                      onTap: () => ring == StoryRing.none ? onOpen(item.chat.id) : onOpenStory(item),
                     );
                   },
                 ),
@@ -148,9 +171,10 @@ class _Cell extends StatelessWidget {
 }
 
 class _ContactCell extends StatelessWidget {
-  const _ContactCell({super.key, required this.item, required this.onTap});
+  const _ContactCell({super.key, required this.item, required this.ring, required this.onTap});
 
   final ChatListItem item;
+  final StoryRing ring;
   final VoidCallback onTap;
 
   @override
@@ -159,7 +183,9 @@ class _ContactCell extends StatelessWidget {
     final base = context.tt.labelMedium;
     return _Cell(
       onTap: onTap,
-      semantics: unread ? '${item.displayName}, есть непрочитанные' : item.displayName,
+      semantics: ring == StoryRing.unviewed
+          ? '${item.displayName}, новая история'
+          : (unread ? '${item.displayName}, есть непрочитанные' : item.displayName),
       label: item.displayName,
       labelStyle: base?.copyWith(
         color: context.rc.textPrimary,
@@ -171,7 +197,7 @@ class _ContactCell extends StatelessWidget {
         imagePath: item.peer.avatarPath,
         tone: item.peer.avatarTone,
         online: item.peer.isOnline,
-        ring: ContactStoryBar.ringFor(item),
+        ring: ring,
       ),
     );
   }

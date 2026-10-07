@@ -24,12 +24,13 @@ import 'chat_rows.dart';
 import 'composer.dart';
 import 'message_bubble.dart';
 import 'typing_indicator.dart';
+import 'voice_mini_player.dart';
 import '../../data/models/media_item.dart';
 import '../calls/calls_screen.dart';
 import '../../data/models/call_record.dart';
 import '../media/media_kinds.dart';
 import '../record/video_note_recorder.dart';
-import '../record/voice_recorder_sheet.dart';
+import '../record/voice_recording.dart';
 import '../../core/design/adaptive.dart';
 
 
@@ -78,6 +79,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   ChatHeader? _header;
   bool _importing = false;
 
+  /// Запись голосового жестом на микрофоне (создаётся при первом показе).
+  VoiceRecordingController? _voice;
+  bool _wasRecording = false;
+
   AppServices get _s => _services!;
 
   @override
@@ -98,6 +103,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       _services!.openChatId.value = widget.chatId;
       unawaited(_services!.notifications.clearChat(widget.chatId));
       _restoreDraft();
+      _voice = VoiceRecordingController(
+        capture: RecordVoiceCapture(newPath: () => _services!.media.newRecordingPath('.m4a')),
+        register: (path, duration, waveform) =>
+            _services!.media.registerVoice(path, duration: duration, waveform: waveform),
+        onRecorded: _sendVoice,
+        onProblem: (message) {
+          if (mounted) _showSnack(message);
+        },
+      )..addListener(_voiceChanged);
     }
   }
 
@@ -114,6 +128,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final open = _services?.openChatId;
     if (open != null && open.value == widget.chatId) open.value = null;
     _saveDraftNow();
+    _voice?.removeListener(_voiceChanged);
+    _voice?.dispose();
     _scroll.dispose();
     _composer.dispose();
     _focus.dispose();
@@ -288,10 +304,24 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _recordVoice(ChatHeader header) async {
-    FocusScope.of(context).unfocus();
-    final item = await recordVoice(context);
-    if (item == null || !mounted) return;
+  /// Запись началась: клавиатура убирается, воспроизведение останавливается.
+  void _voiceChanged() {
+    final voice = _voice;
+    if (voice == null) return;
+    if (voice.active && !_wasRecording) {
+      _wasRecording = true;
+      FocusScope.of(context).unfocus();
+      unawaited(_s.audio.stop());
+      HapticFeedback.lightImpact();
+    } else if (!voice.active) {
+      _wasRecording = false;
+    }
+  }
+
+  /// Запись готова (отпустили палец или нажали «отправить» после фиксации).
+  Future<void> _sendVoice(MediaItem item) async {
+    final header = _header;
+    if (header == null || !mounted) return;
     final replyTo = _replyTo;
     setState(() {
       _replyTo = null;
@@ -558,6 +588,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           body: ContentWidth(
             child: Column(
               children: [
+                VoiceMiniPlayer(playback: _s.audio),
                 Expanded(child: _buildMessages(header)),
                 Composer(
                   controller: _composer,
@@ -566,7 +597,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   reply: _replyTo,
                   onCancelReply: () => setState(() => _replyTo = null),
                   onAttach: () => _attach(header),
-                  onVoice: () => _recordVoice(header),
+                  voice: _voice,
                   busy: _importing,
                 ),
               ],

@@ -20,7 +20,9 @@ import '../../data/db/tables.dart';
 import '../../data/models/chat.dart';
 import 'chat_filter.dart';
 import 'chat_tile.dart';
+import 'swipe_actions.dart';
 import 'contact_story_bar.dart';
+import '../stories/story_viewer.dart';
 import '../search/message_hit_tile.dart';
 
 enum _ChatAction { pin, read, mute, delete }
@@ -40,6 +42,9 @@ class _ChatsScreenState extends State<ChatsScreen> {
   String _query = '';
   Timer? _clock;
 
+  /// Какая строка списка открыта свайпом (одна на весь список).
+  final ValueNotifier<String?> _openSwipe = ValueNotifier<String?>(null);
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +58,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
   void dispose() {
     _clock?.cancel();
     _search.dispose();
+    _openSwipe.dispose();
     super.dispose();
   }
 
@@ -64,8 +70,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
   Future<void> _openActions(ChatListItem item) async {
     HapticFeedback.selectionClick();
-    final services = Services.read(context);
-    final chatId = item.chat.id;
     final pinned = item.chat.isPinned;
     final unread = item.chat.unreadCount > 0;
 
@@ -97,6 +101,15 @@ class _ChatsScreenState extends State<ChatsScreen> {
       ],
     );
     if (action == null || !mounted) return;
+    await _perform(action, item);
+  }
+
+  /// Действие над чатом: из меню по долгому нажатию и из свайпов строки.
+  Future<void> _perform(_ChatAction action, ChatListItem item) async {
+    final services = Services.read(context);
+    final chatId = item.chat.id;
+    final pinned = item.chat.isPinned;
+    final unread = item.chat.unreadCount > 0;
 
     try {
       switch (action) {
@@ -168,6 +181,14 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   visible: !searching && all != null && all.isNotEmpty,
                   onNewChat: () => AppNavigator.homeTab.value = 2,
                   onOpen: AppNavigator.openChat,
+                  stories: services.stories,
+                  onOpenStory: (item) => openStoryViewer(
+                    context,
+                    characterId: item.chat.peerCharacterId!,
+                    name: item.displayName,
+                    avatarPath: item.peer.avatarPath,
+                    avatarTone: item.peer.avatarTone,
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.s),
@@ -230,14 +251,53 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 
   Widget _tile(ChatListItem item, DateTime now, {required bool showDivider}) {
-    return ChatTile(
-      key: ValueKey(item.chat.id),
-      item: item,
-      now: now,
-      typing: Services.read(context).typing.isTyping(item.chat.id),
-      showDivider: showDivider,
-      onTap: () => AppNavigator.openChat(item.chat.id),
-      onLongPress: () => _openActions(item),
+    final rc = context.rc;
+    final cs = context.cs;
+    final pinned = item.chat.isPinned;
+    final unread = item.chat.unreadCount > 0;
+    final muted = item.chat.muted;
+    return SwipeActionTile(
+      key: ValueKey('swipe-${item.chat.id}'),
+      id: item.chat.id,
+      open: _openSwipe,
+      // Вправо: прочитано / закрепить. Влево: звук / удалить.
+      leading: [
+        SwipeAction(
+          icon: unread ? AppIcons.markRead : AppIcons.markUnread,
+          label: unread ? 'Прочитан' : 'Не прочитан',
+          color: cs.primary,
+          onTap: () => _perform(_ChatAction.read, item),
+        ),
+        SwipeAction(
+          icon: pinned ? AppIcons.pinOff : AppIcons.pin,
+          label: pinned ? 'Открепить' : 'Закрепить',
+          color: rc.online,
+          onTap: () => _perform(_ChatAction.pin, item),
+        ),
+      ],
+      trailing: [
+        SwipeAction(
+          icon: muted ? AppIcons.notificationsOn : AppIcons.muted,
+          label: muted ? 'Вкл. звук' : 'Без звука',
+          color: Palette.tungsten,
+          onTap: () => _perform(_ChatAction.mute, item),
+        ),
+        SwipeAction(
+          icon: AppIcons.delete,
+          label: 'Удалить',
+          color: rc.danger,
+          onTap: () => _perform(_ChatAction.delete, item),
+        ),
+      ],
+      child: ChatTile(
+        key: ValueKey(item.chat.id),
+        item: item,
+        now: now,
+        typing: Services.read(context).typing.isTyping(item.chat.id),
+        showDivider: showDivider,
+        onTap: () => AppNavigator.openChat(item.chat.id),
+        onLongPress: () => _openActions(item),
+      ),
     );
   }
 }

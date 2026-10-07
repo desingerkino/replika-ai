@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
@@ -144,8 +145,47 @@ public class ReplikaRecorderPlugin implements FlutterPlugin, MethodChannel.Metho
             case "saveToGallery":
                 saveToGallery(call.argument("path"), call.argument("name"), result);
                 break;
+            case "setSpeaker":
+                Boolean on = call.argument("on");
+                setSpeaker(on != null && on, result);
+                break;
+            case "releaseAudioRoute":
+                releaseAudioRoute(result);
+                break;
             default:
                 result.notImplemented();
+        }
+    }
+
+    // ---------- Маршрут звука ----------
+
+    @SuppressWarnings("deprecation")
+    private void setSpeaker(boolean on, MethodChannel.Result result) {
+        try {
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am == null) {
+                result.success(false);
+                return;
+            }
+            am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+            am.setSpeakerphoneOn(on);
+            result.success(true);
+        } catch (Exception e) {
+            result.error("failed", String.valueOf(e.getMessage()), null);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void releaseAudioRoute(MethodChannel.Result result) {
+        try {
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) {
+                am.setSpeakerphoneOn(false);
+                am.setMode(AudioManager.MODE_NORMAL);
+            }
+            result.success(null);
+        } catch (Exception e) {
+            result.error("failed", String.valueOf(e.getMessage()), null);
         }
     }
 

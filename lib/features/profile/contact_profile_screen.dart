@@ -16,6 +16,9 @@ import '../../data/db/tables.dart';
 import '../../data/models/call_record.dart';
 import '../../data/models/contact.dart';
 import '../calls/calls_screen.dart';
+import '../../data/models/media_item.dart';
+import '../media/media_library_screen.dart';
+import '../stories/story_viewer.dart';
 import '../../core/design/widgets/form.dart';
 
 /// Профиль собеседника — так его видит владелец телефона.
@@ -185,6 +188,8 @@ class _ProfileBody extends StatelessWidget {
           const SizedBox(height: Space.s),
           _InfoCard(label: 'Имя', value: character.fullName),
         ],
+        const SizedBox(height: Space.l),
+        _StorySection(contact: contact),
       ],
     );
   }
@@ -318,6 +323,83 @@ class ProfileAction extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+/// «История»: просмотр и добавление фото или видео. Истории живут локально и
+/// показываются кольцом вокруг аватара в ленте контактов.
+class _StorySection extends StatelessWidget {
+  const _StorySection({required this.contact});
+
+  final Contact contact;
+
+  Future<void> _add(BuildContext context, MediaKind kind) async {
+    final stories = Services.read(context).stories;
+    final id = contact.character.id;
+    final items = await importMedia(context, kind);
+    for (final item in items) {
+      await stories.add(id, item);
+    }
+    if (items.isNotEmpty && context.mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('История добавлена')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rc = context.rc;
+    final stories = Services.of(context).stories;
+    final id = contact.character.id;
+    return ListenableBuilder(
+      listenable: stories,
+      builder: (context, _) {
+        final count = stories.of(id).length;
+        return Container(
+          decoration: BoxDecoration(
+            color: rc.surfaceMuted,
+            borderRadius: BorderRadius.circular(Radii.card),
+            border: Border.all(color: rc.divider, width: Sizes.line),
+          ),
+          child: Column(
+            children: [
+              if (count > 0)
+                SettingsTile(
+                  icon: AppIcons.play,
+                  title: 'Смотреть историю',
+                  trailing: stories.hasUnviewed(id) ? '$count · новая' : '$count',
+                  onTap: () => openStoryViewer(
+                    context,
+                    characterId: id,
+                    name: contact.shownName,
+                    avatarPath: contact.avatarPath,
+                    avatarTone: contact.character.avatarTone,
+                  ),
+                ),
+              SettingsTile(
+                icon: AppIcons.addPhoto,
+                title: 'Добавить фото в историю',
+                onTap: () => _add(context, MediaKind.photo),
+              ),
+              SettingsTile(
+                icon: AppIcons.video,
+                title: 'Добавить видео в историю',
+                onTap: () => _add(context, MediaKind.video),
+              ),
+              if (count > 0)
+                SettingsTile(
+                  icon: AppIcons.delete,
+                  title: 'Убрать историю',
+                  destructive: true,
+                  onTap: () => stories.clear(id),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

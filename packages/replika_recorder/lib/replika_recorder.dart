@@ -68,4 +68,23 @@ class ReplikaRecorder {
   /// Replika_2026-10-07_03-45-12.mp4). Возвращает true при успехе.
   static Future<bool> saveToGallery(String path, String name) async =>
       await _call<bool>('saveToGallery', {'path': path, 'name': name}) ?? false;
+
+  /// Маршрут звука разговора: [on] — громкая связь, иначе разговорный динамик.
+  /// Если платформа не умеет, молча остаётся системный маршрут.
+  static Future<void> setSpeaker(bool on) async {
+    try {
+      await _call<void>('setSpeaker', {'on': on});
+    } on RecorderException {
+      // Маршрут недоступен (например, на компьютере) — не ошибка звонка.
+    }
+  }
+
+  /// Возвращает обычный маршрут звука после разговора.
+  static Future<void> releaseAudioRoute() async {
+    try {
+      await _call<void>('releaseAudioRoute');
+    } on RecorderException {
+      // см. setSpeaker
+    }
+  }
 }

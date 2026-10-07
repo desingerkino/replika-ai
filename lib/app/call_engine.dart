@@ -129,6 +129,7 @@ class CallEngine extends ChangeNotifier {
   CallSession? _session;
   bool _muted = false;
   bool _cameraOff = false;
+  bool _speaker = false;
   DateTime? _startedAt;
   DateTime? _activeSince;
   CallOutcome? _outcome;
@@ -139,6 +140,10 @@ class CallEngine extends ChangeNotifier {
   CallSession? get session => _session;
   bool get muted => _muted;
   bool get cameraOff => _cameraOff;
+
+  /// Громкая связь. По умолчанию выключена: звонок идёт через разговорный
+  /// динамик, как обычный телефонный.
+  bool get speakerOn => _speaker;
   CallOutcome? get outcome => _outcome;
   bool get inCall => _phase != CallPhase.idle && _phase != CallPhase.ended;
 
@@ -163,6 +168,7 @@ class CallEngine extends ChangeNotifier {
     _cancelTimers();
     _session = session;
     _muted = false;
+    _speaker = false;
     _cameraOff = session.kind == CallKind.audio;
     _startedAt = _clock();
     _activeSince = null;
@@ -256,6 +262,14 @@ class CallEngine extends ChangeNotifier {
   void toggleMute() {
     if (!inCall) return;
     _muted = !_muted;
+    notifyListeners();
+  }
+
+  /// Громкая связь вкл/выкл. Это только локальное состояние маршрута звука:
+  /// ход звонка (входящий → принят → разговор) не меняется.
+  void toggleSpeaker() {
+    if (!inCall) return;
+    _speaker = !_speaker;
     notifyListeners();
   }
 

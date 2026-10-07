@@ -3,6 +3,8 @@
          служба переднего плана типа mediaProjection (Android 10+/14+). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
+    <!-- Громкая связь / разговорный динамик во время звонка. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <!-- Только Android 9 и старше: сохранить видео в общую папку Movies. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
 

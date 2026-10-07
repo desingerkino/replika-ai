@@ -15,6 +15,7 @@ import '../data/repositories/message_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/seed/demo_seed.dart';
 import 'audio_playback.dart';
+import 'story_store.dart';
 import 'call_engine.dart';
 import 'call_services.dart';
 import 'navigator.dart';
@@ -70,6 +71,9 @@ class AppServices {
 
   /// Проигрыватель голосовых и аудио.
   final AudioPlayback audio = AudioPlayback();
+
+  /// Истории контактов (кольца в ленте и просмотр).
+  late final StoryStore stories = StoryStore(settings);
 
   final SceneRepository scenes;
 
@@ -312,6 +316,11 @@ class AppServices {
         debugPrint('Папка медиатеки недоступна: $error');
       }
       services.kino.apply();
+      try {
+        await services.stories.load();
+      } catch (error) {
+        debugPrint('Истории не загружены: $error');
+      }
       await services.notifications.init();
       // Connect поднимается в фоне: запуск приложения его не ждёт.
       unawaited(services.connect.init().catchError((Object e) => debugPrint('Connect не запущен: $e')));

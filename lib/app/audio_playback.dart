@@ -12,11 +12,15 @@ class AudioPlayback extends ChangeNotifier {
   final List<StreamSubscription<Object?>> _subscriptions = [];
 
   String? _currentId;
+  MediaItem? _currentMedia;
   bool _playing = false;
   Duration _position = Duration.zero;
   Duration? _duration;
 
   String? get currentId => _currentId;
+
+  /// Сообщение, которое сейчас активно (играет или на паузе); null — тишина.
+  MediaItem? get currentMedia => _currentMedia;
   bool get playing => _playing;
   Duration get position => _position;
   Duration? get duration => _duration;
@@ -65,6 +69,7 @@ class AudioPlayback extends ChangeNotifier {
       return;
     }
     _currentId = media.id;
+    _currentMedia = media;
     _position = Duration.zero;
     _duration = media.duration;
     notifyListeners();
@@ -75,15 +80,39 @@ class AudioPlayback extends ChangeNotifier {
     } catch (error) {
       debugPrint('Не удалось воспроизвести: $error');
       _currentId = null;
+      _currentMedia = null;
       _playing = false;
       notifyListeners();
       rethrow;
     }
   }
 
+  /// Перемотка активного сообщения; [fraction] — 0..1 от длительности.
+  Future<void> seekFraction(double fraction) async {
+    final total = _duration;
+    final player = _player;
+    if (_currentId == null || total == null || total.inMilliseconds <= 0 || player == null) return;
+    final target = Duration(milliseconds: (total.inMilliseconds * fraction.clamp(0.0, 1.0)).round());
+    _position = target;
+    notifyListeners();
+    await player.seek(target);
+  }
+
+  /// Пауза или продолжение активного сообщения (кнопка верхнего плеера).
+  Future<void> togglePlayPause() async {
+    final player = _player;
+    if (_currentId == null || player == null) return;
+    if (_playing) {
+      await player.pause();
+    } else {
+      unawaited(player.play());
+    }
+  }
+
   Future<void> stop() async {
     await _player?.stop();
     _currentId = null;
+    _currentMedia = null;
     _playing = false;
     _position = Duration.zero;
     notifyListeners();

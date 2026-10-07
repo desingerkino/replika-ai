@@ -2,6 +2,7 @@ import Flutter
 import UIKit
 import ReplayKit
 import Photos
+import AVFoundation
 
 /// Запись экрана приложения (ReplayKit) и сохранение готового видео в «Фото».
 public class ReplikaRecorderPlugin: NSObject, FlutterPlugin {
@@ -26,9 +27,39 @@ public class ReplikaRecorderPlugin: NSObject, FlutterPlugin {
       stop(result)
     case "saveToGallery":
       saveToGallery(call, result)
+    case "setSpeaker":
+      setSpeaker(call, result)
+    case "releaseAudioRoute":
+      releaseAudioRoute(result)
     default:
       result(FlutterMethodNotImplemented)
     }
+  }
+
+  // MARK: - Маршрут звука
+
+  /// Разговор: playAndRecord по умолчанию уводит звук в разговорный динамик;
+  /// громкая связь — переопределение выхода на динамик телефона.
+  private func setSpeaker(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+    let args = call.arguments as? [String: Any]
+    let on = (args?["on"] as? Bool) ?? false
+    let session = AVAudioSession.sharedInstance()
+    do {
+      try session.setCategory(.playAndRecord, mode: .default, options: [.allowBluetooth])
+      try session.setActive(true)
+      try session.overrideOutputAudioPort(on ? .speaker : .none)
+      result(true)
+    } catch {
+      result(FlutterError(code: "failed", message: error.localizedDescription, details: nil))
+    }
+  }
+
+  /// После разговора возвращаем обычное воспроизведение.
+  private func releaseAudioRoute(_ result: @escaping FlutterResult) {
+    let session = AVAudioSession.sharedInstance()
+    try? session.overrideOutputAudioPort(.none)
+    try? session.setCategory(.playback, mode: .default, options: [])
+    result(nil)
   }
 
   // MARK: - Запись

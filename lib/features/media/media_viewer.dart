@@ -116,17 +116,25 @@ class PhotoViewerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Причина «маленького» фото: Image без размера берёт собственный размер
+    // картинки (в логических пикселях) и внутри Center не растягивается.
+    // SizedBox.expand даёт Image весь экран, а BoxFit.contain вписывает фото
+    // с сохранением пропорций, вверх и вниз.
     return _ViewerFrame(
-      child: InteractiveViewer(
-        minScale: 1,
-        maxScale: 5,
-        child: Center(
-          child: Image.file(
-            File(media.path),
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stack) => const Text(
-              'Не удалось открыть фото',
-              style: TextStyle(color: Colors.white70),
+      child: SafeArea(
+        child: InteractiveViewer(
+          minScale: 1,
+          maxScale: 5,
+          child: SizedBox.expand(
+            child: Image.file(
+              File(media.path),
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stack) => const Center(
+                child: Text(
+                  'Не удалось открыть фото',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
             ),
           ),
         ),
@@ -197,10 +205,21 @@ class _VideoViewerScreenState extends State<VideoViewerScreen> {
     } else if (!value.isInitialized) {
       content = const Center(child: CircularProgressIndicator(color: Colors.white));
     } else {
-      content = Center(
-        child: AspectRatio(
-          aspectRatio: value.aspectRatio,
-          child: VideoPlayer(_controller),
+      // Видео вписывается в экран по его реальному размеру: FittedBox с
+      // BoxFit.contain масштабирует и маленькие ролики, и большие, не
+      // зависит от того, какие ограничения пришли сверху.
+      final size = value.size;
+      final valid = size.width > 0 && size.height > 0;
+      content = SafeArea(
+        child: SizedBox.expand(
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: valid ? size.width : 1600,
+              height: valid ? size.height : 900,
+              child: VideoPlayer(_controller),
+            ),
+          ),
         ),
       );
     }

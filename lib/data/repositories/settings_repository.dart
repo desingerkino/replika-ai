@@ -17,6 +17,7 @@ abstract final class SettingKeys {
   static const String connectShooting = 'connect_shooting';
   static const String connectDeviceName = 'connect_device_name';
   static const String connectDone = 'connect_done_commands';
+  static const String stories = 'stories_v1';
 }
 
 /// Настройки приложения «ключ — значение».

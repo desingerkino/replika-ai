@@ -75,12 +75,32 @@ class ChatTile extends StatelessWidget {
           ? (item.lastIsOutgoing ? 'Вы' : item.lastSenderName)
           : null;
       final text = who == null ? plain : '$who: $plain';
-      preview = Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: previewStyle,
-      );
+      if (last?.deleted == true) {
+        // Удалённое — системное состояние: приглушённый тон и маленький значок,
+        // а не обычное превью. Красный не используется.
+        preview = Row(
+          key: const ValueKey('deleted-preview'),
+          children: [
+            Icon(AppIcons.markDeleted, size: 15, color: rc.textTertiary),
+            const SizedBox(width: Space.xs + 1),
+            Expanded(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: previewStyle?.copyWith(color: rc.textTertiary),
+              ),
+            ),
+          ],
+        );
+      } else {
+        preview = Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: previewStyle,
+        );
+      }
     }
 
     // Мягкая подсветка вместо Material-волны (Pressable, 120 мс).

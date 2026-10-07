@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../context.dart';
 import '../tokens.dart';
+import 'story_ring.dart';
+
+export 'story_ring.dart' show StoryRing;
 
 /// Инициалы: «Алексей Громов» → «АГ», «Мама» → «М».
 String initialsOf(String name) {
@@ -18,11 +21,6 @@ String initialsOf(String name) {
   if (parts.length == 1) return first(parts.first);
   return first(parts[0]) + first(parts[1]);
 }
-
-/// Кольцо вокруг аватара в ленте контактов.
-/// [none] — без кольца, [unviewed] — голубое (есть новое),
-/// [viewed] — спокойное серо-голубое.
-enum StoryRing { none, unviewed, viewed }
 
 /// Аватар: фото из медиатеки или инициалы на фирменном тоне.
 ///
@@ -40,7 +38,7 @@ class Avatar extends StatelessWidget {
   });
 
   /// Толщина кольца и зазор между кольцом и фото.
-  static const double ringWidth = 2.5;
+  static const double ringWidth = 3.5;
   static const double ringGap = 2;
 
   /// Сколько места кольцо занимает снаружи фото с каждой стороны.
@@ -108,16 +106,10 @@ class Avatar extends StatelessWidget {
                 right: -ringExtent,
                 bottom: -ringExtent,
                 child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: ring == StoryRing.unviewed
-                            ? context.rc.badge
-                            : context.rc.storyViewed,
-                        width: ringWidth,
-                      ),
-                    ),
+                  child: StoryRingView(
+                    ring: ring,
+                    width: ringWidth,
+                    viewedColor: context.rc.storyViewed,
                   ),
                 ),
               ),
