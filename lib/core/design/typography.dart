@@ -27,8 +27,8 @@ abstract final class AppType {
   /// Текст сообщения (было 16).
   static const TextStyle message = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 16,
-    height: 21 / 16,
+    fontSize: 14.5,
+    height: 19.5 / 14.5,
     fontWeight: FontWeight.w400,
     letterSpacing: 0,
   );
@@ -37,16 +37,16 @@ abstract final class AppType {
   /// не «проседает», даже если в ней нет текста.
   static const StrutStyle messageStrut = StrutStyle(
     fontFamily: fontFamily,
-    fontSize: 16,
-    height: 21 / 16,
+    fontSize: 14.5,
+    height: 19.5 / 14.5,
     forceStrutHeight: true,
   );
 
   /// Время и статус внутри пузыря — цифры одинаковой ширины (было 11.5).
   static const TextStyle meta = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 12,
-    height: 15 / 12,
+    fontSize: 11,
+    height: 14 / 11,
     fontWeight: FontWeight.w400,
     letterSpacing: 0.1,
     fontFeatures: [FontFeature.tabularFigures()],

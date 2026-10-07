@@ -104,10 +104,10 @@ class Composer extends StatelessWidget {
                                   keyboardType: TextInputType.multiline,
                                   textCapitalization: TextCapitalization.sentences,
                                   cursorColor: GlassTheme.accentBlue,
-                                  style: AppType.message.copyWith(color: glass.textPrimary),
+                                  style: AppType.message.copyWith(color: glass.textPrimary, fontSize: 16, height: 21 / 16),
                                   decoration: InputDecoration.collapsed(
                                     hintText: 'Сообщение',
-                                    hintStyle: AppType.message.copyWith(color: glass.textTertiary),
+                                    hintStyle: AppType.message.copyWith(color: glass.textTertiary, fontSize: 16, height: 21 / 16),
                                   ),
                                 ),
                               ),

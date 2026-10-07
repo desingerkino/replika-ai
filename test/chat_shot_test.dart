@@ -148,8 +148,11 @@ void main() {
           ),
         ),
       ));
-      await tester.pump(const Duration(milliseconds: 600));
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+      // Картинки декодируются вне тестовых часов: ждём по-настоящему.
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 60));
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
+      }
       await tester.pump(const Duration(milliseconds: 100));
       final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(key));
       await tester.runAsync(() async {

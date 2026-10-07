@@ -120,7 +120,7 @@ class _VideoFrameState extends State<VideoFrame> {
       width: widget.width,
       height: widget.height,
       child: ColoredBox(
-        color: Colors.black,
+        color: const Color(0xFF1B1E29),
         child: ready && size.width > 0
             ? FittedBox(
                 fit: BoxFit.cover,

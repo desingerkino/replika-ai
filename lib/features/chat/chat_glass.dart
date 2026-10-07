@@ -144,8 +144,8 @@ class ChatGlassHeader extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: glass.textPrimary,
-                            fontSize: 16.5,
-                            height: 22 / 16.5,
+                            fontSize: 15.5,
+                            height: 21 / 15.5,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
