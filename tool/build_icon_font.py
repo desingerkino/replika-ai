@@ -322,6 +322,27 @@ def call_missed():
     return c, handset | bounce | head
 
 
+def camera_flip():
+    """Камера в центре и две дуги со стрелками вокруг: смена камеры."""
+    c = Canvas(24)
+    body = c.box(6.1, 8.5, 17.9, 16.5, r=2.5) | c.box(9.5, 7.0, 14.5, 9.8, r=0.9)
+    shape = c.soften(body, concave=0.5) & ~c.circle(12.0, 12.6, 2.1)
+    radius = 9.5
+    for start, end in ((206, 300), (26, 120)):
+        shape |= c.stroke(_arc(12, 12, radius, radius, start, end), 2.0)
+        a = math.radians(end)
+        bx, by = 12 + radius * math.cos(a), 12 + radius * math.sin(a)
+        tx, ty = -math.sin(a), math.cos(a)          # куда направлена дуга
+        nx, ny = math.cos(a), math.sin(a)           # поперёк дуги
+        head = c.polygon([
+            (bx + 4.3 * tx, by + 4.3 * ty),
+            (bx + 3.0 * nx - 0.3 * tx, by + 3.0 * ny - 0.3 * ty),
+            (bx - 3.0 * nx - 0.3 * tx, by - 3.0 * ny - 0.3 * ty),
+        ])
+        shape |= c.soften(head, convex=0.45)
+    return c, shape
+
+
 GLYPHS = [
     (0xE001, 'back', back),
     (0xE002, 'chats', chats),
@@ -344,6 +365,7 @@ GLYPHS = [
     (0xE013, 'videoOff', video_off),
     (0xE014, 'callEnd', call_end),
     (0xE015, 'callMissed', call_missed),
+    (0xE016, 'cameraFlip', camera_flip),
 ]
 
 

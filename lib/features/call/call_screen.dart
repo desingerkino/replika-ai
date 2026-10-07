@@ -404,7 +404,7 @@ class _Controls extends StatelessWidget {
       }
       if (video && onFlip != null && phase != CallPhase.incoming) {
         buttons.add(_RoundButton(
-          icon: AppIcons.cameraSwitch,
+          icon: AppIcons.cameraFlip,
           label: 'Перевернуть',
           color: Colors.white24,
           onTap: onFlip!,

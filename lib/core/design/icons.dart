@@ -75,7 +75,7 @@ abstract final class AppIcons {
   static const IconData video = IconData(0xE00E, fontFamily: _own);
   static const IconData videoOutlined = IconData(0xE00F, fontFamily: _own);
   static const IconData videoOff = IconData(0xE013, fontFamily: _own);
-  static const IconData cameraSwitch = Icons.cameraswitch_rounded;
+  static const IconData cameraFlip = IconData(0xE016, fontFamily: _own);
 
   // Чаты.
   static const IconData notificationsOn = Icons.notifications_active_outlined;
