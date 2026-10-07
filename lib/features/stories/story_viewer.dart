@@ -11,6 +11,7 @@ import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../data/models/media_item.dart';
+import '../media/fitted_media.dart';
 
 /// Полноэкранный просмотр историй контакта.
 Future<void> openStoryViewer(
@@ -213,28 +214,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
     }
     final video = _video;
     if (video != null) {
-      final size = video.value.size;
-      final valid = size.width > 0 && size.height > 0;
-      return SizedBox.expand(
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: SizedBox(
-            width: valid ? size.width : 1600,
-            height: valid ? size.height : 900,
-            child: VideoPlayer(video),
-          ),
-        ),
-      );
+      return FittedContent(size: video.value.size, child: VideoPlayer(video));
     }
-    return SizedBox.expand(
-      child: Image.file(
-        File(media.path),
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stack) => const Center(
-          child: Text('Не удалось открыть фото', style: TextStyle(color: Colors.white70)),
-        ),
-      ),
-    );
+    return FittedPhoto(image: FileImage(File(media.path)));
   }
 
   @override

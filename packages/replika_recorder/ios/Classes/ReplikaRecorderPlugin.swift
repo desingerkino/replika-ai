@@ -38,24 +38,78 @@ public class ReplikaRecorderPlugin: NSObject, FlutterPlugin {
 
   // MARK: - Маршрут звука
 
-  /// Разговор: playAndRecord по умолчанию уводит звук в разговорный динамик;
-  /// громкая связь — переопределение выхода на динамик телефона.
+  /// Маршрут, который должен держаться, пока идёт разговор. nil — не в разговоре.
+  private var wantSpeaker: Bool?
+  private var routeObserver: NSObjectProtocol?
+  private var resetObserver: NSObjectProtocol?
+
+  /// Разговор: playAndRecord + голосовой режим уводят звук в разговорный
+  /// динамик; громкая связь — переопределение выхода на динамик телефона.
+  /// Другие плагины (камера, запись, плеер) после нас переключают категорию
+  /// на «defaultToSpeaker», поэтому маршрут не просто выставляется, а
+  /// удерживается: любое изменение маршрута проверяется и при расхождении
+  /// выставляется заново.
   private func setSpeaker(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
     let args = call.arguments as? [String: Any]
     let on = (args?["on"] as? Bool) ?? false
-    let session = AVAudioSession.sharedInstance()
+    wantSpeaker = on
+    startObservingRoute()
     do {
-      try session.setCategory(.playAndRecord, mode: .default, options: [.allowBluetooth])
-      try session.setActive(true)
-      try session.overrideOutputAudioPort(on ? .speaker : .none)
+      try applyRoute(on)
       result(true)
     } catch {
       result(FlutterError(code: "failed", message: error.localizedDescription, details: nil))
     }
   }
 
+  private func applyRoute(_ on: Bool) throws {
+    let session = AVAudioSession.sharedInstance()
+    try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth])
+    try session.setActive(true)
+    try session.overrideOutputAudioPort(on ? .speaker : .none)
+  }
+
+  /// Внешние наушники и Bluetooth пользователь выбрал сам — с ними не спорим.
+  private func routeMismatch(_ on: Bool) -> Bool {
+    let session = AVAudioSession.sharedInstance()
+    if session.category != .playAndRecord { return true }
+    let outputs = session.currentRoute.outputs.map { $0.portType }
+    let external: [AVAudioSession.Port] = [.headphones, .bluetoothA2DP, .bluetoothHFP, .bluetoothLE, .usbAudio, .airPlay, .carAudio]
+    if outputs.contains(where: { external.contains($0) }) { return false }
+    let onSpeaker = outputs.contains(.builtInSpeaker)
+    return on ? !onSpeaker : onSpeaker
+  }
+
+  private func startObservingRoute() {
+    if routeObserver != nil { return }
+    let center = NotificationCenter.default
+    routeObserver = center.addObserver(
+      forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main
+    ) { [weak self] _ in self?.enforceRoute() }
+    resetObserver = center.addObserver(
+      forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: .main
+    ) { [weak self] _ in self?.enforceRoute() }
+  }
+
+  private func stopObservingRoute() {
+    let center = NotificationCenter.default
+    if let o = routeObserver { center.removeObserver(o) }
+    if let o = resetObserver { center.removeObserver(o) }
+    routeObserver = nil
+    resetObserver = nil
+  }
+
+  /// Вызывается на каждое изменение маршрута; без расхождения ничего не делает,
+  /// поэтому собственная перенастройка не зацикливается.
+  private func enforceRoute() {
+    guard let on = wantSpeaker, routeMismatch(on) else { return }
+    try? applyRoute(on)
+  }
+
   /// После разговора возвращаем обычное воспроизведение.
   private func releaseAudioRoute(_ result: @escaping FlutterResult) {
+    wantSpeaker = nil
+    stopObservingRoute()
     let session = AVAudioSession.sharedInstance()
     try? session.overrideOutputAudioPort(.none)
     try? session.setCategory(.playback, mode: .default, options: [])

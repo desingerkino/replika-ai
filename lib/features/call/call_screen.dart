@@ -28,6 +28,22 @@ const Color _endColor = Palette.danger;
 const Color _acceptColor = Palette.success;
 
 /// Экран постановочного звонка. Закрывается сам, когда звонок убран.
+/// Какой маршрут звука нужен в этой фазе звонка: null — обычное воспроизведение
+/// (входящий рингтон, конец звонка), false — разговорный динамик (у уха),
+/// true — громкая связь. Исходящий вызов тоже у уха: гудки как в обычном звонке.
+bool? callAudioRoute(CallPhase phase, {required bool speakerOn}) {
+  switch (phase) {
+    case CallPhase.outgoing:
+    case CallPhase.connecting:
+    case CallPhase.active:
+      return speakerOn;
+    case CallPhase.idle:
+    case CallPhase.incoming:
+    case CallPhase.ended:
+      return null;
+  }
+}
+
 class CallScreen extends StatefulWidget {
   const CallScreen({super.key});
 
@@ -133,16 +149,15 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// Маршрут применяется в разговоре (соединение и дальше); при звонке и
-  /// вызове звучат обычные сигналы. После завершения звук возвращается.
+  /// Маршрут применяется при вызове собеседника и в разговоре; входящий
+  /// рингтон звучит обычно. После завершения звук возвращается.
   void _syncAudioRoute({bool force = false}) {
-    final phase = _engine.phase;
-    final live = phase == CallPhase.connecting || phase == CallPhase.active;
-    if (live) {
-      if (force || !_routeActive || _routeSpeaker != _engine.speakerOn) {
+    final wanted = callAudioRoute(_engine.phase, speakerOn: _engine.speakerOn);
+    if (wanted != null) {
+      if (force || !_routeActive || _routeSpeaker != wanted) {
         _routeActive = true;
-        _routeSpeaker = _engine.speakerOn;
-        unawaited(ReplikaRecorder.setSpeaker(_engine.speakerOn));
+        _routeSpeaker = wanted;
+        unawaited(ReplikaRecorder.setSpeaker(wanted));
       }
     } else if (_routeActive) {
       _routeActive = false;
@@ -183,7 +198,12 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
         player.setFilePath(audioPath).then((_) {
           // Плеер мог сбросить маршрут звука: применяем его заново.
           _syncAudioRoute(force: true);
-          return player.play();
+          final playing = player.play();
+          // Маршрут ещё раз после старта: плеер активирует сессию уже в play().
+          Future<void>.delayed(const Duration(milliseconds: 400), () {
+            if (mounted && identical(_voice, player)) _syncAudioRoute(force: true);
+          });
+          return playing;
         }).catchError((Object error) {
           debugPrint('Голос собеседника не воспроизведён: $error');
         });

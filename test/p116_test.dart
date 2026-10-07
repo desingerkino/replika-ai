@@ -21,6 +21,7 @@ import 'package:replika/features/chat/voice_mini_player.dart';
 import 'package:replika/features/chats/chat_tile.dart';
 import 'package:replika/features/chats/swipe_actions.dart';
 import 'package:replika/features/record/voice_recording.dart';
+import 'package:replika_recorder/replika_recorder.dart';
 
 Widget host(Widget child, {ThemeData? theme, bool disableAnimations = false}) => MaterialApp(
       theme: theme ?? AppTheme.light,
@@ -407,6 +408,36 @@ void main() {
       expect(engine.phase, CallPhase.active);
       engine.hangUp();
       await tester.pump(const Duration(seconds: 3));
+    });
+  });
+
+  group('Маршрут звука звонка', () {
+    test('какой маршрут нужен в каждой фазе', () {
+      bool? route(CallPhase p, {bool speaker = false}) => callAudioRoute(p, speakerOn: speaker);
+      expect(route(CallPhase.incoming), isNull, reason: 'рингтон звучит обычно');
+      expect(route(CallPhase.idle), isNull);
+      expect(route(CallPhase.ended), isNull);
+      expect(route(CallPhase.outgoing), isFalse, reason: 'гудки у уха');
+      expect(route(CallPhase.connecting), isFalse);
+      expect(route(CallPhase.active), isFalse, reason: 'по умолчанию разговорный динамик');
+      expect(route(CallPhase.active, speaker: true), isTrue);
+    });
+
+    testWidgets('нативный маршрут получает выбранное значение', (tester) async {
+      final calls = <MethodCall>[];
+      final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      const channel = MethodChannel('ru.kinoprop.replika/recorder');
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        calls.add(call);
+        return true;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+      await ReplikaRecorder.setSpeaker(false);
+      await ReplikaRecorder.setSpeaker(true);
+      await ReplikaRecorder.releaseAudioRoute();
+      expect(calls.map((c) => c.method), ['setSpeaker', 'setSpeaker', 'releaseAudioRoute']);
+      expect(calls[0].arguments, {'on': false});
+      expect(calls[1].arguments, {'on': true});
     });
   });
 
