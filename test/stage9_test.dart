@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:replika/app/kino.dart';
 import 'package:replika/features/kino/fake_status_bar.dart';
@@ -49,11 +48,14 @@ void main() {
     );
   });
 
-  test('значки заряда и сигнала', () {
-    expect(batteryIcon(100), Icons.battery_full);
-    expect(batteryIcon(3), Icons.battery_0_bar);
-    expect(batteryIcon(50, charging: true), Icons.battery_charging_full);
-    expect(signalIcon(3), Icons.signal_cellular_alt);
-    expect(signalIcon(0), Icons.signal_cellular_0_bar);
+  test('полосы сигнала и заполнение батареи', () {
+    expect(signalBars(0), 0);
+    expect(signalBars(1), 2);
+    expect(signalBars(2), 3);
+    expect(signalBars(3), 4);
+    expect(batteryFill(100), 1.0);
+    expect(batteryFill(0), 0.0);
+    expect(batteryFill(50), 0.5);
+    expect(batteryFill(150), 1.0);
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/kino.dart';
 import '../../app/services.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/form.dart';
 import '../../core/design/widgets/top_bar.dart';
@@ -63,7 +64,12 @@ class KinoScreen extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(Radii.control),
                   ),
-                  child: FakeStatusBar(settings: s, lightIcons: false),
+                  // Образец на белом: светлая тема, иначе в тёмной операторской
+                  // значки были бы белыми на белом.
+                  child: Theme(
+                    data: AppTheme.light,
+                    child: FakeStatusBar(settings: s, lightIcons: false),
+                  ),
                 ),
                 const SizedBox(height: Space.m),
                 const Text('Время', style: TextStyle(color: OperatorPalette.textDim)),

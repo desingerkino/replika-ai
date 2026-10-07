@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/services.dart';
+import '../../core/design/colors.dart';
 import '../../core/design/tokens.dart';
 import '../../data/models/media_item.dart';
 import '../call/camera_cover.dart';
@@ -118,7 +119,8 @@ class _VideoNoteRecorderState extends State<_VideoNoteRecorder> {
     final elapsed = _startedAt == null ? Duration.zero : DateTime.now().difference(_startedAt!);
     final ready = controller != null && controller.value.isInitialized;
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1115),
+      // Тот же тёмный фон, что у экрана звонка.
+      backgroundColor: ReplikaColors.dark.chatBackground,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -181,7 +183,7 @@ class _VideoNoteRecorderState extends State<_VideoNoteRecorder> {
                           width: _recording ? 28 : 58,
                           height: _recording ? 28 : 58,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE5483E),
+                            color: Palette.danger,
                             borderRadius: BorderRadius.circular(_recording ? 6 : 29),
                           ),
                         ),
