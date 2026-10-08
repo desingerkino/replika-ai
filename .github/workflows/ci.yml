@@ -31,7 +31,7 @@ jobs:
           code=$?
           cat analyze.txt
           if [ $code -ne 0 ]; then
-            body=$(grep -E ' (error|warning) •' analyze.txt | head -c 60000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            body=$( (grep -vE '^\s*info' analyze.txt | grep -vE '^\s*$' | tail -n 150; echo "end") | tail -c 60000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
             echo "::error title=flutter analyze::${body}"
           fi
           exit $code
@@ -43,7 +43,7 @@ jobs:
           code=$?
           cat test.txt
           if [ $code -ne 0 ]; then
-            body=$(grep -nE '\[E\]|EXCEPTION CAUGHT|Expected:|Actual:|Error:|error:|Which:|The following|FAILED|══╡' test.txt | head -c 60000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            body=$( (grep -nE '\[E\]|EXCEPTION CAUGHT|Expected:|Actual:|Error:|error:|Which:|The following|FAILED|══╡|\.dart [0-9]+:[0-9]+' test.txt | head -n 300; tail -n 30 test.txt) | head -c 60000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
             echo "::error title=flutter test::${body}"
           fi
           exit $code
@@ -71,7 +71,7 @@ jobs:
           code=$?
           cat build.txt
           if [ $code -ne 0 ]; then
-            body=$(grep -nE 'error|Error|FAILURE|What went wrong' build.txt | tail -c 50000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            body=$( (grep -nE 'error|Error|FAILURE|What went wrong' build.txt | tail -n 150; tail -n 40 build.txt) | tail -c 50000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
             echo "::error title=android build::${body}"
           fi
           exit $code
@@ -97,7 +97,7 @@ jobs:
           code=$?
           cat build.txt
           if [ $code -ne 0 ]; then
-            body=$(grep -nE 'error|Error|FAILED|failed' build.txt | tail -c 50000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            body=$( (grep -nE 'error|Error|FAILED|failed' build.txt | tail -n 150; tail -n 40 build.txt) | tail -c 50000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
             echo "::error title=ios build::${body}"
           fi
           exit $code
