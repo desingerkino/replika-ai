@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/db/app_database.dart';
+import '../data/models/call_record.dart';
 import '../data/repositories/call_repository.dart';
 import '../data/repositories/chat_repository.dart';
 import '../data/repositories/contact_repository.dart';
@@ -16,6 +17,7 @@ import '../data/repositories/settings_repository.dart';
 import '../data/repositories/story_repository.dart';
 import '../data/seed/demo_seed.dart';
 import 'audio_playback.dart';
+import 'call_audio.dart';
 import 'call_engine.dart';
 import 'call_services.dart';
 import 'navigator.dart';
@@ -107,6 +109,10 @@ class AppServices {
 
   CallPhase _lastCallPhase = CallPhase.idle;
 
+  /// Маршрут звука звонка: разговорный динамик / громкая связь, микрофон,
+  /// датчик приближения. После звонка сессия возвращается к медиа.
+  final CallAudio callAudio = CallAudio();
+
   /// Звонок начался — показать экран звонка поверх всего.
   void _onCallChanged() {
     final phase = callEngine.phase;
@@ -115,6 +121,31 @@ class AppServices {
       unawaited(AppNavigator.openCall());
     }
     _lastCallPhase = phase;
+    _syncCallAudio(phase);
+  }
+
+  /// Входящий звонит как рингтон (громко); с вызова и до конца разговора —
+  /// звук телефонного разговора.
+  void _syncCallAudio(CallPhase phase) {
+    switch (phase) {
+      case CallPhase.outgoing:
+      case CallPhase.connecting:
+      case CallPhase.active:
+        final video = callEngine.session?.kind == CallKind.video;
+        unawaited(() async {
+          if (callAudio.active) {
+            if (callAudio.speaker != callEngine.speaker) await callAudio.setSpeaker(callEngine.speaker);
+          } else {
+            await callAudio.begin(speaker: callEngine.speaker, video: video);
+          }
+          await callAudio.setMicrophoneMuted(callEngine.muted);
+        }());
+      case CallPhase.ended:
+      case CallPhase.idle:
+        unawaited(callAudio.end());
+      case CallPhase.incoming:
+        break;
+    }
   }
 
   /// Экспорт и импорт профилей (виртуальных телефонов персонажей).

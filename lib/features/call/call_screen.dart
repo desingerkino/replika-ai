@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../app/call_audio.dart';
 import '../../app/call_engine.dart';
 import '../../app/call_video_recording.dart';
 import '../../app/operator_toast.dart';
@@ -145,7 +146,12 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
       if (audioPath != null && File(audioPath).existsSync()) {
         final player = AudioPlayer();
         _voice = player;
-        player.setFilePath(audioPath).then((_) => player.play()).catchError((Object error) {
+        // Голос собеседника — как в телефонном разговоре (на Android —
+        // разговорный поток; на iOS маршрут задаёт звуковая сессия звонка).
+        final attributes = Platform.isAndroid
+            ? player.setAndroidAudioAttributes(CallAudio.voiceAttributes).catchError((Object _) {})
+            : Future<void>.value();
+        attributes.then((_) => player.setFilePath(audioPath)).then((_) => player.play()).catchError((Object error) {
           debugPrint('Голос собеседника не воспроизведён: $error');
         });
       }
@@ -364,6 +370,13 @@ class _Controls extends StatelessWidget {
         color: engine.muted ? MediaPalette.onMedia : MediaPalette.control,
         iconColor: engine.muted ? const Color(0xFF0B1115) : MediaPalette.onMedia,
         onTap: engine.toggleMute,
+      ));
+      buttons.add(_RoundButton(
+        icon: engine.speaker ? Icons.volume_up_rounded : Icons.phone_in_talk_rounded,
+        label: 'Динамик',
+        color: engine.speaker ? MediaPalette.onMedia : MediaPalette.control,
+        iconColor: engine.speaker ? const Color(0xFF0B1115) : MediaPalette.onMedia,
+        onTap: engine.toggleSpeaker,
       ));
       if (video) {
         buttons.add(_RoundButton(

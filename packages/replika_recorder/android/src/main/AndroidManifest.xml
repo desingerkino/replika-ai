@@ -6,6 +6,10 @@
     <!-- Только Android 9 и старше: сохранить видео в общую папку Movies. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
 
+    <!-- Звонок: громкая связь, выключение микрофона, датчик приближения. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
     <application>
         <service
             android:name="ru.kinoprop.replika_recorder.ReplikaRecorderService"

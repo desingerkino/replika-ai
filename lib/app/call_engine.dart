@@ -129,6 +129,7 @@ class CallEngine extends ChangeNotifier {
   CallSession? _session;
   bool _muted = false;
   bool _cameraOff = false;
+  bool _speaker = false;
   DateTime? _startedAt;
   DateTime? _activeSince;
   CallOutcome? _outcome;
@@ -139,6 +140,10 @@ class CallEngine extends ChangeNotifier {
   CallSession? get session => _session;
   bool get muted => _muted;
   bool get cameraOff => _cameraOff;
+
+  /// Звук через громкий динамик. Аудиозвонок начинается в разговорном
+  /// (верхнем) динамике, как у настоящего телефона; видеозвонок — в громком.
+  bool get speaker => _speaker;
   CallOutcome? get outcome => _outcome;
   bool get inCall => _phase != CallPhase.idle && _phase != CallPhase.ended;
 
@@ -164,6 +169,7 @@ class CallEngine extends ChangeNotifier {
     _session = session;
     _muted = false;
     _cameraOff = session.kind == CallKind.audio;
+    _speaker = session.kind == CallKind.video;
     _startedAt = _clock();
     _activeSince = null;
     _outcome = null;
@@ -256,6 +262,12 @@ class CallEngine extends ChangeNotifier {
   void toggleMute() {
     if (!inCall) return;
     _muted = !_muted;
+    notifyListeners();
+  }
+
+  void toggleSpeaker() {
+    if (!inCall) return;
+    _speaker = !_speaker;
     notifyListeners();
   }
 

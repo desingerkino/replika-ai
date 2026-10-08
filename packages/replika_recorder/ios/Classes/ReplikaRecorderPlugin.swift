@@ -26,6 +26,16 @@ public class ReplikaRecorderPlugin: NSObject, FlutterPlugin {
       stop(result)
     case "saveToGallery":
       saveToGallery(call, result)
+    case "setMicrophoneMuted":
+      let muted = ((call.arguments as? [String: Any])?["muted"] as? Bool) ?? false
+      // Микрофон записи экрана; голос собеседника в постановочном звонке
+      // не уходит в сеть, поэтому глушить нужно именно запись.
+      RPScreenRecorder.shared().isMicrophoneEnabled = !muted
+      result(nil)
+    case "setProximityMonitoring":
+      let enabled = ((call.arguments as? [String: Any])?["enabled"] as? Bool) ?? false
+      UIDevice.current.isProximityMonitoringEnabled = enabled
+      result(nil)
     default:
       result(FlutterMethodNotImplemented)
     }
