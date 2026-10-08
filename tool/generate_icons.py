@@ -66,6 +66,41 @@ def rounded(img, radius_k=0.225):
     return out
 
 
+def _bezier(points, t):
+    pts = list(points)
+    while len(pts) > 1:
+        pts = [((1 - t) * a[0] + t * b[0], (1 - t) * a[1] + t * b[1]) for a, b in zip(pts, pts[1:])]
+    return pts[0]
+
+
+def _taper(draw, n, ctrl, w0, w1, ease=1.6):
+    """Мазок по кривой Безье: тонкое начало, «капля» в конце — как
+    завитки на сфере логотипа."""
+    steps = 400
+    for i in range(steps + 1):
+        t = i / steps
+        x, y = _bezier(ctrl, t)
+        r = (w0 + (w1 - w0) * (t ** ease)) / 2
+        draw.ellipse(((x - r) * n, (y - r) * n, (x + r) * n, (y + r) * n), fill=255)
+
+
+def notification_glyph(size):
+    """Значок уведомления Android: белый силуэт сферы-логотипа (кольцо и
+    два завитка) на прозрачном фоне. Сплошной круг система показывала бы
+    белым пятном — поэтому рисуем узнаваемые завитки."""
+    n = size * 4
+    mask = Image.new("L", (n, n), 0)
+    d = ImageDraw.Draw(mask)
+    d.ellipse((0.04 * n, 0.04 * n, 0.96 * n, 0.96 * n), outline=255, width=int(0.07 * n))
+    _taper(d, n, [(0.34, 0.76), (0.16, 0.40), (0.40, 0.16), (0.62, 0.22), (0.84, 0.30), (0.76, 0.52), (0.60, 0.50)],
+           0.035, 0.15)
+    _taper(d, n, [(0.36, 0.60), (0.52, 0.50), (0.66, 0.58), (0.70, 0.74)], 0.035, 0.12)
+    mask = mask.resize((size, size), Image.LANCZOS)
+    out = Image.new("RGBA", (size, size), (255, 255, 255, 0))
+    out.putalpha(mask)
+    return out
+
+
 def main():
     logo = Image.open(LOGO).convert("RGBA")
 
@@ -96,6 +131,12 @@ def main():
         white.putalpha(alpha)
         mono.alpha_composite(white, ((layer - d) // 2, (layer - d) // 2))
         mono.save(os.path.join(folder, "ic_launcher_monochrome.png"))
+
+    # Значок в строке состояния и в шторке уведомлений: 24 dp, белый силуэт.
+    for name, k in DENSITIES.items():
+        folder = os.path.join(OUT, f"drawable-{name}")
+        os.makedirs(folder, exist_ok=True)
+        notification_glyph(int(24 * k)).save(os.path.join(folder, "ic_notification.png"))
 
     values = os.path.join(OUT, "values")
     os.makedirs(values, exist_ok=True)

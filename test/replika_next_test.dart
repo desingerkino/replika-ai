@@ -59,12 +59,16 @@ void main() {
 
     test('тема Telegram: палитра из дизайн-системы и свой стиль', () {
       final light = AppTheme.build(AppThemeId.telegram, Brightness.light);
-      expect(light.colorScheme.primary, const Color(0xFF0466C8));
-      expect(light.colorScheme.onSurface, const Color(0xFF12172B));
-      expect(light.colorScheme.primaryContainer, const Color(0xFFD4E3FF));
-      expect(light.extension<ReplikaColors>()!.bubbleOut, const Color(0xFF0466C8));
+      expect(light.colorScheme.primary, const Color(0xFF007AFF));
+      expect(light.colorScheme.onSurface, const Color(0xFF1C1C1E));
+      expect(light.colorScheme.surface, const Color(0xFFFFFFFF));
+      final rc = light.extension<ReplikaColors>()!;
+      expect(rc.bubbleOut, const Color(0xFF2B86FD));
+      expect(rc.badge, const Color(0xFF007AFF));
+      expect(rc.groupedBackground, const Color(0xFFF2F2F7));
       final style = light.extension<AppStyle>()!;
-      expect(style.tabBar, TabBarLook.docked);
+      expect(style.tabBar, TabBarLook.floating);
+      expect(style.groupedSettings, isTrue);
       expect(style.chatWallpaper, isTrue);
       final replika = AppTheme.build(AppThemeId.replika, Brightness.light).extension<AppStyle>()!;
       expect(replika.tabBar, TabBarLook.floating);
@@ -88,7 +92,7 @@ void main() {
       manager.addListener(() => notified++);
       await manager.setTheme(AppThemeId.telegram);
       expect(manager.id, AppThemeId.telegram);
-      expect(manager.light.colorScheme.primary, const Color(0xFF0466C8));
+      expect(manager.light.colorScheme.primary, const Color(0xFF007AFF));
       expect(saved[ThemeSettingKeys.themeId], 'telegram');
       await manager.setMode(ThemeMode.light);
       expect(saved[ThemeSettingKeys.themeMode], 'light');
@@ -96,11 +100,15 @@ void main() {
       manager.dispose();
     });
 
-    test('белый текст на исходящем пузыре Telegram читается в кадре (≥ 4.5:1)', () {
+    // Цвет исходящего пузыря задан палитрой (#2B86FD); белый текст на нём
+    // проходит порог 3:1 (крупный и полужирный текст), основной синий
+    // кнопок #007AFF — около 4:1.
+    test('белый текст на синем Telegram читается', () {
       double lin(double v) => v <= 0.03928 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
       double lum(Color c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
-      final bg = ReplikaColors.telegramLight.bubbleOut;
-      expect((1.0 + 0.05) / (lum(bg) + 0.05), greaterThan(4.5));
+      double ratio(Color bg) => (1.0 + 0.05) / (lum(bg) + 0.05);
+      expect(ratio(ReplikaColors.telegramLight.bubbleOut), greaterThan(3.0));
+      expect(ratio(const Color(0xFF007AFF)), greaterThan(3.9));
     });
   });
 

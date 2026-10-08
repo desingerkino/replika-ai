@@ -68,4 +68,29 @@ class ReplikaRecorder {
   /// Replika_2026-10-07_03-45-12.mp4). Возвращает true при успехе.
   static Future<bool> saveToGallery(String path, String name) async =>
       await _call<bool>('saveToGallery', {'path': path, 'name': name}) ?? false;
+
+  /// Звонок: глушит микрофон (и в идущей записи экрана). Тихо ничего не
+  /// делает, если платформа не поддерживает.
+  static Future<void> setMicrophoneMuted(bool muted) => _quiet('setMicrophoneMuted', {'muted': muted});
+
+  /// Звонок: экран гаснет, когда телефон поднесён к уху.
+  static Future<void> setProximityMonitoring(bool enabled) =>
+      _quiet('setProximityMonitoring', {'enabled': enabled});
+
+  /// Звонок, Android 12+: громкая связь или разговорный динамик через
+  /// устройство связи (setCommunicationDevice). На других системах — ничего.
+  static Future<void> setSpeakerRoute(bool speaker) => _quiet('setSpeakerRoute', {'speaker': speaker});
+
+  /// Звонок закончился: вернуть маршрут связи системе.
+  static Future<void> clearSpeakerRoute() => _quiet('clearSpeakerRoute', const {});
+
+  static Future<void> _quiet(String method, Map<String, Object?> arguments) async {
+    try {
+      await _channel.invokeMethod<void>(method, arguments);
+    } on MissingPluginException {
+      // Нет нативной части (тесты, десктоп) — ничего не делаем.
+    } on PlatformException {
+      // Не критично для звонка.
+    }
+  }
 }

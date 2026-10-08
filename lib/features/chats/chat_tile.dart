@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../core/design/context.dart';
@@ -47,7 +49,13 @@ class ChatTile extends StatelessWidget {
     final time = formatChatListTime(item.sortTime, now);
     final divider = showDivider && style.listDividers;
 
-    final previewStyle = tt.bodyMedium?.copyWith(color: rc.textSecondary, height: 20 / 15);
+    // Непрочитанный чат заметнее: имя темнее и плотнее, превью контрастнее,
+    // время синим. Прочитанный — спокойный графит.
+    final isUnread = unread > 0;
+    final previewStyle = tt.bodyMedium?.copyWith(
+      color: isUnread ? rc.textPrimary.withValues(alpha: 0.82) : rc.textSecondary,
+      height: 20 / 15,
+    );
     final accentStyle = previewStyle?.copyWith(color: cs.primary);
     final Widget preview;
     if (typing) {
@@ -102,13 +110,16 @@ class ChatTile extends StatelessWidget {
     }
 
     final avatarSize = style.avatarList;
+    final showTicks = item.lastIsOutgoing && !hasDraft && last != null && !last.deleted;
     return Material(
-      color: chat.isPinned ? rc.rowHighlight : Colors.transparent,
+      // Непрозрачный фон: под строкой лежат кнопки свайпа.
+      color: chat.isPinned ? rc.rowHighlight : cs.surface,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: Sizes.chatRowMinHeight),
+        child: SizedBox(
+          // Высота строки постоянная; растёт только с системным размером шрифта.
+          height: math.max(Sizes.chatRowMinHeight, 30 + 46 * MediaQuery.textScalerOf(context).scale(16) / 16),
           child: Padding(
             padding: const EdgeInsets.only(left: Space.l),
             child: Row(
@@ -120,64 +131,76 @@ class ChatTile extends StatelessWidget {
                   tone: item.peer.avatarTone,
                   online: item.peer.isOnline,
                 ),
-                const SizedBox(width: Space.m + 2),
+                const SizedBox(width: Space.m),
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.fromLTRB(0, Space.m, Space.l, Space.m),
+                    padding: const EdgeInsets.only(right: Space.l),
+                    alignment: Alignment.centerLeft,
                     decoration: BoxDecoration(
-                      border: divider ? Border(bottom: BorderSide(color: rc.divider, width: 0.6)) : null,
+                      // Разделитель начинается после аватара, как в iOS.
+                      border: divider ? Border(bottom: BorderSide(color: rc.divider, width: 0.5)) : null,
                     ),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Row(
                           children: [
-                            if (chat.isGroup) ...[
-                              Icon(Icons.group_rounded, size: 16, color: rc.textPrimary),
-                              const SizedBox(width: 4),
-                            ],
-                            Flexible(
-                              child: Text(
-                                item.displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700, fontSize: 16.5),
+                            // Имя занимает всё свободное место; время — справа
+                            // в постоянной колонке и не сдвигается длинным текстом.
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  if (chat.isGroup) ...[
+                                    Icon(Icons.group_rounded, size: 16, color: rc.textPrimary),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Flexible(
+                                    child: Text(
+                                      item.displayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: tt.titleMedium?.copyWith(
+                                        fontSize: 16.5,
+                                        fontWeight: isUnread ? FontWeight.w700 : FontWeight.w600,
+                                        color: rc.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  if (chat.muted) ...[
+                                    const SizedBox(width: Space.xs),
+                                    Icon(AppIcons.muted, size: 14, color: rc.textTertiary),
+                                  ],
+                                ],
                               ),
                             ),
-                            if (chat.muted) ...[
+                            if (showTicks) ...[
                               const SizedBox(width: Space.xs),
-                              Icon(AppIcons.muted, size: 15, color: rc.textTertiary),
-                            ],
-                            const Spacer(),
-                            if (chat.isPinned) ...[
-                              const SizedBox(width: Space.s),
-                              Icon(AppIcons.pin, size: 14, color: rc.textTertiary),
+                              MessageTicks(state: last.state, color: rc.textTertiary, readColor: rc.success, size: 16),
                             ],
                             const SizedBox(width: Space.xs),
                             Text(
                               time,
+                              maxLines: 1,
                               style: tt.labelMedium?.copyWith(
-                                color: unread > 0 && !chat.muted ? cs.primary : rc.textTertiary,
-                                fontWeight: unread > 0 ? FontWeight.w600 : FontWeight.w500,
+                                fontSize: 13,
+                                color: isUnread && !chat.muted ? cs.primary : rc.textTertiary,
+                                fontWeight: isUnread ? FontWeight.w600 : FontWeight.w400,
+                                fontFeatures: const [FontFeature.tabularFigures()],
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Row(
                           children: [
                             Expanded(child: preview),
-                            if (unread > 0) ...[
+                            if (isUnread) ...[
                               const SizedBox(width: Space.s),
                               UnreadBadge(count: unread, muted: chat.muted),
-                            ] else if (item.lastIsOutgoing && !hasDraft && last?.deleted != true) ...[
+                            ] else if (chat.isPinned) ...[
                               const SizedBox(width: Space.s),
-                              MessageTicks(
-                                state: last!.state,
-                                color: rc.textTertiary,
-                                readColor: rc.success,
-                              ),
+                              Icon(AppIcons.pin, size: 15, color: rc.textTertiary),
                             ],
                           ],
                         ),

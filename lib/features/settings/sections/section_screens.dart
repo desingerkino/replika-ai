@@ -32,12 +32,14 @@ class NotificationsSettingsScreen extends StatelessWidget {
     return SettingsPage(
       title: 'Уведомления и звуки',
       children: [
-        const SectionLabel('Сообщения'),
-        _addon(context, 'notifications'),
-        _addon(context, 'notifications_test'),
-        const SettingsNote(
-          'Отключить звук отдельного чата можно долгим нажатием на него в '
-          'списке чатов — «Без звука».',
+        SettingsGroup(
+          title: 'Сообщения',
+          footer: 'Отключить звук отдельного чата можно свайпом влево по нему '
+              'в списке чатов — «Без звука».',
+          children: [
+            _addon(context, 'notifications'),
+            _addon(context, 'notifications_test'),
+          ],
         ),
       ],
     );
@@ -54,32 +56,33 @@ class PrivacySettingsScreen extends StatelessWidget {
     return SettingsPage(
       title: 'Конфиденциальность',
       children: [
-        const SectionLabel('Данные'),
-        const SettingsTile(
+        const SettingsGroup(title: 'Данные', children: [
+        SettingsTile(
           icon: Icons.lock_outline_rounded,
           title: 'Всё хранится на этом устройстве',
           subtitle: 'Переписки, контакты, фото и истории не уходят в интернет',
         ),
-        const SettingsTile(
+        SettingsTile(
           icon: Icons.cloud_off_outlined,
           title: 'Работает без сети',
           subtitle: 'Приложению не нужен интернет ни для чатов, ни для ИИ',
         ),
-        if (!kino) ...[
-          const SectionLabel('Управление по сети'),
-          const SettingsTile(
+        ]),
+        if (!kino)
+          const SettingsGroup(title: 'Управление по сети', children: [
+          SettingsTile(
             icon: Icons.wifi_tethering_rounded,
             title: 'Connect',
             subtitle: 'Сопряжение с Prop Controller шифруется; доступ — только подтверждённым',
             onTap: AppNavigator.openConnect,
           ),
-          const SettingsTile(
+          SettingsTile(
             icon: Icons.phone_android_rounded,
             title: 'Экспорт и импорт профилей',
             subtitle: 'Перенос телефона персонажа файлом',
             onTap: AppNavigator.openProfiles,
           ),
-        ],
+          ]),
       ],
     );
   }
@@ -95,21 +98,22 @@ class AiSettingsScreen extends StatelessWidget {
     return SettingsPage(
       title: 'ИИ-собеседник',
       children: [
-        const SectionLabel('Автоответы'),
-        if (available)
-          _addon(context, 'ai')
-        else
-          const SettingsTile(
-            icon: Icons.smart_toy_outlined,
-            title: 'ИИ недоступен в этой сборке',
-            subtitle: 'Автоответы есть в сборке «Реплика AI» (модель Qwen на телефоне)',
-          ),
-        const SectionLabel('Как это работает'),
-        const SettingsNote(
-          'Собеседник отвечает в личных чатах от имени контакта: характер берётся '
-          'из поля «Описание» в его профиле, контекст — из последних сообщений '
-          'переписки. В группах и во время дубля сцены ИИ молчит. Ответ можно '
-          'стереть вместе с импровизацией.',
+        SettingsGroup(
+          title: 'Автоответы',
+          footer: 'Собеседник отвечает в личных чатах от имени контакта: характер берётся '
+              'из поля «Описание» в его профиле, контекст — из последних сообщений '
+              'переписки. В группах и во время дубля сцены ИИ молчит. Ответ можно '
+              'стереть вместе с импровизацией.',
+          children: [
+            if (available)
+              _addon(context, 'ai')
+            else
+              const SettingsTile(
+                icon: Icons.smart_toy_outlined,
+                title: 'ИИ недоступен в этой сборке',
+                subtitle: 'Автоответы есть в сборке «Реплика AI» (модель Qwen на телефоне)',
+              ),
+          ],
         ),
       ],
     );
@@ -147,7 +151,7 @@ class StorageSettingsScreen extends StatelessWidget {
         return SettingsPage(
           title: 'Данные и память',
           children: [
-            const SectionLabel('Использование'),
+            SettingsGroup(title: 'Использование', children: [
             SettingsTile(
               icon: Icons.perm_media_outlined,
               title: 'Медиатека',
@@ -159,15 +163,17 @@ class StorageSettingsScreen extends StatelessWidget {
               title: 'Переписки и настройки',
               trailing: usage == null ? '…' : formatBytes(usage.dbBytes),
             ),
-            if (usage != null && usage.byKind.isNotEmpty) ...[
-              const SectionLabel('Файлы по типам'),
-              for (final entry in usage.byKind.entries)
-                SettingsTile(icon: Icons.folder_outlined, title: entry.key, trailing: '${entry.value}'),
-            ],
-            const SettingsNote(
-              'Файлы копируются во внутреннюю папку приложения: если удалить '
-              'оригинал из галереи, переписка и сцены не сломаются.',
-            ),
+            ]),
+            if (usage != null && usage.byKind.isNotEmpty)
+              SettingsGroup(
+                title: 'Файлы по типам',
+                footer: 'Файлы копируются во внутреннюю папку приложения: если удалить '
+                    'оригинал из галереи, переписка и сцены не сломаются.',
+                children: [
+                  for (final entry in usage.byKind.entries)
+                    SettingsTile(icon: Icons.folder_outlined, title: entry.key, trailing: '${entry.value}'),
+                ],
+              ),
           ],
         );
       },
@@ -204,17 +210,18 @@ class AboutScreen extends StatelessWidget {
             style: context.tt.bodyMedium?.copyWith(color: context.rc.textSecondary),
           ),
         ),
-        const SizedBox(height: Space.xl),
-        const SettingsTile(
+        const SettingsGroup(children: [
+        SettingsTile(
           icon: Icons.chat_bubble_outline_rounded,
           title: 'Мессенджер нового поколения',
           subtitle: 'Чаты, истории, звонки, голосовые и видео — на одном телефоне, без сети',
         ),
-        const SettingsTile(
+        SettingsTile(
           icon: Icons.movie_filter_outlined,
           title: Brand.tagline,
           subtitle: 'Персонажи, постановочные переписки, сцены и операторский режим',
         ),
+        ]),
       ],
     );
   }

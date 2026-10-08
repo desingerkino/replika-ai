@@ -95,7 +95,7 @@ class MediaStore {
       durationMs: info.duration?.inMilliseconds,
       width: info.width,
       height: info.height,
-      waveform: kind == MediaKind.voice ? decorativeWaveform(id) : const [],
+      waveform: kind == MediaKind.voice ? await _waveformOf(target.path) : const [],
       createdAt: DateTime.now(),
     );
     await repository.insert(item);
@@ -175,11 +175,25 @@ class MediaStore {
       durationMs: info.duration?.inMilliseconds ?? durationMs,
       width: info.width,
       height: info.height,
-      waveform: kind == MediaKind.voice ? decorativeWaveform(id) : const [],
+      waveform: kind == MediaKind.voice ? await _waveformOf(moved.path) : const [],
       createdAt: DateTime.now(),
     );
     await repository.insert(item);
     return item;
+  }
+
+  /// Настоящая волна файла: для WAV считается по самим отсчётам. Для
+  /// сжатых форматов (m4a, mp3, ogg) декодера без внешних библиотек нет —
+  /// тогда волны нет, и в пузыре рисуется честная дорожка с бегунком.
+  Future<List<double>> _waveformOf(String path) async {
+    try {
+      if (!path.toLowerCase().endsWith('.wav')) return const [];
+      final bytes = await File(path).readAsBytes();
+      return wavWaveform(bytes);
+    } catch (error) {
+      debugPrint('Волна не посчитана: $error');
+      return const [];
+    }
   }
 
   /// Путь для новой записи внутри папки медиатеки (голосовое с микрофона).

@@ -399,6 +399,9 @@ class MessageBubble extends StatelessWidget {
                 Flexible(
                   child: AudioContent(
                     media: media,
+                    messageId: message.id,
+                    // Точка «не прослушано» — только у входящих голосовых.
+                    unplayed: !outgoing && message.type == MessageType.voice && !message.played,
                     voice: message.type == MessageType.voice,
                     foreground: foreground,
                     accent: accent,

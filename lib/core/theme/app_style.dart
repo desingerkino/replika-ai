@@ -37,6 +37,7 @@ class AppStyle extends ThemeExtension<AppStyle> {
     required this.searchRadius,
     required this.settingsQuickActions,
     required this.mediaMaxWidth,
+    required this.groupedSettings,
   });
 
   final AppThemeId id;
@@ -65,6 +66,9 @@ class AppStyle extends ThemeExtension<AppStyle> {
   /// Предел ширины фото и видео в пузыре.
   final double mediaMaxWidth;
 
+  /// Настройки сгруппированными карточками, как в iOS.
+  final bool groupedSettings;
+
   static const AppStyle replika = AppStyle(
     id: AppThemeId.replika,
     tabBar: TabBarLook.floating,
@@ -77,20 +81,22 @@ class AppStyle extends ThemeExtension<AppStyle> {
     searchRadius: 12,
     settingsQuickActions: false,
     mediaMaxWidth: 320,
+    groupedSettings: false,
   );
 
   static const AppStyle telegram = AppStyle(
     id: AppThemeId.telegram,
-    tabBar: TabBarLook.docked,
+    tabBar: TabBarLook.floating,
     chatListHeader: ChatListHeaderLook.searchFirst,
     chatWallpaper: true,
-    listDividers: false,
+    listDividers: true,
     avatarList: 54,
     bubbleRadius: 18,
     bubbleTail: 6,
     searchRadius: 999,
     settingsQuickActions: true,
     mediaMaxWidth: 340,
+    groupedSettings: true,
   );
 
   static AppStyle of(AppThemeId id) => switch (id) {
@@ -111,6 +117,7 @@ class AppStyle extends ThemeExtension<AppStyle> {
     double? searchRadius,
     bool? settingsQuickActions,
     double? mediaMaxWidth,
+    bool? groupedSettings,
   }) {
     return AppStyle(
       id: id ?? this.id,
@@ -124,6 +131,7 @@ class AppStyle extends ThemeExtension<AppStyle> {
       searchRadius: searchRadius ?? this.searchRadius,
       settingsQuickActions: settingsQuickActions ?? this.settingsQuickActions,
       mediaMaxWidth: mediaMaxWidth ?? this.mediaMaxWidth,
+      groupedSettings: groupedSettings ?? this.groupedSettings,
     );
   }
 

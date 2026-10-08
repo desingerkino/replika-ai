@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
+import android.media.AudioManager;
+import android.os.PowerManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
@@ -69,6 +71,9 @@ public class ReplikaRecorderPlugin implements FlutterPlugin, MethodChannel.Metho
 
     private MethodChannel.Result pendingStorage;
 
+    // Звонок: датчик приближения гасит экран у уха.
+    private PowerManager.WakeLock proximityLock;
+
     // ---------- FlutterPlugin ----------
 
     @Override
@@ -83,6 +88,9 @@ public class ReplikaRecorderPlugin implements FlutterPlugin, MethodChannel.Metho
         channel.setMethodCallHandler(null);
         channel = null;
         finishRecording(); // не оставляем открытый рекордер
+        setProximityMonitoring(false);
+        setMicrophoneMuted(false);
+        clearSpeakerRoute();
     }
 
     // ---------- ActivityAware ----------
@@ -144,8 +152,83 @@ public class ReplikaRecorderPlugin implements FlutterPlugin, MethodChannel.Metho
             case "saveToGallery":
                 saveToGallery(call.argument("path"), call.argument("name"), result);
                 break;
+            case "setMicrophoneMuted":
+                Boolean muted = call.argument("muted");
+                setMicrophoneMuted(muted != null && muted);
+                result.success(null);
+                break;
+            case "setSpeakerRoute":
+                Boolean speaker = call.argument("speaker");
+                setSpeakerRoute(speaker != null && speaker);
+                result.success(null);
+                break;
+            case "clearSpeakerRoute":
+                clearSpeakerRoute();
+                result.success(null);
+                break;
+            case "setProximityMonitoring":
+                Boolean enabled = call.argument("enabled");
+                setProximityMonitoring(enabled != null && enabled);
+                result.success(null);
+                break;
             default:
                 result.notImplemented();
+        }
+    }
+
+    // ---------- Звонок ----------
+
+    /** Глушит микрофон устройства (в том числе для записи экрана). */
+    private void setMicrophoneMuted(boolean muted) {
+        try {
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) am.setMicrophoneMute(muted);
+        } catch (Exception ignored) {
+        }
+    }
+
+    /** Android 12+: маршрут разговора — громкий или разговорный динамик. */
+    private void setSpeakerRoute(boolean speaker) {
+        if (Build.VERSION.SDK_INT < 31) return;
+        try {
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am == null) return;
+            int wanted = speaker ? android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+                    : android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE;
+            for (android.media.AudioDeviceInfo device : am.getAvailableCommunicationDevices()) {
+                if (device.getType() == wanted) {
+                    am.setCommunicationDevice(device);
+                    return;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void clearSpeakerRoute() {
+        if (Build.VERSION.SDK_INT < 31) return;
+        try {
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) am.clearCommunicationDevice();
+        } catch (Exception ignored) {
+        }
+    }
+
+    /** Экран гаснет, когда телефон у уха (разговорный динамик). */
+    private void setProximityMonitoring(boolean enabled) {
+        try {
+            if (enabled) {
+                if (proximityLock == null) {
+                    PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                    if (pm == null || !pm.isWakeLockLevelSupported(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK)) return;
+                    proximityLock = pm.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "replika:call");
+                    proximityLock.setReferenceCounted(false);
+                }
+                if (!proximityLock.isHeld()) proximityLock.acquire(60 * 60 * 1000L);
+            } else if (proximityLock != null && proximityLock.isHeld()) {
+                proximityLock.release(PowerManager.RELEASE_FLAG_WAIT_FOR_NO_PROXIMITY);
+            }
+        } catch (Exception ignored) {
         }
     }
 

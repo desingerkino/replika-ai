@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/chat/chat_backgrounds.dart';
 import '../features/call/call_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../data/models/media_item.dart';
@@ -121,6 +122,9 @@ abstract final class AppNavigator {
   static Future<void> openImprov() => _push<void>('/improv', const ImprovScreen());
 
   static Future<void> openAddons() => _push<void>('/addons', const AddonsScreen());
+
+  static Future<void> openChatBackground(String chatId) =>
+      _push<void>('/chat/background', ChatBackgroundScreen(chatId: chatId), chatId);
 
   static Future<void> openThemes() => _push<void>('/themes', const ThemesScreen());
 

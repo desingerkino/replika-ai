@@ -15,6 +15,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: settingsBackground(context),
       appBar: ReplikaTopBar(
         leading: const BackIconButton(),
         title: Text(title, style: context.tt.titleMedium),

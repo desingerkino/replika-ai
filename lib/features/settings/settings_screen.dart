@@ -44,7 +44,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final services = Services.of(context);
     return ColoredBox(
-      color: context.cs.surface,
+      color: settingsBackground(context),
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -89,7 +89,7 @@ class SettingsScreen extends StatelessWidget {
                                     onThemes: AppNavigator.openThemes,
                                   )
                                 : _OwnerCard(data: data, onTap: editOwner),
-                          const SectionLabel('Аккаунт'),
+                          SettingsGroup(title: 'Аккаунт', children: [
                           SettingsTile(
                             icon: Icons.person_outline_rounded,
                             title: 'Личные данные',
@@ -119,7 +119,8 @@ class SettingsScreen extends StatelessWidget {
                               subtitle: 'Сменить, создать, импорт и экспорт',
                               onTap: AppNavigator.openProfiles,
                             ),
-                          const SectionLabel('Настройки'),
+                          ]),
+                          SettingsGroup(title: 'Настройки', children: [
                           const SettingsTile(
                             icon: Icons.notifications_none_rounded,
                             title: 'Уведомления и звуки',
@@ -160,13 +161,15 @@ class SettingsScreen extends StatelessWidget {
                               subtitle: 'Операторский режим, кнопки громкости',
                               onTap: AppNavigator.openAddons,
                             ),
-                          const SectionLabel('О приложении'),
+                          ]),
+                          SettingsGroup(title: 'О приложении', children: [
                           SettingsTile(
                             icon: AppIcons.info,
                             title: '${Brand.name} ${Brand.version}',
                             subtitle: 'Все данные хранятся только на этом телефоне',
                             onTap: AppNavigator.openAbout,
                           ),
+                          ]),
                         ],
                       );
                     },
@@ -199,6 +202,7 @@ class _ProfileHeader extends StatelessWidget {
     final name = character?.fullName ?? '';
     final shown = name.isEmpty ? data.deviceName : name;
     final phone = character?.phone ?? '';
+    final cell = context.style.groupedSettings ? rc.groupedCell : null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(Space.l, Space.l, Space.l, Space.s),
       child: Column(
@@ -216,11 +220,11 @@ class _ProfileHeader extends StatelessWidget {
           const SizedBox(height: Space.l),
           Row(
             children: [
-              Expanded(child: QuickAction(icon: Icons.photo_camera_outlined, label: 'Фото профиля', onTap: onEdit)),
+              Expanded(child: QuickAction(icon: Icons.photo_camera_outlined, label: 'Фото профиля', onTap: onEdit, background: cell)),
               const SizedBox(width: Space.s),
-              Expanded(child: QuickAction(icon: Icons.add_circle_outline_rounded, label: 'Новая история', onTap: onStory)),
+              Expanded(child: QuickAction(icon: Icons.add_circle_outline_rounded, label: 'Новая история', onTap: onStory, background: cell)),
               const SizedBox(width: Space.s),
-              Expanded(child: QuickAction(icon: Icons.palette_outlined, label: 'Темы', onTap: onThemes)),
+              Expanded(child: QuickAction(icon: Icons.palette_outlined, label: 'Темы', onTap: onThemes, background: cell)),
             ],
           ),
         ],
