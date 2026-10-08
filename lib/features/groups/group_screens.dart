@@ -228,7 +228,7 @@ class GroupInfoScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AvatarTones.at(i),
                       shape: BoxShape.circle,
-                      border: i == m.colorTone ? Border.all(width: 3, color: Colors.white) : null,
+                      border: i == m.colorTone ? Border.all(width: 3, color: MediaPalette.onMedia) : null,
                       boxShadow: i == m.colorTone
                           ? [BoxShadow(color: AvatarTones.at(i), blurRadius: 0, spreadRadius: 2)]
                           : null,

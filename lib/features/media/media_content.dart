@@ -58,7 +58,7 @@ class PhotoContent extends StatelessWidget {
           width: width,
           height: height,
           child: ColoredBox(
-            color: Colors.black26,
+            color: MediaPalette.scrimLight,
             child: Icon(Icons.broken_image_outlined, color: context.rc.textTertiary),
           ),
         ),
@@ -109,7 +109,7 @@ class _VideoFrameState extends State<VideoFrame> {
       width: widget.width,
       height: widget.height,
       child: ColoredBox(
-        color: Colors.black,
+        color: MediaPalette.background,
         child: ready && size.width > 0
             ? FittedBox(
                 fit: BoxFit.cover,
@@ -147,7 +147,7 @@ class VideoContent extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0x66FFFFFF), width: 1.5),
             ),
-            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 38),
+            child: const Icon(Icons.play_arrow_rounded, color: MediaPalette.onMedia, size: 38),
           ),
           if (duration != null)
             Positioned(
@@ -228,7 +228,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
           children: [
             ClipOval(
               child: ColoredBox(
-                color: Colors.black,
+                color: MediaPalette.background,
                 child: SizedBox.expand(
                   child: _ready && size.width > 0
                       ? FittedBox(
@@ -243,7 +243,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
             if (value.isPlaying || value.position > Duration.zero)
               Positioned.fill(
                 child: CustomPaint(
-                  painter: _RingPainter(progress: progress, color: Colors.white),
+                  painter: _RingPainter(progress: progress, color: MediaPalette.onMedia),
                 ),
               ),
             if (remaining != null)
@@ -258,7 +258,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
                   width: 44,
                   height: 44,
                   decoration: const BoxDecoration(color: Color(0x66000000), shape: BoxShape.circle),
-                  child: const Icon(Icons.volume_up_rounded, color: Colors.white, size: 24),
+                  child: const Icon(Icons.volume_up_rounded, color: MediaPalette.onMedia, size: 24),
                 ),
               ),
           ],
@@ -305,7 +305,7 @@ class _Pill extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          color: Colors.white,
+          color: MediaPalette.onMedia,
           fontSize: 12,
           fontWeight: FontWeight.w500,
           fontFeatures: [FontFeature.tabularFigures()],

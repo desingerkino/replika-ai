@@ -348,7 +348,7 @@ class MessageBubble extends StatelessWidget {
                               color: const Color(0x80000000),
                               borderRadius: BorderRadius.circular(Radii.pill),
                             ),
-                            child: metaIn(Colors.white, Colors.white),
+                            child: metaIn(MediaPalette.onMedia, MediaPalette.onMedia),
                           ),
                         ),
                     ],
@@ -386,7 +386,7 @@ class MessageBubble extends StatelessWidget {
       case MessageType.voice:
       case MessageType.audio:
         final accent = outgoing ? rc.onBubbleOut : cs.primary;
-        final onAccent = outgoing ? rc.bubbleOut : Colors.white;
+        final onAccent = outgoing ? rc.bubbleOut : MediaPalette.onMedia;
         final muted = outgoing ? rc.metaOut : rc.metaIn;
         return padded(Column(
           mainAxisSize: MainAxisSize.min,

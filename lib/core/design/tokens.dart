@@ -150,3 +150,19 @@ abstract final class AvatarTints {
     return list[index.abs() % list.length];
   }
 }
+
+/// Цвета поверх фото, видео и тёмных полноэкранных экранов (просмотр
+/// медиа, истории, звонок, запись). Не зависят от темы: картинка под ними
+/// может быть любой, поэтому текст всегда белый на затемнении.
+abstract final class MediaPalette {
+  static const Color background = Color(0xFF000000);
+  static const Color onMedia = Color(0xFFFFFFFF);
+  static const Color onMediaDim = Color(0xB3FFFFFF);
+  static const Color onMediaFaint = Color(0x8AFFFFFF);
+  static const Color scrimLight = Color(0x42000000);
+  static const Color scrim = Color(0x8C000000);
+  static const Color transparent = Color(0x00000000);
+
+  /// Подложка круглых кнопок звонка.
+  static const Color control = Color(0x3DFFFFFF);
+}

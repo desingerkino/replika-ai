@@ -68,7 +68,7 @@ class _ViewerFrameState extends State<_ViewerFrame> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _darkOverlay,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: MediaPalette.background,
         body: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => setState(() => _chrome = !_chrome),
@@ -84,7 +84,7 @@ class _ViewerFrameState extends State<_ViewerFrame> {
                     child: IconButton(
                       tooltip: 'Закрыть',
                       onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                      icon: const Icon(Icons.close_rounded, color: MediaPalette.onMedia, size: 28),
                     ),
                   ),
                 ),
@@ -125,7 +125,7 @@ class PhotoViewerScreen extends StatelessWidget {
             fit: BoxFit.contain,
             errorBuilder: (context, error, stack) => const Text(
               'Не удалось открыть фото',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: MediaPalette.onMediaDim),
             ),
           ),
         ),
@@ -191,10 +191,10 @@ class _VideoViewerScreenState extends State<VideoViewerScreen> {
     Widget content;
     if (_failed) {
       content = const Center(
-        child: Text('Не удалось открыть видео', style: TextStyle(color: Colors.white70)),
+        child: Text('Не удалось открыть видео', style: TextStyle(color: MediaPalette.onMediaDim)),
       );
     } else if (!value.isInitialized) {
-      content = const Center(child: CircularProgressIndicator(color: Colors.white));
+      content = const Center(child: CircularProgressIndicator(color: MediaPalette.onMedia));
     } else {
       content = Center(
         child: AspectRatio(
@@ -222,13 +222,13 @@ class _VideoViewerScreenState extends State<VideoViewerScreen> {
                   onPressed: _togglePlay,
                   icon: Icon(
                     value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: Colors.white,
+                    color: MediaPalette.onMedia,
                     size: 32,
                   ),
                 ),
                 Text(
                   formatDuration(value.position),
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: const TextStyle(color: MediaPalette.onMedia, fontSize: 13),
                 ),
                 const SizedBox(width: Space.m),
                 Expanded(
@@ -246,7 +246,7 @@ class _VideoViewerScreenState extends State<VideoViewerScreen> {
                 const SizedBox(width: Space.m),
                 Text(
                   formatDuration(value.duration),
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: const TextStyle(color: MediaPalette.onMedia, fontSize: 13),
                 ),
               ],
             ),

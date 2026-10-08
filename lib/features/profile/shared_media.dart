@@ -210,9 +210,9 @@ class _MediaGrid extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.play_arrow_rounded, size: 14, color: Colors.white),
+                          const Icon(Icons.play_arrow_rounded, size: 14, color: MediaPalette.onMedia),
                           if (media.duration != null)
-                            Text(formatDuration(media.duration!), style: const TextStyle(color: Colors.white, fontSize: 11)),
+                            Text(formatDuration(media.duration!), style: const TextStyle(color: MediaPalette.onMedia, fontSize: 11)),
                         ],
                       ),
                     ),

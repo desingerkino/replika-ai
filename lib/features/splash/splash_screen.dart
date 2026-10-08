@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/brand/brand.dart';
 import '../../core/brand/logo.dart';
 import '../../core/design/context.dart';
+import '../../core/design/tokens.dart';
 
 /// Стартовый экран: сфера появляется из лёгкого размытия, «дышит» и
 /// переливается, пока открываются данные.
@@ -65,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.4,
-                      color: dark ? Colors.white : context.rc.textPrimary,
+                      color: dark ? MediaPalette.onMedia : context.rc.textPrimary,
                     ),
                   ),
                 ),

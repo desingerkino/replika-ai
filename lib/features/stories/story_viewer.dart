@@ -12,6 +12,7 @@ import '../../core/util/time_format.dart';
 import '../../data/models/media_item.dart';
 import '../../data/models/story.dart';
 import '../../data/repositories/story_repository.dart';
+import '../../core/design/tokens.dart';
 
 /// Полноэкранный просмотр историй: полоски прогресса сверху, касание
 /// справа — дальше, слева — назад, удержание — пауза, смахивание вниз —
@@ -199,7 +200,7 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: MediaPalette.background,
         resizeToAvoidBottomInset: true,
         body: GestureDetector(
           onVerticalDragUpdate: (d) => setState(() => _dragDown = (_dragDown + d.delta.dy).clamp(0, 400)),
@@ -280,7 +281,7 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
                           child: Text(
                             story.caption,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white, fontSize: 17, height: 1.3, fontWeight: FontWeight.w500),
+                            style: const TextStyle(color: MediaPalette.onMedia, fontSize: 17, height: 1.3, fontWeight: FontWeight.w500),
                           ),
                         ),
                       if (!author.isOwner)
@@ -313,13 +314,13 @@ class _StoryContent extends StatelessWidget {
     final media = story.media;
     if (media == null || !File(media.path).existsSync()) {
       return const Center(
-        child: Text('Файл истории удалён', style: TextStyle(color: Colors.white70, fontSize: 16)),
+        child: Text('Файл истории удалён', style: TextStyle(color: MediaPalette.onMediaDim, fontSize: 16)),
       );
     }
     if (media.kind == MediaKind.video) {
       final controller = video;
       if (controller == null || !controller.value.isInitialized) {
-        return const Center(child: CircularProgressIndicator(color: Colors.white));
+        return const Center(child: CircularProgressIndicator(color: MediaPalette.onMedia));
       }
       final size = controller.value.size;
       return FittedBox(
@@ -333,7 +334,7 @@ class _StoryContent extends StatelessWidget {
       fit: BoxFit.cover,
       gaplessPlayback: true,
       errorBuilder: (context, error, stack) =>
-          const Center(child: Icon(Icons.broken_image_outlined, color: Colors.white54, size: 48)),
+          const Center(child: Icon(Icons.broken_image_outlined, color: MediaPalette.onMediaFaint, size: 48)),
     );
   }
 }
@@ -350,8 +351,8 @@ class _ProgressBars extends StatelessWidget {
         child: LinearProgressIndicator(
           value: value,
           minHeight: 2.5,
-          color: Colors.white,
-          backgroundColor: Colors.white.withValues(alpha: 0.35),
+          color: MediaPalette.onMedia,
+          backgroundColor: MediaPalette.onMedia.withValues(alpha: 0.35),
         ),
       );
 
@@ -397,11 +398,11 @@ class _Header extends StatelessWidget {
                 author.isOwner ? 'Моя история' : author.displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                style: const TextStyle(color: MediaPalette.onMedia, fontSize: 15, fontWeight: FontWeight.w700),
               ),
               Text(
                 formatAgo(story.postedAt, DateTime.now()),
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+                style: TextStyle(color: MediaPalette.onMedia.withValues(alpha: 0.8), fontSize: 13),
               ),
             ],
           ),
@@ -409,12 +410,12 @@ class _Header extends StatelessWidget {
         IconButton(
           tooltip: 'Удалить историю',
           onPressed: onDelete,
-          icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+          icon: const Icon(Icons.more_vert_rounded, color: MediaPalette.onMedia),
         ),
         IconButton(
           tooltip: 'Закрыть',
           onPressed: onClose,
-          icon: const Icon(Icons.close_rounded, color: Colors.white),
+          icon: const Icon(Icons.close_rounded, color: MediaPalette.onMedia),
         ),
       ],
     );
@@ -434,7 +435,7 @@ class _Shade extends StatelessWidget {
           gradient: LinearGradient(
             begin: top ? Alignment.topCenter : Alignment.bottomCenter,
             end: top ? Alignment.bottomCenter : Alignment.topCenter,
-            colors: [Colors.black.withValues(alpha: 0.55), Colors.black.withValues(alpha: 0)],
+            colors: [MediaPalette.background.withValues(alpha: 0.55), MediaPalette.background.withValues(alpha: 0)],
           ),
         ),
       ),
@@ -459,8 +460,8 @@ class _ReplyField extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
-              color: Colors.black.withValues(alpha: 0.25),
+              border: Border.all(color: MediaPalette.onMedia.withValues(alpha: 0.6)),
+              color: MediaPalette.background.withValues(alpha: 0.25),
             ),
             alignment: Alignment.centerLeft,
             child: TextField(
@@ -468,11 +469,11 @@ class _ReplyField extends StatelessWidget {
               focusNode: focusNode,
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => onSend(),
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              cursorColor: Colors.white,
+              style: const TextStyle(color: MediaPalette.onMedia, fontSize: 16),
+              cursorColor: MediaPalette.onMedia,
               decoration: InputDecoration.collapsed(
                 hintText: 'Ответить…',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 16),
+                hintStyle: TextStyle(color: MediaPalette.onMedia.withValues(alpha: 0.75), fontSize: 16),
               ),
             ),
           ),
@@ -490,7 +491,7 @@ class _ReplyField extends StatelessWidget {
                 : onSend,
             icon: Icon(
               value.text.trim().isEmpty ? Icons.favorite_border_rounded : Icons.send_rounded,
-              color: Colors.white,
+              color: MediaPalette.onMedia,
               size: 28,
             ),
           ),

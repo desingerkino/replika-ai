@@ -7,6 +7,7 @@ import '../../core/design/widgets/action_sheet.dart';
 import '../../data/models/media_item.dart';
 import '../../data/repositories/story_repository.dart';
 import 'story_viewer.dart';
+import '../../core/design/tokens.dart';
 
 enum _StorySource { gallery, library }
 
@@ -77,7 +78,7 @@ Future<void> openStories(
   return Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder<void>(
       opaque: false,
-      barrierColor: Colors.black,
+      barrierColor: MediaPalette.background,
       transitionDuration: const Duration(milliseconds: 280),
       reverseTransitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (context, animation, secondary) =>

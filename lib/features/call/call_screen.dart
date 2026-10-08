@@ -272,7 +272,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
                       child: Text(
                         session.displayName,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700),
+                        style: const TextStyle(color: MediaPalette.onMedia, fontSize: 28, fontWeight: FontWeight.w700),
                       ),
                     ),
                     const SizedBox(height: Space.xs),
@@ -280,7 +280,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
                       _status(session),
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
+                        color: MediaPalette.onMedia.withValues(alpha: 0.8),
                         fontSize: 16,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
@@ -289,7 +289,7 @@ class _CallScreenState extends State<CallScreen> with WidgetsBindingObserver {
                       Padding(
                         padding: const EdgeInsets.only(top: Space.s),
                         child: Text('Микрофон выключен',
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
+                            style: TextStyle(color: MediaPalette.onMedia.withValues(alpha: 0.7), fontSize: 13)),
                       ),
                     const Spacer(),
                     _Controls(
@@ -361,16 +361,16 @@ class _Controls extends StatelessWidget {
       buttons.add(_RoundButton(
         icon: engine.muted ? Icons.mic_off_rounded : Icons.mic_rounded,
         label: engine.muted ? 'Включить' : 'Микрофон',
-        color: engine.muted ? Colors.white : Colors.white24,
-        iconColor: engine.muted ? const Color(0xFF0B1115) : Colors.white,
+        color: engine.muted ? MediaPalette.onMedia : MediaPalette.control,
+        iconColor: engine.muted ? const Color(0xFF0B1115) : MediaPalette.onMedia,
         onTap: engine.toggleMute,
       ));
       if (video) {
         buttons.add(_RoundButton(
           icon: engine.cameraOff ? Icons.videocam_off_rounded : Icons.videocam_rounded,
           label: 'Камера',
-          color: engine.cameraOff ? Colors.white : Colors.white24,
-          iconColor: engine.cameraOff ? const Color(0xFF0B1115) : Colors.white,
+          color: engine.cameraOff ? MediaPalette.onMedia : MediaPalette.control,
+          iconColor: engine.cameraOff ? const Color(0xFF0B1115) : MediaPalette.onMedia,
           onTap: engine.toggleCamera,
         ));
       }
@@ -378,7 +378,7 @@ class _Controls extends StatelessWidget {
         buttons.add(_RoundButton(
           icon: Icons.cameraswitch_rounded,
           label: 'Перевернуть',
-          color: Colors.white24,
+          color: MediaPalette.control,
           onTap: onFlip!,
         ));
       }
@@ -407,7 +407,7 @@ class _RoundButton extends StatelessWidget {
     required this.label,
     required this.color,
     required this.onTap,
-    this.iconColor = Colors.white,
+    this.iconColor = MediaPalette.onMedia,
   });
 
   final IconData icon;
@@ -436,7 +436,7 @@ class _RoundButton extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style: const TextStyle(color: MediaPalette.onMedia, fontSize: 13),
           ),
         ],
       ),
