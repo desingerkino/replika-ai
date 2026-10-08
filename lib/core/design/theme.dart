@@ -1,20 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/app_style.dart';
+import '../theme/app_theme_id.dart';
 import 'colors.dart';
 import 'tokens.dart';
 import 'typography.dart';
 
 /// Темы приложения. Цветовая схема задана полностью вручную, без генерации
 /// из одного цвета: так интерфейс не выглядит «шаблонным» Material.
+///
+/// [build] собирает ThemeData для пары «тема оформления + яркость».
+/// Готовые ThemeData кэшируются: переключение темы мгновенное.
 abstract final class AppTheme {
-  static final ThemeData light = _build(Brightness.light);
-  static final ThemeData dark = _build(Brightness.dark);
+  /// Фирменная тема «Реплики» (оператор, автотесты, экран запуска).
+  static final ThemeData light = build(AppThemeId.replika, Brightness.light);
+  static final ThemeData dark = build(AppThemeId.replika, Brightness.dark);
 
-  static ThemeData _build(Brightness brightness) {
+  static final Map<(AppThemeId, Brightness), ThemeData> _cache = {};
+
+  static ThemeData build(AppThemeId id, Brightness brightness) =>
+      _cache[(id, brightness)] ??= _build(id, brightness);
+
+  static (ColorScheme, ReplikaColors) _palette(AppThemeId id, bool isDark) => switch (id) {
+        AppThemeId.replika => isDark ? (_darkScheme, ReplikaColors.dark) : (_lightScheme, ReplikaColors.light),
+        AppThemeId.telegram =>
+          isDark ? (_telegramDarkScheme, ReplikaColors.telegramDark) : (_telegramLightScheme, ReplikaColors.telegramLight),
+      };
+
+  static ThemeData _build(AppThemeId id, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final rc = isDark ? ReplikaColors.dark : ReplikaColors.light;
-    final cs = isDark ? _darkScheme : _lightScheme;
+    final (cs, rc) = _palette(id, isDark);
+    final style = AppStyle.of(id);
     final text = AppType.textTheme(primary: rc.textPrimary, secondary: rc.textSecondary);
 
     return ThemeData(
@@ -24,8 +41,22 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: cs.surface,
       canvasColor: cs.surface,
       textTheme: text,
-      extensions: <ThemeExtension<dynamic>>[rc],
+      extensions: <ThemeExtension<dynamic>>[rc, style],
       splashFactory: InkRipple.splashFactory,
+      // Переходы и прокрутка как в iOS на обеих платформах.
+      pageTransitionsTheme: const PageTransitionsTheme(builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      }),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? cs.onPrimary : null,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? cs.primary : null,
+        ),
+      ),
       dividerTheme: DividerThemeData(color: rc.divider, thickness: 0.6, space: 0.6),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: cs.primary),
       textSelectionTheme: TextSelectionThemeData(
@@ -148,6 +179,73 @@ abstract final class AppTheme {
     inverseSurface: Color(0xFFE3E7EE),
     onInverseSurface: Color(0xFF1B1F26),
     inversePrimary: Palette.brand,
+    shadow: Color(0xFF000000),
+    scrim: Color(0xFF000000),
+  );
+
+  /// Telegram, светлая: фон #FCFCFF, вторичный #D4E3FF, текст #12172B,
+  /// акцент #0466C8.
+  static const ColorScheme _telegramLightScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary: Color(0xFF0466C8),
+    onPrimary: Color(0xFFFFFFFF),
+    primaryContainer: Color(0xFFD4E3FF),
+    onPrimaryContainer: Color(0xFF0A2A55),
+    secondary: Color(0xFF5F6475),
+    onSecondary: Color(0xFFFFFFFF),
+    secondaryContainer: Color(0xFFECECFF),
+    onSecondaryContainer: Color(0xFF12172B),
+    tertiary: Color(0xFFFF7AD9),
+    onTertiary: Color(0xFF3A0730),
+    error: Color(0xFFD92B2F),
+    onError: Color(0xFFFFFFFF),
+    surface: Color(0xFFFCFCFF),
+    onSurface: Color(0xFF12172B),
+    onSurfaceVariant: Color(0xFF5F6475),
+    surfaceTint: Colors.transparent,
+    surfaceContainerLowest: Color(0xFFFFFFFF),
+    surfaceContainerLow: Color(0xFFF6F7FC),
+    surfaceContainer: Color(0xFFF1F3F9),
+    surfaceContainerHigh: Color(0xFFECECF6),
+    surfaceContainerHighest: Color(0xFFE4E6F0),
+    outline: Color(0xFFA3A8B8),
+    outlineVariant: Color(0xFFE6E8F0),
+    inverseSurface: Color(0xFF12172B),
+    onInverseSurface: Color(0xFFF2F4FA),
+    inversePrimary: Color(0xFF9CC4FF),
+    shadow: Color(0xFF000000),
+    scrim: Color(0xFF000000),
+  );
+
+  /// Telegram, тёмная: основа — тёмно-синий #12172B.
+  static const ColorScheme _telegramDarkScheme = ColorScheme(
+    brightness: Brightness.dark,
+    primary: Color(0xFF6AAEF5),
+    onPrimary: Color(0xFF04213F),
+    primaryContainer: Color(0xFF233A63),
+    onPrimaryContainer: Color(0xFFD4E3FF),
+    secondary: Color(0xFF9CA3B8),
+    onSecondary: Color(0xFF12172B),
+    secondaryContainer: Color(0xFF1F2740),
+    onSecondaryContainer: Color(0xFFE2E6F2),
+    tertiary: Color(0xFFFF9BE3),
+    onTertiary: Color(0xFF3A0730),
+    error: Color(0xFFFF6B6B),
+    onError: Color(0xFF2B0503),
+    surface: Color(0xFF0F1424),
+    onSurface: Color(0xFFE9ECF5),
+    onSurfaceVariant: Color(0xFF9CA3B8),
+    surfaceTint: Colors.transparent,
+    surfaceContainerLowest: Color(0xFF0A0E1A),
+    surfaceContainerLow: Color(0xFF12182A),
+    surfaceContainer: Color(0xFF161D31),
+    surfaceContainerHigh: Color(0xFF1B2238),
+    surfaceContainerHighest: Color(0xFF242C44),
+    outline: Color(0xFF5B6380),
+    outlineVariant: Color(0xFF232A40),
+    inverseSurface: Color(0xFFE9ECF5),
+    onInverseSurface: Color(0xFF12172B),
+    inversePrimary: Color(0xFF0466C8),
     shadow: Color(0xFF000000),
     scrim: Color(0xFF000000),
   );
