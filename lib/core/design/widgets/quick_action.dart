@@ -6,7 +6,7 @@ import '../tokens.dart';
 /// Кнопка быстрого действия под профилем: значок цвета акцента и подпись
 /// на мягкой подложке («Звонок», «Видео», «Звук», «Ещё»).
 class QuickAction extends StatelessWidget {
-  const QuickAction({super.key, required this.icon, required this.label, this.onTap, this.active = false});
+  const QuickAction({super.key, required this.icon, required this.label, this.onTap, this.active = false, this.background});
 
   final IconData icon;
   final String label;
@@ -15,12 +15,15 @@ class QuickAction extends StatelessWidget {
   /// Включённое состояние (например, «Без звука»).
   final bool active;
 
+  /// Подложка (по умолчанию — мягкий серый поверхности).
+  final Color? background;
+
   @override
   Widget build(BuildContext context) {
     final cs = context.cs;
     final rc = context.rc;
     return Material(
-      color: active ? cs.primaryContainer : cs.surfaceContainerHigh,
+      color: active ? cs.primaryContainer : (background ?? cs.surfaceContainerHigh),
       borderRadius: BorderRadius.circular(Radii.control),
       clipBehavior: Clip.antiAlias,
       child: InkWell(

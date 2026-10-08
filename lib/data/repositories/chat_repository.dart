@@ -436,11 +436,29 @@ class ChatRepository extends Repository {
     notify({Tables.chats, Tables.messages, Tables.chatMembers});
   }
 
+  /// В архив и обратно. Архивный чат не показывается в общем списке и не
+  /// попадает в счётчик на вкладке.
+  Future<void> setArchived(String chatId, bool archived) async {
+    await db.update(
+      Tables.chats,
+      {'archived_at': archived ? dateToInt(DateTime.now()) : null},
+      where: 'id = ?',
+      whereArgs: [chatId],
+    );
+    notify({Tables.chats});
+  }
+
+  /// Фон переписки; null — «Стандартный».
+  Future<void> setBackground(String chatId, String? background) async {
+    await db.update(Tables.chats, {'background': background}, where: 'id = ?', whereArgs: [chatId]);
+    notify({Tables.chats});
+  }
+
   /// Сумма непрочитанных для значка на вкладке «Чаты» (без чатов без звука).
   Future<int> totalUnread(String deviceId) async {
     final rows = await db.rawQuery(
       'SELECT COALESCE(SUM(unread_count), 0) AS n FROM chats '
-      'WHERE device_id = ? AND muted = 0',
+      'WHERE device_id = ? AND muted = 0 AND archived_at IS NULL',
       [deviceId],
     );
     return (rows.first['n'] as num?)?.toInt() ?? 0;

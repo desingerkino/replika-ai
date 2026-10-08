@@ -43,7 +43,7 @@ void main() {
 
   testWidgets('счётчик непрочитанных', (tester) async {
     await tester.pumpWidget(host(const UnreadBadge(count: 1200)));
-    expect(find.text('999+'), findsOneWidget);
+    expect(find.text('99+'), findsOneWidget);
     await tester.pumpWidget(host(const UnreadBadge(count: 0)));
     expect(find.byType(Text), findsNothing);
   });

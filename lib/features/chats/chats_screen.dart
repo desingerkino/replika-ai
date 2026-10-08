@@ -17,6 +17,9 @@ import '../../core/design/widgets/replika_refresh.dart';
 import '../../core/theme/app_style.dart';
 import '../stories/stories_strip.dart';
 import 'chat_folder_tabs.dart';
+import 'chat_actions.dart';
+import 'archive_screen.dart';
+import '../../core/design/widgets/swipe_actions.dart';
 import '../../core/design/widgets/search_field.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
@@ -26,7 +29,7 @@ import 'chat_filter.dart';
 import 'chat_tile.dart';
 import '../search/message_hit_tile.dart';
 
-enum _ChatAction { pin, read, mute, delete }
+enum _ChatAction { pin, read, mute, archive, delete }
 
 enum _ComposeAction { chat, group }
 
@@ -122,6 +125,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
           icon: item.chat.muted ? Icons.notifications_active_outlined : AppIcons.muted,
           label: item.chat.muted ? 'Включить уведомления' : 'Без звука',
         ),
+        SheetAction(
+          value: _ChatAction.archive,
+          icon: item.chat.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+          label: item.chat.isArchived ? 'Вернуть из архива' : 'В архив',
+        ),
         const SheetAction(
           value: _ChatAction.delete,
           icon: AppIcons.delete,
@@ -144,6 +152,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
           }
         case _ChatAction.mute:
           await services.chats.setMuted(chatId, !item.chat.muted);
+        case _ChatAction.archive:
+          await ChatRowActions(context, item).toggleArchive();
         case _ChatAction.delete:
           final confirmed = await showConfirmDialog(
             context,
@@ -218,7 +228,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 queryKey: widget.deviceId,
                 load: () => services.chats.listForDevice(widget.deviceId),
                 builder: (context, snapshot) {
-                  final all = snapshot.data;
+                  var all = snapshot.data;
                   if (all == null) {
                     return snapshot.error != null
                         ? ErrorState(
@@ -228,6 +238,9 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         : const LoadingState();
                   }
                   final searching = _query.trim().isNotEmpty;
+                  // Архивные чаты живут отдельно: в общем списке — одна строка «Архив».
+                  final archived = all.where((i) => i.chat.isArchived).toList();
+                  all = all.where((i) => !i.chat.isArchived).toList();
                   final tabs = searchFirst && !searching
                       ? ChatFolderTabs(
                           selected: _folder,
@@ -240,7 +253,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         )
                       : null;
                   Widget body;
-                  if (all.isEmpty) {
+                  if (all.isEmpty && archived.isEmpty) {
                     body = ListView(
                       children: [
                         StoriesStrip(deviceId: widget.deviceId),
@@ -271,6 +284,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         padding: EdgeInsets.only(bottom: Space.s + MediaQuery.paddingOf(context).bottom),
                         children: [
                           if (_folder == ChatFolder.all || !searchFirst) StoriesStrip(deviceId: widget.deviceId),
+                          if (archived.isNotEmpty && (_folder == ChatFolder.all || !searchFirst))
+                            ArchiveRow(
+                              chats: archived,
+                              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                                builder: (_) => ArchiveScreen(deviceId: widget.deviceId),
+                              )),
+                            ),
                           if (sections) const SectionLabel('Закреплённые'),
                           for (var i = 0; i < pinned.length; i++)
                             _tile(
@@ -324,14 +344,20 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 
   Widget _tile(ChatListItem item, DateTime now, {required bool showDivider}) {
-    return ChatTile(
-      key: ValueKey(item.chat.id),
-      item: item,
-      now: now,
-      typing: Services.read(context).typing.isTyping(item.chat.id),
-      showDivider: showDivider,
-      onTap: () => AppNavigator.openChat(item.chat.id),
-      onLongPress: () => _openActions(item),
+    final actions = ChatRowActions(context, item);
+    return SwipeActionTile(
+      key: ValueKey('swipe-${item.chat.id}'),
+      leading: actions.leading(),
+      trailing: actions.trailing(),
+      child: ChatTile(
+        key: ValueKey(item.chat.id),
+        item: item,
+        now: now,
+        typing: Services.read(context).typing.isTyping(item.chat.id),
+        showDivider: showDivider,
+        onTap: () => AppNavigator.openChat(item.chat.id),
+        onLongPress: () => _openActions(item),
+      ),
     );
   }
 }

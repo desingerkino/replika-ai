@@ -56,9 +56,9 @@ class FloatingTabBar extends StatelessWidget {
           borderRadius: radius,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: dark ? 0.45 : 0.14),
-              blurRadius: 28,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: dark ? 0.35 : 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -70,12 +70,9 @@ class FloatingTabBar extends StatelessWidget {
               height: Sizes.tabBar + extra * 1.5,
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               decoration: BoxDecoration(
-                color: dark ? const Color(0xD11C1F26) : const Color(0xD6F6F6F6),
+                color: rc.glass,
                 borderRadius: radius,
-                border: Border.all(
-                  color: dark ? const Color(0x1FFFFFFF) : const Color(0x14141820),
-                  width: 0.5,
-                ),
+                border: Border.all(color: rc.glassBorder, width: 0.5),
               ),
               child: Row(
                 children: [
@@ -84,9 +81,9 @@ class FloatingTabBar extends StatelessWidget {
                       child: _TabButton(
                         item: items[i],
                         selected: i == index,
-                        selectedColor: context.cs.primary,
+                        selectedColor: rc.onNavIndicator,
                         idleColor: rc.textSecondary,
-                        highlight: dark ? const Color(0x1FFFFFFF) : const Color(0x12141820),
+                        highlight: rc.navIndicator,
                         onTap: () => onSelect(i),
                       ),
                     ),
@@ -140,7 +137,7 @@ class _TabButton extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
-          duration: Motion.fast,
+          duration: Motion.normal,
           curve: Motion.curve,
           decoration: BoxDecoration(
             color: selected ? highlight : Colors.transparent,

@@ -43,25 +43,32 @@ class ChatFolderTabs extends StatelessWidget {
       ChatFolder.personal,
       if (hasGroups || selected == ChatFolder.groups) ChatFolder.groups,
     ];
+    // Закладка и «+» закреплены по краям, прокручиваются только папки:
+    // так значки не уезжают за край при длинных названиях и счётчиках.
     Widget row = Container(
       height: 48,
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: rc.divider, width: 1))),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: rc.divider, width: 0.5))),
+      child: Row(
         children: [
           IconButton(
             tooltip: 'Избранное',
             onPressed: onFavorites,
             icon: Icon(Icons.bookmark_border_rounded, color: rc.textSecondary),
           ),
-          for (final folder in folders)
-            _Tab(
-              label: folder.label,
-              badge: folder == ChatFolder.unread ? unread : 0,
-              selected: folder == selected,
-              onTap: () => onSelect(folder),
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final folder in folders)
+                  _Tab(
+                    label: folder.label,
+                    badge: folder == ChatFolder.unread ? unread : 0,
+                    selected: folder == selected,
+                    onTap: () => onSelect(folder),
+                  ),
+              ],
             ),
+          ),
           IconButton(
             tooltip: 'Новый чат',
             onPressed: onCompose,
