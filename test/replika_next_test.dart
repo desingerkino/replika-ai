@@ -230,7 +230,7 @@ void main() {
     test('истории группируются по авторам, свои — первыми, просмотр отмечается', () async {
       const device = DemoSeed.deviceId;
       final owner = (await s.devices.byId(device))!.ownerCharacterId;
-      final contact = (await s.contacts.forDevice(device)).first.id;
+      final contact = (await s.contacts.forDevice(device)).firstWhere((c) => c.id != owner).id;
       final now = DateTime.now();
       await s.stories.add(deviceId: device, characterId: contact, mediaId: (await photo('a')).id,
           postedAt: now.subtract(const Duration(minutes: 30)));
