@@ -48,6 +48,47 @@ jobs:
           fi
           exit $code
 
+  # Снимки экранов в обеих темах — для визуальной проверки редизайна.
+  # Кладутся в ветку ci-screens (только для веток claude/**).
+  screens:
+    runs-on: ubuntu-latest
+    needs: analyze-test
+    if: startsWith(github.ref_name, 'claude/')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Снимки экранов
+        continue-on-error: true
+        run: |
+          set +e
+          flutter pub get
+          REPLIKA_SCREENSHOTS=1 flutter test test/screenshots_test.dart --update-goldens > shots.txt 2>&1
+          code=$?
+          cat shots.txt
+          if [ $code -ne 0 ]; then
+            body=$( (grep -n -A 16 '\[E\]\|EXCEPTION' shots.txt | head -n 200; tail -n 20 shots.txt) | head -c 50000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::warning title=screenshots::${body}"
+          fi
+
+      - name: Отправить снимки в ветку ci-screens
+        run: |
+          ls test/shots || exit 0
+          mkdir -p /tmp/shots && cp test/shots/*.png /tmp/shots/ || exit 0
+          cd /tmp/shots
+          git init -q -b ci-screens
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -qm "Снимки экранов ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" ci-screens
+
   android:
     runs-on: ubuntu-latest
     needs: analyze-test
