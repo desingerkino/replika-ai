@@ -1,0 +1,28 @@
+name: Проверка кода (Flutter)
+
+on:
+  push:
+    branches: [main, new-ui-ios27]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter --version
+
+      - run: flutter pub get
+
+      - name: Анализ кода
+        run: flutter analyze --no-fatal-infos
+
+      - name: Тесты
+        run: flutter test
