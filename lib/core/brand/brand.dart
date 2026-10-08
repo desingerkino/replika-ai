@@ -5,5 +5,5 @@ abstract final class Brand {
   static const String tagline = 'Постановочный мессенджер';
 
   /// Версия для экрана «О приложении». Менять вместе с pubspec.yaml.
-  static const String version = '0.17.0';
+  static const String version = '0.18.0';
 }

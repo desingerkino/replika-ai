@@ -161,6 +161,18 @@ void main() {
       await settle(tester, 3);
     }
 
+    // Тёмный вариант темы Telegram.
+    await tester.runAsync(() async {
+      await s.setTheme(AppThemeId.telegram);
+      await s.setThemeMode(ThemeMode.dark);
+    });
+    await tester.pumpWidget(ReplikaApp(services: s));
+    AppNavigator.homeTab.value = 0;
+    await shot(tester, 'telegram_dark_1_chats');
+    AppNavigator.openChat('chat-veronika');
+    await shot(tester, 'telegram_dark_2_chat');
+    AppNavigator.toRoot();
+
     // Отпустить таймеры и базу до конца теста.
     await tester.pumpWidget(const SizedBox());
     await tester.runAsync(() async {

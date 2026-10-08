@@ -1,7 +1,7 @@
 name: replika
 description: "Реплика — постановочный мессенджер для кино и сериалов (Android, iPhone, iPad)."
 publish_to: 'none'
-version: 0.17.0+19
+version: 0.18.0+20
 
 environment:
   sdk: ^3.6.0
