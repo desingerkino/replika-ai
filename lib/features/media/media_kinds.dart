@@ -107,7 +107,7 @@ double levelFromDb(double db) {
 List<double> normalizeWaveform(List<double> values) {
   if (values.isEmpty) return values;
   final peak = values.reduce((a, b) => a > b ? a : b);
-  if (peak < 0.08) return values;
+  if (peak < 0.02) return [for (final v in values) double.parse(v.clamp(0.05, 1.0).toStringAsFixed(2))];
   return [for (final v in values) double.parse((v / peak).clamp(0.05, 1.0).toStringAsFixed(2))];
 }
 
@@ -122,7 +122,7 @@ List<double> downsampleWaveform(List<double> samples, {int bars = 40}) {
     final avg = slice.reduce((a, b) => a + b) / slice.length;
     // Пик отрезка весомее среднего: слоги не «размазываются».
     final peak = slice.reduce((a, b) => a > b ? a : b);
-    result.add(double.parse((avg * 0.4 + peak * 0.6).clamp(0.05, 1.0).toStringAsFixed(2)));
+    result.add((avg * 0.4 + peak * 0.6).clamp(0.0, 1.0));
   }
   return normalizeWaveform(result);
 }
