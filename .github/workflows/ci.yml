@@ -118,7 +118,16 @@ jobs:
           exit $code
 
       - name: Размер APK
-        run: ls -lh build/app/outputs/flutter-apk/
+        run: |
+          ls -lh build/app/outputs/flutter-apk/
+          cp build/app/outputs/flutter-apk/app-release.apk replika.apk
+
+      - name: Файл установки Android
+        uses: actions/upload-artifact@v4
+        with:
+          name: replika-android-apk
+          path: replika.apk
+          retention-days: 30
 
   ios:
     runs-on: macos-latest
@@ -142,3 +151,17 @@ jobs:
             echo "::error title=ios build::${body}"
           fi
           exit $code
+
+      - name: Неподписанный IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qr replika-unsigned.ipa Payload
+          ls -lh replika-unsigned.ipa
+
+      - name: Файл установки iOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: replika-ios-unsigned-ipa
+          path: replika-unsigned.ipa
+          retention-days: 30
