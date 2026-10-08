@@ -62,6 +62,9 @@ abstract final class Sizes {
   static const double avatarContact = 44;
   static const double bubbleMaxWidthFactor = 0.78;
 
+  /// Фото и видео шире текста: превью крупное, как в Telegram.
+  static const double mediaMaxWidthFactor = 0.86;
+
   /// Предел ширины пузыря на широких экранах (iPad).
   static const double bubbleMaxWidthCap = 520;
   static const double sendButton = 44;

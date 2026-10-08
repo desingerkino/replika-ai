@@ -28,6 +28,12 @@ class ConnectDiscovery {
   final Duration beaconInterval;
 
   RawDatagramSocket? _socket;
+
+  /// Отдельный сокет для широковещательного маяка. Если сети нет, ошибка
+  /// отправки закрывает сокет, на котором случилась, — поэтому маяк не
+  /// шлётся с сокета, отвечающего на запросы: ответы продолжают работать
+  /// и без Wi-Fi (например, по кабелю или на одном устройстве).
+  RawDatagramSocket? _beaconSocket;
   Timer? _beacon;
 
   bool get running => _socket != null;
@@ -80,8 +86,25 @@ class ConnectDiscovery {
 
   /// Разослать маяк сейчас (например, сразу после возврата Wi-Fi).
   Future<void> burst() async {
-    final socket = _socket;
-    if (socket == null) return;
+    if (_socket == null) return;
+    RawDatagramSocket? socket = _beaconSocket;
+    if (socket == null) {
+      try {
+        final created = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+        created.broadcastEnabled = true;
+        void drop() {
+          if (_beaconSocket == created) _beaconSocket = null;
+        }
+        created.listen((_) {}, onError: (Object error) => drop(), onDone: drop);
+        if (_socket == null) {
+          created.close();
+          return;
+        }
+        _beaconSocket = socket = created;
+      } catch (_) {
+        return;
+      }
+    }
     final packet = _packet();
     final targets = <InternetAddress>{InternetAddress('255.255.255.255')};
     try {
@@ -106,6 +129,8 @@ class ConnectDiscovery {
   Future<void> stop() async {
     _beacon?.cancel();
     _beacon = null;
+    _beaconSocket?.close();
+    _beaconSocket = null;
     _socket?.close();
     _socket = null;
   }

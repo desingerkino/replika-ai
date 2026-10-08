@@ -22,17 +22,18 @@ class SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rc = context.rc;
+    final pill = context.style.searchRadius >= 100;
     return Container(
-      constraints: const BoxConstraints(minHeight: 38),
+      constraints: BoxConstraints(minHeight: pill ? 46 : 38),
       decoration: BoxDecoration(
         color: rc.surfaceMuted,
-        borderRadius: BorderRadius.circular(Radii.control),
+        borderRadius: BorderRadius.circular(context.style.searchRadius),
       ),
-      padding: const EdgeInsets.only(left: Space.m),
+      padding: EdgeInsets.only(left: pill ? Space.l : Space.m),
       child: Row(
         children: [
-          Icon(AppIcons.search, size: 18, color: rc.textTertiary),
-          const SizedBox(width: Space.s),
+          Icon(AppIcons.search, size: pill ? 22 : 18, color: rc.textSecondary),
+          SizedBox(width: pill ? Space.m : Space.s),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 9),

@@ -20,10 +20,12 @@ BorderRadius bubbleRadius({
   required bool outgoing,
   required bool joinsPrevious,
   required bool joinsNext,
+  double radius = Radii.bubble,
+  double tail = Radii.tail,
 }) {
-  const round = Radius.circular(Radii.bubble);
-  final top = Radius.circular(joinsPrevious ? Radii.joined : Radii.bubble);
-  final bottom = Radius.circular(joinsNext ? Radii.joined : Radii.tail);
+  final round = Radius.circular(radius);
+  final top = Radius.circular(joinsPrevious ? Radii.joined : radius);
+  final bottom = Radius.circular(joinsNext ? Radii.joined : tail);
   return outgoing
       ? BorderRadius.only(topLeft: round, bottomLeft: round, topRight: top, bottomRight: bottom)
       : BorderRadius.only(topRight: round, bottomRight: round, topLeft: top, bottomLeft: bottom);
@@ -56,9 +58,17 @@ class MessageBubble extends StatelessWidget {
     this.selected = false,
     this.senderName,
     this.senderTone,
+    this.onDoubleTap,
+    this.onReactionTap,
   });
 
   final MessageRow row;
+
+  /// Двойное касание — быстрая реакция ❤️.
+  final VoidCallback? onDoubleTap;
+
+  /// Касание реакции под пузырём — убрать или сменить её.
+  final VoidCallback? onReactionTap;
   final VoidCallback onLongPress;
 
   /// Жест «смахнуть влево» — ответить. null — ответ недоступен.
@@ -134,11 +144,18 @@ class MessageBubble extends StatelessWidget {
       favorite: message.favorite,
     );
 
-    final maxWidth = math.min(MediaQuery.sizeOf(context).width * Sizes.bubbleMaxWidthFactor, Sizes.bubbleMaxWidthCap);
+    final style = context.style;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final maxWidth = math.min(
+      screenWidth * (message.isMedia ? Sizes.mediaMaxWidthFactor : Sizes.bubbleMaxWidthFactor),
+      Sizes.bubbleMaxWidthCap,
+    );
     final radius = bubbleRadius(
       outgoing: outgoing,
       joinsPrevious: row.joinsPrevious,
       joinsNext: row.joinsNext,
+      radius: style.bubbleRadius,
+      tail: style.bubbleTail,
     );
     final Widget bubble = !deleted && message.isMedia
         ? (_showSender
@@ -156,11 +173,7 @@ class MessageBubble extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(Space.m, 7, Space.s + 2, 7),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: bubbleRadius(
-          outgoing: outgoing,
-          joinsPrevious: row.joinsPrevious,
-          joinsNext: row.joinsNext,
-        ),
+        borderRadius: radius,
         boxShadow: outgoing
             ? null
             : const [BoxShadow(color: Color(0x14000000), blurRadius: 1, offset: Offset(0, 1))],
@@ -230,9 +243,11 @@ class MessageBubble extends StatelessWidget {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onLongPress: onLongPress,
-            child: onReply == null
-                ? bubble
-                : SwipeToReply(onReply: onReply!, child: bubble),
+            onDoubleTap: onDoubleTap,
+            child: _withReaction(
+              context,
+              onReply == null ? bubble : SwipeToReply(onReply: onReply!, child: bubble),
+            ),
           ),
         ),
       ),
@@ -301,7 +316,7 @@ class MessageBubble extends StatelessWidget {
     switch (message.type) {
       case MessageType.photo:
       case MessageType.video:
-        final width = math.min(maxWidth, 280.0) - 6;
+        final width = math.min(maxWidth, context.style.mediaMaxWidth) - 6;
         final inner = radius - BorderRadius.circular(3);
         final visual = message.type == MessageType.photo
             ? PhotoContent(media: media, width: width)
@@ -414,6 +429,23 @@ class MessageBubble extends StatelessWidget {
           ],
         ));
     }
+  }
+
+  /// Реакция-эмодзи под пузырём, со стороны отправителя.
+  Widget _withReaction(BuildContext context, Widget bubble) {
+    final reaction = row.message.reaction;
+    if (reaction == null || reaction.isEmpty || row.message.deleted) return bubble;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: row.outgoing ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        bubble,
+        Padding(
+          padding: const EdgeInsets.only(top: 3, left: Space.xs, right: Space.xs),
+          child: ReactionChip(emoji: reaction, onTap: onReactionTap),
+        ),
+      ],
+    );
   }
 
   Widget _withQuote(BuildContext context, bool outgoing, Widget body) {
@@ -697,6 +729,78 @@ class DaySeparator extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Быстрые реакции в меню сообщения.
+const List<String> quickReactions = ['❤️', '👍', '😂', '🔥', '😮', '😢', '🙏', '👎'];
+
+/// Реакция под пузырём: эмодзи на светлой «таблетке» с тенью.
+class ReactionChip extends StatelessWidget {
+  const ReactionChip({super.key, required this.emoji, this.onTap});
+
+  final String emoji;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.cs;
+    return Semantics(
+      button: onTap != null,
+      label: 'Реакция $emoji',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: cs.primaryContainer,
+            borderRadius: BorderRadius.circular(Radii.pill),
+            border: Border.all(color: cs.surface, width: 1.5),
+            boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 4, offset: Offset(0, 1))],
+          ),
+          child: Text(emoji, style: const TextStyle(fontSize: 16, height: 1.2)),
+        ),
+      ),
+    );
+  }
+}
+
+/// Строка быстрых реакций над меню сообщения.
+class ReactionPicker extends StatelessWidget {
+  const ReactionPicker({super.key, required this.onPick, this.current});
+
+  final ValueChanged<String> onPick;
+  final String? current;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.cs;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final emoji in quickReactions)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Material(
+                color: emoji == current ? cs.primaryContainer : cs.surfaceContainerHigh,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onPick(emoji);
+                  },
+                  child: SizedBox.square(
+                    dimension: 44,
+                    child: Center(child: Text(emoji, style: const TextStyle(fontSize: 22))),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

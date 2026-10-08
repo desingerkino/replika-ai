@@ -69,7 +69,7 @@ class _HomeShellState extends State<HomeShell> {
             ChatsScreen(deviceId: deviceId),
             ContactsScreen(deviceId: deviceId),
             CallsScreen(deviceId: deviceId),
-            const StoriesScreen(),
+            StoriesScreen(deviceId: deviceId),
             SettingsScreen(deviceId: deviceId),
           ],
         );

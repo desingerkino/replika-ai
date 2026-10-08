@@ -13,6 +13,10 @@ import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../core/design/widgets/dialogs.dart';
 import '../../core/design/widgets/form.dart';
+import '../../core/design/widgets/replika_refresh.dart';
+import '../../core/theme/app_style.dart';
+import '../stories/stories_strip.dart';
+import 'chat_folder_tabs.dart';
 import '../../core/design/widgets/search_field.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
@@ -40,6 +44,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
   final TextEditingController _search = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
   String _query = '';
+  ChatFolder _folder = ChatFolder.all;
   Timer? _clock;
 
   @override
@@ -160,37 +165,46 @@ class _ChatsScreenState extends State<ChatsScreen> {
   Widget build(BuildContext context) {
     final services = Services.of(context);
     final cs = context.cs;
+    final searchFirst = context.style.chatListHeader == ChatListHeaderLook.searchFirst;
+    final search = SearchField(
+      controller: _search,
+      focusNode: _searchFocus,
+      hint: 'Поиск',
+      onChanged: (value) => setState(() => _query = value),
+    );
     return ColoredBox(
       color: cs.surface,
       child: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            ScreenHeader(
-              title: 'Чаты',
-              onTitleHold: AppNavigator.openOperator,
-              actions: [
-                IconButton(
-                  tooltip: 'Поиск',
-                  icon: const Icon(AppIcons.search),
-                  onPressed: _searchFocus.requestFocus,
-                ),
-                IconButton(
-                  tooltip: 'Новый чат',
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: _compose,
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.s),
-              child: SearchField(
-                controller: _search,
-                focusNode: _searchFocus,
-                hint: 'Поиск',
-                onChanged: (value) => setState(() => _query = value),
+            if (searchFirst)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(Space.l, Space.m, Space.l, Space.xs),
+                child: search,
+              )
+            else ...[
+              ScreenHeader(
+                title: 'Чаты',
+                onTitleHold: AppNavigator.openOperator,
+                actions: [
+                  IconButton(
+                    tooltip: 'Поиск',
+                    icon: const Icon(AppIcons.search),
+                    onPressed: _searchFocus.requestFocus,
+                  ),
+                  IconButton(
+                    tooltip: 'Новый чат',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: _compose,
+                  ),
+                ],
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.s),
+                child: search,
+              ),
+            ],
             Expanded(
               child: LiveQuery<List<ChatListItem>>(
                 tables: const {
@@ -213,29 +227,50 @@ class _ChatsScreenState extends State<ChatsScreen> {
                           )
                         : const LoadingState();
                   }
+                  final searching = _query.trim().isNotEmpty;
+                  final tabs = searchFirst && !searching
+                      ? ChatFolderTabs(
+                          selected: _folder,
+                          unread: all.where((i) => i.chat.unreadCount > 0).length,
+                          hasGroups: all.any((i) => i.chat.isGroup),
+                          onSelect: (folder) => setState(() => _folder = folder),
+                          onFavorites: () => AppNavigator.openFavorites(widget.deviceId),
+                          onCompose: _compose,
+                          onHold: AppNavigator.openOperator,
+                        )
+                      : null;
+                  Widget body;
                   if (all.isEmpty) {
-                    return EmptyState(
-                      icon: AppIcons.emptyChats,
-                      title: 'Чатов пока нет',
-                      message: 'Откройте контакт, чтобы начать переписку.',
-                      action: FilledButton(
-                        onPressed: () => AppNavigator.homeTab.value = 1,
-                        child: const Text('Новый чат'),
-                      ),
+                    body = ListView(
+                      children: [
+                        StoriesStrip(deviceId: widget.deviceId),
+                        SizedBox(
+                          height: 360,
+                          child: EmptyState(
+                            icon: AppIcons.emptyChats,
+                            title: 'Чатов пока нет',
+                            message: 'Откройте контакт, чтобы начать переписку.',
+                            action: FilledButton(
+                              onPressed: () => AppNavigator.homeTab.value = 1,
+                              child: const Text('Новый чат'),
+                            ),
+                          ),
+                        ),
+                      ],
                     );
-                  }
-                  final items = filterChats(all, _query);
-                  final now = DateTime.now();
-                  if (_query.trim().isEmpty) {
+                  } else if (!searching) {
+                    final items = filterByFolder(all, searchFirst ? _folder : ChatFolder.all);
+                    final now = DateTime.now();
                     final pinned = items.where((item) => item.chat.isPinned).toList();
                     final others = items.where((item) => !item.chat.isPinned).toList();
-                    final sections = pinned.isNotEmpty && others.isNotEmpty;
-                    return ListenableBuilder(
+                    final sections = !searchFirst && pinned.isNotEmpty && others.isNotEmpty;
+                    body = ListenableBuilder(
                       listenable: services.typing,
                       builder: (context, _) => ListView(
                         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                         padding: EdgeInsets.only(bottom: Space.s + MediaQuery.paddingOf(context).bottom),
                         children: [
+                          if (_folder == ChatFolder.all || !searchFirst) StoriesStrip(deviceId: widget.deviceId),
                           if (sections) const SectionLabel('Закреплённые'),
                           for (var i = 0; i < pinned.length; i++)
                             _tile(
@@ -246,16 +281,38 @@ class _ChatsScreenState extends State<ChatsScreen> {
                           if (sections) const SectionLabel('Все чаты'),
                           for (var i = 0; i < others.length; i++)
                             _tile(others[i], now, showDivider: i < others.length - 1),
+                          if (items.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(Space.xxl),
+                              child: Text(
+                                'В папке «${_folder.label}» пока пусто',
+                                textAlign: TextAlign.center,
+                                style: context.tt.bodyMedium?.copyWith(color: context.rc.textSecondary),
+                              ),
+                            ),
                         ],
                       ),
                     );
+                  } else {
+                    final now = DateTime.now();
+                    body = _SearchResults(
+                      deviceId: widget.deviceId,
+                      query: _query,
+                      chats: filterChats(all, _query),
+                      now: now,
+                      chatTile: (item, divider) => _tile(item, now, showDivider: divider),
+                    );
                   }
-                  return _SearchResults(
-                    deviceId: widget.deviceId,
-                    query: _query,
-                    chats: items,
-                    now: now,
-                    chatTile: (item, divider) => _tile(item, now, showDivider: divider),
+                  return Column(
+                    children: [
+                      if (tabs != null) tabs,
+                      Expanded(
+                        child: ReplikaRefreshIndicator(
+                          onRefresh: () async => snapshot.reload(),
+                          child: body,
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
