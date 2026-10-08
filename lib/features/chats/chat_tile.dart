@@ -176,7 +176,7 @@ class ChatTile extends StatelessWidget {
                             ),
                             if (showTicks) ...[
                               const SizedBox(width: Space.xs),
-                              MessageTicks(state: last!.state, color: rc.textTertiary, readColor: rc.success, size: 16),
+                              MessageTicks(state: last.state, color: rc.textTertiary, readColor: rc.success, size: 16),
                             ],
                             const SizedBox(width: Space.xs),
                             Text(
