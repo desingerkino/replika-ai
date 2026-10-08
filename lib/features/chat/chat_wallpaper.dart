@@ -2,26 +2,32 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../core/design/context.dart';
+import 'chat_backgrounds.dart';
 
-/// Фон переписки. В теме с узором — лёгкие «дудлы» (звёзды, сердца,
-/// луны, кружки) поверх цвета фона, как обои Telegram. Узор нарисован
-/// кодом: ни файлов, ни сети, чёткий на любом экране.
+/// Фон переписки. [background] — выбранный для чата фон
+/// (chats.background, см. [ChatBackgrounds]); null — «Стандартный»: в теме
+/// с узором — лёгкие «дудлы» (звёзды, сердца, луны, кружки) поверх цвета
+/// фона, как обои Telegram. Узоры нарисованы кодом: ни файлов, ни сети,
+/// чёткие на любом экране. Светлый или тёмный фон вопреки теме
+/// перекрашивает и пузыри — текст на нём всегда читается.
 class ChatWallpaper extends StatelessWidget {
-  const ChatWallpaper({super.key, required this.child});
+  const ChatWallpaper({super.key, this.background, required this.child});
 
+  final String? background;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
-    if (!context.style.chatWallpaper) return ColoredBox(color: rc.chatBackground, child: child);
+    final spec = ChatBackgrounds.byId(background);
+    final theme = themeForBackground(context, spec);
     // Узор кэшируется отдельным слоем, прокрутка ленты его не перерисовывает.
-    return CustomPaint(
-      painter: DoodlePainter(background: rc.chatBackground, stroke: rc.chatPattern),
-      isComplex: true,
-      child: RepaintBoundary(child: child),
-    );
+    final painted = theme == null
+        ? ChatBackgroundPaint(background: spec, child: child)
+        : Theme(
+            data: theme,
+            child: Builder(builder: (context) => ChatBackgroundPaint(background: spec, child: child)),
+          );
+    return painted;
   }
 }
 

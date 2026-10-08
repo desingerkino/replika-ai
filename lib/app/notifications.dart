@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Номер уведомления чата: одно уведомление на чат, новые сообщения
@@ -27,6 +28,13 @@ class NotificationMessage {
 /// Настоящие локальные уведомления: Android (каналы, звук, вибрация) и iOS
 /// (баннер, экран блокировки, звук). Переход в чат по нажатию. Сервер и
 /// push не используются.
+/// Значок уведомления Android: белый силуэт сферы «Реплики»
+/// (tool/generate_icons.py → drawable-*/ic_notification.png).
+const String notificationIcon = '@drawable/ic_notification';
+
+/// Цвет значка и акцента уведомления — синий интерфейса (#007AFF).
+const Color notificationAccent = Color(0xFF007AFF);
+
 class NotificationService {
   NotificationService({required this.onOpenChat});
 
@@ -67,7 +75,7 @@ class NotificationService {
     try {
       await _plugin.initialize(
         const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher_monochrome'),
+          android: AndroidInitializationSettings(notificationIcon),
           // Разрешение на iOS спрашиваем сами, в нужный момент, а не при запуске.
           iOS: DarwinInitializationSettings(
             requestAlertPermission: false,
@@ -162,6 +170,8 @@ class NotificationService {
             importance: Importance.high,
             priority: Priority.high,
             category: AndroidNotificationCategory.message,
+            icon: notificationIcon,
+            color: notificationAccent,
             styleInformation: style,
             when: message.time.millisecondsSinceEpoch,
             showWhen: true,
@@ -199,6 +209,8 @@ class NotificationService {
             importance: Importance.high,
             priority: Priority.high,
             styleInformation: BigTextStyleInformation(text),
+            icon: notificationIcon,
+            color: notificationAccent,
             when: (time ?? DateTime.now()).millisecondsSinceEpoch,
             showWhen: true,
             autoCancel: true,

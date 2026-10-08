@@ -584,6 +584,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       deviceId: header.chat.deviceId, characterId: peerId, kind: CallKind.audio, chatId: widget.chatId),
                 ),
               ],
+              IconButton(
+                tooltip: 'Фон чата',
+                icon: const Icon(Icons.wallpaper_outlined),
+                onPressed: () => AppNavigator.openChatBackground(widget.chatId),
+              ),
             ],
             title: ListenableBuilder(
               listenable: _s.typing,
@@ -605,7 +610,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           body: ContentWidth(
             child: Column(
               children: [
-                Expanded(child: ChatWallpaper(child: _buildMessages(header))),
+                Expanded(child: ChatWallpaper(background: header.chat.background, child: _buildMessages(header))),
                 Composer(
                   controller: _composer,
                   focusNode: _focus,
