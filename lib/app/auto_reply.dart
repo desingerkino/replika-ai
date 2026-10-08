@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import '../data/models/message.dart';
+import 'ai_context.dart';
 import 'improv.dart';
 import 'improv_sender.dart';
 import 'services.dart';
@@ -115,17 +115,15 @@ class AutoReplyController extends ChangeNotifier {
       if (token != _token) return;
 
       final all = await _services.messages.forChat(chatId);
-      final history = <AiTurn>[
-        for (final m in all)
-          if (m.type == MessageType.text && !m.deleted && m.text.trim().isNotEmpty)
-            AiTurn(fromOwner: m.senderId == header.ownerCharacterId, text: m.text.trim()),
-      ];
-      final recent = history.length > 12 ? history.sublist(history.length - 12) : history;
+      final recent = buildAiHistory(all, header.ownerCharacterId);
+      // Последняя реплика должна быть от владельца: иначе отвечать не на что
+      // (например, пока ИИ думал, собеседнику уже ответила сцена).
+      if (recent.isEmpty || !recent.last.fromOwner) return;
 
       final peerId = header.chat.peerCharacterId;
       final contact = peerId == null
           ? null
-          : await _services.contacts.view(_services.currentDeviceId.value, peerId);
+          : await _services.contacts.view(header.chat.deviceId, peerId);
       final reply = await ai.reply(
         personaName: header.peer.displayName,
         persona: contact?.character.description ?? '',
