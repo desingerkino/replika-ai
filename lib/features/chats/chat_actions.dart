@@ -51,11 +51,14 @@ class ChatRowActions {
 
   Future<void> toggleArchive() => _guard(() async {
         final archive = !item.chat.isArchived;
-        await _s.chats.setArchived(_id, archive);
+        // Репозиторий берём сразу: строка может исчезнуть из списка раньше,
+        // чем нажмут «Отменить».
+        final chats = _s.chats;
+        await chats.setArchived(_id, archive);
         _snack(
           archive ? 'Чат перенесён в архив' : 'Чат возвращён из архива',
           undoLabel: 'Отменить',
-          onUndo: () => _s.chats.setArchived(_id, !archive),
+          onUndo: () => chats.setArchived(_id, !archive),
         );
       });
 

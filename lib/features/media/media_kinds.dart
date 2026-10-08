@@ -172,7 +172,7 @@ List<double> wavWaveform(Uint8List bytes, {int bars = 40}) {
     return switch (bytesPerSample) {
       1 => (bytes[at] - 128) / 128,
       2 => data.getInt16(at, Endian.little) / 32768,
-      3 => (((bytes[at + 2] << 24) | (bytes[at + 1] << 16) | (bytes[at] << 8)) >> 8) / 8388608,
+      3 => ((bytes[at + 2] << 16) | (bytes[at + 1] << 8) | bytes[at]).toSigned(24) / 8388608,
       4 => data.getInt32(at, Endian.little) / 2147483648,
       _ => 0,
     };

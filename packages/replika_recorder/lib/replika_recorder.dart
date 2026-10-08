@@ -77,6 +77,13 @@ class ReplikaRecorder {
   static Future<void> setProximityMonitoring(bool enabled) =>
       _quiet('setProximityMonitoring', {'enabled': enabled});
 
+  /// Звонок, Android 12+: громкая связь или разговорный динамик через
+  /// устройство связи (setCommunicationDevice). На других системах — ничего.
+  static Future<void> setSpeakerRoute(bool speaker) => _quiet('setSpeakerRoute', {'speaker': speaker});
+
+  /// Звонок закончился: вернуть маршрут связи системе.
+  static Future<void> clearSpeakerRoute() => _quiet('clearSpeakerRoute', const {});
+
   static Future<void> _quiet(String method, Map<String, Object?> arguments) async {
     try {
       await _channel.invokeMethod<void>(method, arguments);

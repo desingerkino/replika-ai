@@ -238,9 +238,10 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         : const LoadingState();
                   }
                   final searching = _query.trim().isNotEmpty;
-                  // Архивные чаты живут отдельно: в общем списке — одна строка «Архив».
-                  final archived = all.where((i) => i.chat.isArchived).toList();
-                  all = all.where((i) => !i.chat.isArchived).toList();
+                  // Архивные чаты живут отдельно: в общем списке — одна строка
+                  // «Архив». Поиск находит и архивные.
+                  final archived = searching ? <ChatListItem>[] : all.where((i) => i.chat.isArchived).toList();
+                  if (!searching) all = all.where((i) => !i.chat.isArchived).toList();
                   final tabs = searchFirst && !searching
                       ? ChatFolderTabs(
                           selected: _folder,

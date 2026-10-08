@@ -40,6 +40,19 @@ class CallAudio {
 
   bool get _supported => !kIsWeb && (Platform.isIOS || Platform.isAndroid);
 
+  /// Все переключения звука идут строго по очереди: «положили трубку» сразу
+  /// после «вызова» не обгоняет настройку сессии и не оставляет телефон в
+  /// режиме разговора.
+  Future<void> _queue = Future<void>.value();
+
+  Future<void> _serial(Future<void> Function() action) {
+    final next = _queue.then((_) => action()).catchError((Object error) {
+      debugPrint('Звук звонка: $error');
+    });
+    _queue = next;
+    return next;
+  }
+
   Future<void> _guard(String what, Future<void> Function() action) async {
     try {
       await action();
@@ -49,7 +62,10 @@ class CallAudio {
   }
 
   /// Начало разговора (вызов, соединение, разговор).
-  Future<void> begin({required bool speaker, required bool video}) async {
+  Future<void> begin({required bool speaker, required bool video}) =>
+      _serial(() => _begin(speaker: speaker, video: video));
+
+  Future<void> _begin({required bool speaker, required bool video}) async {
     if (!_supported) return;
     _video = video;
     if (!_active) {
@@ -59,7 +75,9 @@ class CallAudio {
         await session.configure(AudioSessionConfiguration(
           avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
           avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.allowBluetooth,
-          avAudioSessionMode: video ? AVAudioSessionMode.videoChat : AVAudioSessionMode.voiceChat,
+          // voiceChat и для видео: videoChat на iOS сам включает громкую
+          // связь, и кнопка «Динамик» перестала бы переключать маршрут.
+          avAudioSessionMode: AVAudioSessionMode.voiceChat,
           androidAudioAttributes: voiceAttributes,
           androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
         ));
@@ -69,11 +87,13 @@ class CallAudio {
         }
       });
     }
-    await setSpeaker(speaker);
+    await _setSpeaker(speaker);
   }
 
   /// Громкая связь вкл./выкл.
-  Future<void> setSpeaker(bool on) async {
+  Future<void> setSpeaker(bool on) => _serial(() => _setSpeaker(on));
+
+  Future<void> _setSpeaker(bool on) async {
     if (!_supported || !_active) return;
     _speaker = on;
     await _guard('динамик', () async {
@@ -83,13 +103,17 @@ class CallAudio {
         );
       } else {
         await AndroidAudioManager().setSpeakerphoneOn(on);
+        // Android 12+: маршрут разговора задаётся устройством связи.
+        await ReplikaRecorder.setSpeakerRoute(on);
       }
     });
     await _updateProximity();
   }
 
   /// Микрофон звонка выкл./вкл. (глушится и в записи видеозвонка).
-  Future<void> setMicrophoneMuted(bool muted) async {
+  Future<void> setMicrophoneMuted(bool muted) => _serial(() => _setMicrophoneMuted(muted));
+
+  Future<void> _setMicrophoneMuted(bool muted) async {
     if (!_supported || _micMuted == muted) return;
     _micMuted = muted;
     await _guard('микрофон', () => ReplikaRecorder.setMicrophoneMuted(muted));
@@ -104,15 +128,18 @@ class CallAudio {
   }
 
   /// Звонок закончился: всё вернуть как было.
-  Future<void> end() async {
+  Future<void> end() => _serial(_end);
+
+  Future<void> _end() async {
     if (!_supported || !_active) return;
     _active = false;
     _speaker = false;
-    await setMicrophoneMuted(false);
+    await _setMicrophoneMuted(false);
     await _updateProximity();
     await _guard('возврат к медиа', () async {
       if (Platform.isAndroid) {
         await AndroidAudioManager().setSpeakerphoneOn(false);
+        await ReplikaRecorder.clearSpeakerRoute();
         await AndroidAudioManager().setMode(AndroidAudioHardwareMode.normal);
       } else {
         await AVAudioSession().overrideOutputAudioPort(AVAudioSessionPortOverride.none);

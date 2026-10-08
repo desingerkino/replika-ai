@@ -19,15 +19,13 @@ class ChatWallpaper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spec = ChatBackgrounds.byId(background);
-    final theme = themeForBackground(context, spec);
-    // Узор кэшируется отдельным слоем, прокрутка ленты его не перерисовывает.
-    final painted = theme == null
-        ? ChatBackgroundPaint(background: spec, child: child)
-        : Theme(
-            data: theme,
-            child: Builder(builder: (context) => ChatBackgroundPaint(background: spec, child: child)),
-          );
-    return painted;
+    // Структура дерева одна для любого фона: смена фона перекрашивает,
+    // но не пересоздаёт переписку (прокрутка и плееры на месте).
+    final theme = themeForBackground(context, spec) ?? Theme.of(context);
+    return Theme(
+      data: theme,
+      child: Builder(builder: (context) => ChatBackgroundPaint(background: spec, child: child)),
+    );
   }
 }
 

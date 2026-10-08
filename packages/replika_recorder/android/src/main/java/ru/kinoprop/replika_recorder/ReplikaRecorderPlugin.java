@@ -90,6 +90,7 @@ public class ReplikaRecorderPlugin implements FlutterPlugin, MethodChannel.Metho
         finishRecording(); // не оставляем открытый рекордер
         setProximityMonitoring(false);
         setMicrophoneMuted(false);
+        clearSpeakerRoute();
     }
 
     // ---------- ActivityAware ----------
@@ -156,6 +157,15 @@ public class ReplikaRecorderPlugin implements FlutterPlugin, MethodChannel.Metho
                 setMicrophoneMuted(muted != null && muted);
                 result.success(null);
                 break;
+            case "setSpeakerRoute":
+                Boolean speaker = call.argument("speaker");
+                setSpeakerRoute(speaker != null && speaker);
+                result.success(null);
+                break;
+            case "clearSpeakerRoute":
+                clearSpeakerRoute();
+                result.success(null);
+                break;
             case "setProximityMonitoring":
                 Boolean enabled = call.argument("enabled");
                 setProximityMonitoring(enabled != null && enabled);
@@ -173,6 +183,33 @@ public class ReplikaRecorderPlugin implements FlutterPlugin, MethodChannel.Metho
         try {
             AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             if (am != null) am.setMicrophoneMute(muted);
+        } catch (Exception ignored) {
+        }
+    }
+
+    /** Android 12+: маршрут разговора — громкий или разговорный динамик. */
+    private void setSpeakerRoute(boolean speaker) {
+        if (Build.VERSION.SDK_INT < 31) return;
+        try {
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am == null) return;
+            int wanted = speaker ? android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+                    : android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE;
+            for (android.media.AudioDeviceInfo device : am.getAvailableCommunicationDevices()) {
+                if (device.getType() == wanted) {
+                    am.setCommunicationDevice(device);
+                    return;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void clearSpeakerRoute() {
+        if (Build.VERSION.SDK_INT < 31) return;
+        try {
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) am.clearCommunicationDevice();
         } catch (Exception ignored) {
         }
     }

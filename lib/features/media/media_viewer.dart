@@ -343,12 +343,8 @@ class _VideoViewerScreenState extends State<VideoViewerScreen> {
   Duration _at(double fraction) =>
       Duration(milliseconds: (_controller.value.duration.inMilliseconds * fraction).round());
 
-  /// Размер кадра с учётом поворота (запись с телефона, снятая вертикально).
-  Size _frameSize(VideoPlayerValue value) {
-    final size = value.size;
-    final quarter = value.rotationCorrection % 180 != 0;
-    return quarter ? Size(size.height, size.width) : size;
-  }
+  /// Размер кадра, как его сообщает плеер (поворот записи плеер уже учёл).
+  Size _frameSize(VideoPlayerValue value) => value.size;
 
   @override
   Widget build(BuildContext context) {

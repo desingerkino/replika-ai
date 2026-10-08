@@ -43,7 +43,16 @@ class _MicButtonState extends State<MicButton> {
   void _start(LongPressStartDetails _) {
     _drag = Offset.zero;
     _cancelled = false;
+    _v.pressed = true;
     unawaited(_v.start());
+  }
+
+  /// Жест прервала система (звонок, окно разрешения): палец «потерян» —
+  /// запись не отправляется сама, а встаёт на замок.
+  void _lost() {
+    _v.pressed = false;
+    if (_v.state == VoiceRecState.holding) _v.lock();
+    if (mounted) setState(() => _drag = Offset.zero);
   }
 
   void _move(LongPressMoveUpdateDetails d) {
@@ -60,6 +69,7 @@ class _MicButtonState extends State<MicButton> {
   }
 
   Future<void> _end(LongPressEndDetails _) async {
+    _v.pressed = false;
     setState(() => _drag = Offset.zero);
     if (_cancelled || _v.state != VoiceRecState.holding) return;
     final item = await _v.finish();
@@ -78,7 +88,11 @@ class _MicButtonState extends State<MicButton> {
         return Semantics(
           button: true,
           label: 'Записать голосовое: удерживайте или коснитесь',
-          child: RawGestureDetector(
+          child: Listener(
+            // Отмена указателя после принятого долгого нажатия не вызывает
+            // onLongPressEnd — ловим её здесь.
+            onPointerCancel: (_) => _lost(),
+            child: RawGestureDetector(
             behavior: HitTestBehavior.opaque,
             gestures: {
               LongPressGestureRecognizer: GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
@@ -86,7 +100,8 @@ class _MicButtonState extends State<MicButton> {
                 (r) => r
                   ..onLongPressStart = widget.enabled ? _start : null
                   ..onLongPressMoveUpdate = _move
-                  ..onLongPressEnd = _end,
+                  ..onLongPressEnd = _end
+                  ..onLongPressCancel = _lost,
               ),
               TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                 TapGestureRecognizer.new,
@@ -148,6 +163,7 @@ class _MicButtonState extends State<MicButton> {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

@@ -552,11 +552,12 @@ class _TrackPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(Offset(0, y), Offset(size.width, y), paint..color = idle);
     canvas.drawLine(Offset(0, y), Offset(x, y), paint..color = played);
-    canvas.drawCircle(Offset(x.clamp(5.0, size.width - 5), y), 5, Paint()..color = played);
+    if (size.width >= 10) canvas.drawCircle(Offset(x.clamp(5.0, size.width - 5), y), 5, Paint()..color = played);
   }
 
   @override
-  bool shouldRepaint(_TrackPainter oldDelegate) => oldDelegate.progress != progress;
+  bool shouldRepaint(_TrackPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.played != played || oldDelegate.idle != idle;
 }
 
 /// Столбики «волны» голосового; проигранная часть — цветом акцента.

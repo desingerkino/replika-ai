@@ -6,6 +6,9 @@ import Photos
 /// Запись экрана приложения (ReplayKit) и сохранение готового видео в «Фото».
 public class ReplikaRecorderPlugin: NSObject, FlutterPlugin {
 
+  /// Микрофон звонка выключен: запись экрана, начатая позже, тоже без него.
+  private var micMuted = false
+
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
       name: "ru.kinoprop.replika/recorder",
@@ -30,7 +33,11 @@ public class ReplikaRecorderPlugin: NSObject, FlutterPlugin {
       let muted = ((call.arguments as? [String: Any])?["muted"] as? Bool) ?? false
       // Микрофон записи экрана; голос собеседника в постановочном звонке
       // не уходит в сеть, поэтому глушить нужно именно запись.
+      micMuted = muted
       RPScreenRecorder.shared().isMicrophoneEnabled = !muted
+      result(nil)
+    case "setSpeakerRoute", "clearSpeakerRoute":
+      // iOS: маршрут задаёт звуковая сессия (overrideOutputAudioPort).
       result(nil)
     case "setProximityMonitoring":
       let enabled = ((call.arguments as? [String: Any])?["enabled"] as? Bool) ?? false
@@ -54,7 +61,7 @@ public class ReplikaRecorderPlugin: NSObject, FlutterPlugin {
       return
     }
     let args = call.arguments as? [String: Any]
-    recorder.isMicrophoneEnabled = (args?["microphone"] as? Bool) ?? true
+    recorder.isMicrophoneEnabled = ((args?["microphone"] as? Bool) ?? true) && !micMuted
     recorder.startRecording { error in
       DispatchQueue.main.async {
         if let error = error as NSError? {

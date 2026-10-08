@@ -134,24 +134,39 @@ class ChatBackgroundPaint extends StatelessWidget {
       final other => other,
     };
     final stroke = background.pattern ?? rc.chatPattern;
+    // Узор кэшируется отдельным слоем, прокрутка ленты его не перерисовывает.
+    return CustomPaint(
+      painter: ChatBackgroundPainter(kind: kind, background: color, stroke: stroke),
+      isComplex: kind != ChatPatternKind.none,
+      child: RepaintBoundary(child: child),
+    );
+  }
+}
+
+/// Один художник для всех фонов (цвет, «дудлы», точки).
+class ChatBackgroundPainter extends CustomPainter {
+  const ChatBackgroundPainter({required this.kind, required this.background, required this.stroke});
+
+  final ChatPatternKind kind;
+  final Color background;
+  final Color stroke;
+
+  @override
+  void paint(Canvas canvas, Size size) {
     switch (kind) {
+      case ChatPatternKind.doodle:
+        DoodlePainter(background: background, stroke: stroke).paint(canvas, size);
+      case ChatPatternKind.dots:
+        DotsPainter(background: background, dot: stroke).paint(canvas, size);
       case ChatPatternKind.none:
       case ChatPatternKind.theme:
-        return ColoredBox(color: color, child: child);
-      case ChatPatternKind.doodle:
-        return CustomPaint(
-          painter: DoodlePainter(background: color, stroke: stroke),
-          isComplex: true,
-          child: RepaintBoundary(child: child),
-        );
-      case ChatPatternKind.dots:
-        return CustomPaint(
-          painter: DotsPainter(background: color, dot: stroke),
-          isComplex: true,
-          child: RepaintBoundary(child: child),
-        );
+        canvas.drawRect(Offset.zero & size, Paint()..color = background);
     }
   }
+
+  @override
+  bool shouldRepaint(ChatBackgroundPainter oldDelegate) =>
+      oldDelegate.kind != kind || oldDelegate.background != background || oldDelegate.stroke != stroke;
 }
 
 /// Мягкий узор из точек разного размера.

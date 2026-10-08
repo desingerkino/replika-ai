@@ -42,6 +42,12 @@ class VoiceRecorderController extends ChangeNotifier {
   Duration _recorded = Duration.zero;
   String? _path;
   bool _busy = false;
+  bool _finishing = false;
+  bool _disposed = false;
+
+  /// Палец ещё держит микрофон (для записи, которая стартует с задержкой:
+  /// окно разрешения, медленный диск).
+  bool pressed = false;
 
   /// Сообщение о проблеме (нет доступа к микрофону и т. п.).
   final ValueNotifier<String?> problem = ValueNotifier<String?>(null);
@@ -74,6 +80,7 @@ class VoiceRecorderController extends ChangeNotifier {
   }
 
   void _set(VoiceRecState state) {
+    if (_disposed) return;
     _state = state;
     notifyListeners();
   }
@@ -88,12 +95,23 @@ class VoiceRecorderController extends ChangeNotifier {
       final recorder = AudioRecorder();
       _recorder = recorder;
       if (!await recorder.hasPermission()) {
-        problem.value = 'Нет доступа к микрофону. Разрешите его в настройках устройства.';
+        if (!_disposed) problem.value = 'Нет доступа к микрофону. Разрешите его в настройках устройства.';
+        await _disposeRecorder();
+        return;
+      }
+      if (_disposed) {
         await _disposeRecorder();
         return;
       }
       final path = await _services.media.newRecordingPath('.m4a');
       await recorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+      if (_disposed) {
+        try {
+          await recorder.cancel();
+        } catch (_) {}
+        await _disposeRecorder();
+        return;
+      }
       _path = path;
       levels.clear();
       _startedAt = DateTime.now();
@@ -109,10 +127,13 @@ class VoiceRecorderController extends ChangeNotifier {
           notifyListeners();
         }
       });
-      _set(locked ? VoiceRecState.locked : VoiceRecState.holding);
+      // Палец отпустили, пока запись запускалась (или жест прервало окно
+      // системы): запись не остаётся «висеть» без пальца — ставим её на
+      // замок, где есть «Удалить» и «Стоп».
+      _set(locked || !pressed ? VoiceRecState.locked : VoiceRecState.holding);
     } catch (error) {
       debugPrint('Запись не началась: $error');
-      problem.value = 'Не удалось начать запись: микрофон недоступен';
+      if (!_disposed) problem.value = 'Не удалось начать запись: микрофон недоступен';
       await _disposeRecorder();
       _set(VoiceRecState.idle);
     } finally {
@@ -145,7 +166,10 @@ class VoiceRecorderController extends ChangeNotifier {
   /// Остановить запись и оставить её для прослушивания.
   Future<void> stop() async {
     if (_state != VoiceRecState.holding && _state != VoiceRecState.locked) return;
+    // Сразу «остановлено»-в-процессе: повторный вызов (двойное касание)
+    // не останавливает запись второй раз.
     _recorded = elapsed;
+    _state = VoiceRecState.stopped;
     await _stopStreams();
     try {
       final path = await _recorder?.stop();
@@ -188,6 +212,18 @@ class VoiceRecorderController extends ChangeNotifier {
   /// Закончить и вернуть готовый файл медиатеки (null — слишком коротко
   /// или ошибка). После вызова контроллер снова свободен.
   Future<MediaItem?> finish() async {
+    if (_finishing) return null;
+    _finishing = true;
+    try {
+      return await _finish();
+    } finally {
+      _finishing = false;
+    }
+  }
+
+  bool get finishing => _finishing;
+
+  Future<MediaItem?> _finish() async {
     if (_state == VoiceRecState.holding || _state == VoiceRecState.locked) {
       await stop();
     }
@@ -214,6 +250,7 @@ class VoiceRecorderController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _ticker?.cancel();
     unawaited(_amplitude?.cancel());
     unawaited(_recorder?.dispose());
