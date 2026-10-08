@@ -43,7 +43,7 @@ jobs:
           code=$?
           cat test.txt
           if [ $code -ne 0 ]; then
-            body=$( (grep -nE '\[E\]|EXCEPTION CAUGHT|Expected:|Actual:|Error:|error:|Which:|The following|FAILED|══╡|\.dart [0-9]+:[0-9]+' test.txt | head -n 300; tail -n 30 test.txt) | head -c 60000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            body=$( (grep -n -A 16 '\[E\]' test.txt | grep -vE '^[0-9]+-\s*$' | head -n 400; tail -n 8 test.txt) | head -c 60000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
             echo "::error title=flutter test::${body}"
           fi
           exit $code

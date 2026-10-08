@@ -45,7 +45,7 @@ class ConnectDiscovery {
       try {
         final json = jsonDecode(utf8.decode(datagram.data));
         if (json is Map && json['type'] == 'discover' && json['protocol'] == discoveryTag) {
-          socket.send(_packet(), datagram.address, datagram.port);
+          _reply(socket, datagram.address, datagram.port);
         }
       } catch (_) {
         // Чужие или повреждённые пакеты молча игнорируются.
@@ -57,6 +57,18 @@ class ConnectDiscovery {
         onError: (Object error) {});
     _beacon = Timer.periodic(beaconInterval, (_) => burst());
     burst();
+  }
+
+  /// Ответ на запрос. UDP-сокет может быть временно не готов к отправке
+  /// (send вернёт 0) — тогда пробуем ещё пару раз с короткой паузой.
+  void _reply(RawDatagramSocket socket, InternetAddress address, int port, [int attempt = 0]) {
+    var sent = 0;
+    try {
+      sent = socket.send(_packet(), address, port);
+    } catch (_) {}
+    if (sent == 0 && attempt < 3 && _socket == socket) {
+      Timer(const Duration(milliseconds: 40), () => _reply(socket, address, port, attempt + 1));
+    }
   }
 
   List<int> _packet() => utf8.encode(jsonEncode({
@@ -122,12 +134,16 @@ Future<List<Map<String, Object?>>> discoverDevices({
     } catch (_) {}
   }, onError: (Object error) {});
   final probe = utf8.encode(jsonEncode({'type': 'discover', 'protocol': discoveryTag, 'protocolVersion': protocolVersion}));
-  for (final h in hosts) {
-    try {
-      socket.send(probe, InternetAddress(h), port);
-    } catch (_) {}
+  // UDP теряет пакеты: запрос повторяется трижды за время ожидания.
+  const rounds = 3;
+  for (var round = 0; round < rounds; round++) {
+    for (final h in hosts) {
+      try {
+        socket.send(probe, InternetAddress(h), port);
+      } catch (_) {}
+    }
+    await Future<void>.delayed(wait ~/ rounds);
   }
-  await Future<void>.delayed(wait);
   await sub.cancel();
   socket.close();
   return found.values.toList();

@@ -25,3 +25,39 @@ List<ChatListItem> filterChats(List<ChatListItem> items, String query) {
     return preview != null && normalizeForSearch(preview).contains(q);
   }).toList();
 }
+
+/// Папки над списком чатов.
+enum ChatFolder {
+  all('Все чаты'),
+  unread('Непрочитанные'),
+  personal('Личные'),
+  groups('Группы');
+
+  const ChatFolder(this.label);
+  final String label;
+}
+
+/// Чаты, попадающие в папку.
+List<ChatListItem> filterByFolder(List<ChatListItem> items, ChatFolder folder) => switch (folder) {
+      ChatFolder.all => items,
+      ChatFolder.unread => items.where((i) => i.chat.unreadCount > 0).toList(),
+      ChatFolder.personal => items.where((i) => !i.chat.isGroup).toList(),
+      ChatFolder.groups => items.where((i) => i.chat.isGroup).toList(),
+    };
+
+/// Значок типа последнего сообщения в превью (null — без значка).
+enum PreviewGlyph { photo, video, videoNote, voice, audio, file, call, missedCall }
+
+PreviewGlyph? previewGlyph(Message? message) {
+  if (message == null || message.deleted) return null;
+  return switch (message.type) {
+    MessageType.photo => PreviewGlyph.photo,
+    MessageType.video => PreviewGlyph.video,
+    MessageType.videoNote => PreviewGlyph.videoNote,
+    MessageType.voice => PreviewGlyph.voice,
+    MessageType.audio => PreviewGlyph.audio,
+    MessageType.file => PreviewGlyph.file,
+    MessageType.call => message.text.startsWith('Пропущ') ? PreviewGlyph.missedCall : PreviewGlyph.call,
+    _ => null,
+  };
+}
