@@ -58,7 +58,7 @@ class PhotoContent extends StatelessWidget {
           width: width,
           height: height,
           child: ColoredBox(
-            color: Colors.black26,
+            color: MediaPalette.scrimLight,
             child: Icon(Icons.broken_image_outlined, color: context.rc.textTertiary),
           ),
         ),
@@ -109,7 +109,7 @@ class _VideoFrameState extends State<VideoFrame> {
       width: widget.width,
       height: widget.height,
       child: ColoredBox(
-        color: Colors.black,
+        color: MediaPalette.background,
         child: ready && size.width > 0
             ? FittedBox(
                 fit: BoxFit.cover,
@@ -140,10 +140,14 @@ class VideoContent extends StatelessWidget {
         children: [
           VideoFrame(media: media, width: width, height: height),
           Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(color: Color(0x88000000), shape: BoxShape.circle),
-            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34),
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: const Color(0x8C000000),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0x66FFFFFF), width: 1.5),
+            ),
+            child: const Icon(Icons.play_arrow_rounded, color: MediaPalette.onMedia, size: 38),
           ),
           if (duration != null)
             Positioned(
@@ -224,7 +228,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
           children: [
             ClipOval(
               child: ColoredBox(
-                color: Colors.black,
+                color: MediaPalette.background,
                 child: SizedBox.expand(
                   child: _ready && size.width > 0
                       ? FittedBox(
@@ -239,7 +243,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
             if (value.isPlaying || value.position > Duration.zero)
               Positioned.fill(
                 child: CustomPaint(
-                  painter: _RingPainter(progress: progress, color: Colors.white),
+                  painter: _RingPainter(progress: progress, color: MediaPalette.onMedia),
                 ),
               ),
             if (remaining != null)
@@ -254,7 +258,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
                   width: 44,
                   height: 44,
                   decoration: const BoxDecoration(color: Color(0x66000000), shape: BoxShape.circle),
-                  child: const Icon(Icons.volume_up_rounded, color: Colors.white, size: 24),
+                  child: const Icon(Icons.volume_up_rounded, color: MediaPalette.onMedia, size: 24),
                 ),
               ),
           ],
@@ -301,7 +305,7 @@ class _Pill extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          color: Colors.white,
+          color: MediaPalette.onMedia,
           fontSize: 12,
           fontWeight: FontWeight.w500,
           fontFeatures: [FontFeature.tabularFigures()],
@@ -361,9 +365,10 @@ class AudioContent extends StatelessWidget {
                     }
                   }
                 },
-                child: Container(
-                  width: 42,
-                  height: 42,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
                   child: Icon(
                     playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
@@ -378,14 +383,14 @@ class AudioContent extends StatelessWidget {
             // оставались внутри пузыря.
             Flexible(
               child: SizedBox(
-              width: 150,
+              width: 176,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (voice)
                     SizedBox(
-                      height: 26,
+                      height: 28,
                       width: double.infinity,
                       child: CustomPaint(
                         painter: WaveformPainter(
@@ -452,7 +457,7 @@ class WaveformPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (values.isEmpty) return;
     final step = size.width / values.length;
-    final barWidth = math.max(1.5, step * 0.55);
+    final barWidth = math.max(2.0, step * 0.6);
     final paint = Paint()..strokeCap = StrokeCap.round..strokeWidth = barWidth;
     for (var i = 0; i < values.length; i++) {
       final x = step * i + step / 2;

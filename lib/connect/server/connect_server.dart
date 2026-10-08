@@ -192,26 +192,26 @@ class _Connection {
     if (_closed) return;
     try {
       if (data is! String || data.length > ConnectLimits.frameBytes) {
-        return _fail(ConnectError.invalidRequest, 'Кадр должен быть текстом до 256 КБ');
+        return await _fail(ConnectError.invalidRequest, 'Кадр должен быть текстом до 256 КБ');
       }
       final decoded = jsonDecode(data);
-      if (decoded is! Map) return _fail(ConnectError.invalidRequest, 'Кадр должен быть объектом');
+      if (decoded is! Map) return await _fail(ConnectError.invalidRequest, 'Кадр должен быть объектом');
       final json = Map<String, Object?>.from(decoded);
       final cipher = _cipher;
       if (cipher == null) {
         switch (json['type']) {
           case 'pair_request':
-            return _pair(json);
+            return await _pair(json);
           case 'hello':
-            return _hello(json);
+            return await _hello(json);
           default:
-            return _fail(ConnectError.unauthorized, 'Сначала сопряжение или hello');
+            return await _fail(ConnectError.unauthorized, 'Сначала сопряжение или hello');
         }
       }
-      if (json['type'] != 'enc') return _fail(ConnectError.invalidRequest, 'В сеансе допускаются только enc-кадры');
+      if (json['type'] != 'enc') return await _fail(ConnectError.invalidRequest, 'В сеансе допускаются только enc-кадры');
       if (server._clock().isAfter(_expiresAt!)) {
         hooks.log('Отказ', 'Сеанс истёк: «${controller?.name}»');
-        return _fail(ConnectError.sessionExpired, 'Сеанс истёк — подключитесь заново (hello)');
+        return await _fail(ConnectError.sessionExpired, 'Сеанс истёк — подключитесь заново (hello)');
       }
       final inner = await cipher.open(json);
       await _inner(inner);

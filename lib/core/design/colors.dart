@@ -30,6 +30,14 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     required this.danger,
     required this.selection,
     required this.alert,
+    required this.chatPattern,
+    required this.navBar,
+    required this.navIndicator,
+    required this.onNavIndicator,
+    required this.rowHighlight,
+    required this.storyRingStart,
+    required this.storyRingEnd,
+    required this.storySeen,
   });
 
   final Color chatBackground;
@@ -61,6 +69,22 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
   /// Красный бейдж непрочитанных на значке вкладки «Чаты».
   final Color alert;
 
+  /// Штрих «дудл»-узора на фоне переписки (тема Telegram).
+  final Color chatPattern;
+
+  /// Нижняя панель вкладок и её активная «таблетка».
+  final Color navBar;
+  final Color navIndicator;
+  final Color onNavIndicator;
+
+  /// Подсветка закреплённой строки списка.
+  final Color rowHighlight;
+
+  /// Кольцо непросмотренной истории (градиент) и просмотренной.
+  final Color storyRingStart;
+  final Color storyRingEnd;
+  final Color storySeen;
+
   static const ReplikaColors light = ReplikaColors(
     chatBackground: Color(0xFFE9ECF1),
     bubbleIn: Color(0xFFFFFFFF),
@@ -88,6 +112,14 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     danger: Color(0xFFC8372D),
     selection: Color(0x1F3D5CFF),
     alert: Color(0xFFFF383C),
+    chatPattern: Color(0x00000000),
+    navBar: Color(0xD6F6F6F6),
+    navIndicator: Color(0x12141820),
+    onNavIndicator: Color(0xFF3D5CFF),
+    rowHighlight: Color(0x00000000),
+    storyRingStart: Color(0xFF3D5CFF),
+    storyRingEnd: Color(0xFFCB30E0),
+    storySeen: Color(0xFFC9CDD4),
   );
 
   static const ReplikaColors dark = ReplikaColors(
@@ -117,6 +149,90 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     danger: Color(0xFFF06A5F),
     selection: Color(0x337C93FF),
     alert: Color(0xFFFF4245),
+    chatPattern: Color(0x00000000),
+    navBar: Color(0xD11C1F26),
+    navIndicator: Color(0x1FFFFFFF),
+    onNavIndicator: Color(0xFF7C93FF),
+    rowHighlight: Color(0x00000000),
+    storyRingStart: Color(0xFF7C93FF),
+    storyRingEnd: Color(0xFFCB30E0),
+    storySeen: Color(0xFF3A3F47),
+  );
+
+  /// Тема «Telegram»: светлая, воздушная, один синий акцент #0466C8.
+  /// Белый текст на синем — контраст 5.6:1, читается в кадре.
+  static const ReplikaColors telegramLight = ReplikaColors(
+    chatBackground: Color(0xFFD5E1EC),
+    bubbleIn: Color(0xFFFFFFFF),
+    bubbleOut: Color(0xFF0466C8),
+    onBubbleIn: Color(0xFF12172B),
+    onBubbleOut: Color(0xFFFFFFFF),
+    metaIn: Color(0xFF6B7186),
+    metaOut: Color(0xFFD4E3FF),
+    tickRead: Color(0xFFFFFFFF),
+    textPrimary: Color(0xFF12172B),
+    textSecondary: Color(0xFF5F6475),
+    textTertiary: Color(0xFF7A7F90),
+    divider: Color(0xFFE6E8F0),
+    surfaceMuted: Color(0xFFECECF6),
+    badge: Color(0xFF0466C8),
+    badgeMuted: Color(0xFF8A8FA0),
+    onBadge: Color(0xFFFFFFFF),
+    draft: Color(0xFFD92B2F),
+    daySeparator: Color(0x9E1E2D46),
+    onDaySeparator: Color(0xFFFFFFFF),
+    accent: Color(0xFFFF7AD9),
+    online: Color(0xFF1FAF54),
+    success: Color(0xFF1E9E50),
+    warning: Color(0xFFD08A1E),
+    danger: Color(0xFFD92B2F),
+    selection: Color(0x290466C8),
+    alert: Color(0xFFD92B2F),
+    chatPattern: Color(0x4D6E8CAA),
+    navBar: Color(0xFFF3F5FA),
+    navIndicator: Color(0xFFD4E3FF),
+    onNavIndicator: Color(0xFF12172B),
+    rowHighlight: Color(0xFFF1F3F9),
+    storyRingStart: Color(0xFF0466C8),
+    storyRingEnd: Color(0xFF6FB1FF),
+    storySeen: Color(0xFFC8CEDB),
+  );
+
+  static const ReplikaColors telegramDark = ReplikaColors(
+    chatBackground: Color(0xFF0B1020),
+    bubbleIn: Color(0xFF1C2338),
+    bubbleOut: Color(0xFF0466C8),
+    onBubbleIn: Color(0xFFE9ECF5),
+    onBubbleOut: Color(0xFFFFFFFF),
+    metaIn: Color(0xFF8C93A8),
+    metaOut: Color(0xFFCFE0FF),
+    tickRead: Color(0xFFFFFFFF),
+    textPrimary: Color(0xFFE9ECF5),
+    textSecondary: Color(0xFF9CA3B8),
+    textTertiary: Color(0xFF767D93),
+    divider: Color(0xFF232A40),
+    surfaceMuted: Color(0xFF1B2134),
+    badge: Color(0xFF3D8EF0),
+    badgeMuted: Color(0xFF4B5268),
+    onBadge: Color(0xFFFFFFFF),
+    draft: Color(0xFFFF6B6B),
+    daySeparator: Color(0xB3000000),
+    onDaySeparator: Color(0xFFE9ECF5),
+    accent: Color(0xFFFF7AD9),
+    online: Color(0xFF34C759),
+    success: Color(0xFF4CC08A),
+    warning: Color(0xFFF0A43A),
+    danger: Color(0xFFFF6B6B),
+    selection: Color(0x333D8EF0),
+    alert: Color(0xFFFF4245),
+    chatPattern: Color(0x26A9B8D8),
+    navBar: Color(0xFF131A2C),
+    navIndicator: Color(0xFF233A63),
+    onNavIndicator: Color(0xFFE9ECF5),
+    rowHighlight: Color(0xFF161D31),
+    storyRingStart: Color(0xFF3D8EF0),
+    storyRingEnd: Color(0xFF8CC2FF),
+    storySeen: Color(0xFF39405A),
   );
 
   @override
@@ -147,6 +263,14 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     Color? danger,
     Color? selection,
     Color? alert,
+    Color? chatPattern,
+    Color? navBar,
+    Color? navIndicator,
+    Color? onNavIndicator,
+    Color? rowHighlight,
+    Color? storyRingStart,
+    Color? storyRingEnd,
+    Color? storySeen,
   }) {
     return ReplikaColors(
       chatBackground: chatBackground ?? this.chatBackground,
@@ -175,6 +299,14 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
       danger: danger ?? this.danger,
       selection: selection ?? this.selection,
       alert: alert ?? this.alert,
+      chatPattern: chatPattern ?? this.chatPattern,
+      navBar: navBar ?? this.navBar,
+      navIndicator: navIndicator ?? this.navIndicator,
+      onNavIndicator: onNavIndicator ?? this.onNavIndicator,
+      rowHighlight: rowHighlight ?? this.rowHighlight,
+      storyRingStart: storyRingStart ?? this.storyRingStart,
+      storyRingEnd: storyRingEnd ?? this.storyRingEnd,
+      storySeen: storySeen ?? this.storySeen,
     );
   }
 
@@ -209,6 +341,14 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
       danger: mix(danger, other.danger),
       selection: mix(selection, other.selection),
       alert: mix(alert, other.alert),
+      chatPattern: mix(chatPattern, other.chatPattern),
+      navBar: mix(navBar, other.navBar),
+      navIndicator: mix(navIndicator, other.navIndicator),
+      onNavIndicator: mix(onNavIndicator, other.onNavIndicator),
+      rowHighlight: mix(rowHighlight, other.rowHighlight),
+      storyRingStart: mix(storyRingStart, other.storyRingStart),
+      storyRingEnd: mix(storyRingEnd, other.storyRingEnd),
+      storySeen: mix(storySeen, other.storySeen),
     );
   }
 }

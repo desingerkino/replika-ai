@@ -13,6 +13,7 @@ import '../data/repositories/prepared_reply_repository.dart';
 import '../data/repositories/scene_repository.dart';
 import '../data/repositories/message_repository.dart';
 import '../data/repositories/settings_repository.dart';
+import '../data/repositories/story_repository.dart';
 import '../data/seed/demo_seed.dart';
 import 'audio_playback.dart';
 import 'call_engine.dart';
@@ -36,6 +37,8 @@ import 'operator/operator_commands.dart';
 import 'operator/operator_inputs.dart';
 import '../connect/actions/prop_controller_input.dart';
 import '../core/util/media_paths.dart';
+import '../core/theme/app_theme_id.dart';
+import '../core/theme/theme_manager.dart';
 
 /// Все службы приложения. Создаются один раз при запуске.
 class AppServices {
@@ -51,7 +54,7 @@ class AppServices {
     required this.replies,
     required this.calls,
     required this.currentDeviceId,
-    required this.themeMode,
+    required this.theme,
     required this.volumeKeysEnabled,
     required this.resetToastEnabled,
     required this.kino,
@@ -79,6 +82,9 @@ class AppServices {
   final PreparedReplyRepository replies;
 
   final CallRepository calls;
+
+  /// Истории персонажей (вкладка «Истории» и кольца над списком чатов).
+  late final StoryRepository stories = StoryRepository(database);
 
   /// Постановочные звонки.
   /// Только для автотестов: хранилище ключей в памяти вместо Keystore.
@@ -242,16 +248,18 @@ class AppServices {
   /// Текущий виртуальный телефон (точка зрения).
   final ValueNotifier<String> currentDeviceId;
 
-  /// Тема оформления: как в системе, светлая или тёмная.
-  final ValueNotifier<ThemeMode> themeMode;
+  /// Тема оформления (Replika, Telegram) и яркость.
+  final ThemeManager theme;
+
+  /// Как в системе, светлая или тёмная.
+  ValueNotifier<ThemeMode> get themeMode => theme.themeMode;
 
   /// Индикатор «печатает…» по чатам.
   final TypingRegistry typing = TypingRegistry();
 
-  Future<void> setThemeMode(ThemeMode mode) async {
-    themeMode.value = mode;
-    await settings.setValue(SettingKeys.themeMode, mode.name);
-  }
+  Future<void> setThemeMode(ThemeMode mode) => theme.setMode(mode);
+
+  Future<void> setTheme(AppThemeId id) => theme.setTheme(id);
 
   /// [databasePath] — только для автотестов (временная база).
   static Future<AppServices> open({String? databasePath}) async {
@@ -271,10 +279,10 @@ class AppServices {
         await settings.setValue(SettingKeys.currentDeviceId, deviceId);
       }
 
-      final themeName = await settings.getValue(SettingKeys.themeMode);
-      final theme = ThemeMode.values.firstWhere(
-        (mode) => mode.name == themeName,
-        orElse: () => ThemeMode.system,
+      final theme = ThemeManager.restore(
+        savedId: await settings.getValue(ThemeSettingKeys.themeId),
+        savedMode: await settings.getValue(ThemeSettingKeys.themeMode),
+        persist: settings.setValue,
       );
 
       final volumeKeys = await settings.getValue(SettingKeys.volumeKeys);
@@ -295,7 +303,7 @@ class AppServices {
         replies: PreparedReplyRepository(database),
         calls: CallRepository(database),
         currentDeviceId: ValueNotifier<String>(deviceId),
-        themeMode: ValueNotifier<ThemeMode>(theme),
+        theme: theme,
         volumeKeysEnabled: ValueNotifier<bool>(volumeKeys != '0'),
         resetToastEnabled: ValueNotifier<bool>(resetToast != '0'),
         notificationsEnabled: ValueNotifier<bool>(notificationsSetting != '0'),

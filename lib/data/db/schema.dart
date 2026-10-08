@@ -6,7 +6,7 @@ import 'package:sqflite/sqflite.dart';
 /// новая версия со своим списком команд, чтобы данные на телефонах
 /// пользователей переживали обновление приложения.
 abstract final class Schema {
-  static const int version = 4;
+  static const int version = 5;
 
   static Future<void> migrate(DatabaseExecutor db, int from, int to) async {
     for (var target = from + 1; target <= to; target++) {
@@ -20,7 +20,26 @@ abstract final class Schema {
     }
   }
 
-  static const Map<int, List<String>> _migrations = {1: _v1, 2: _v2, 3: _v3, 4: _v4};
+  static const Map<int, List<String>> _migrations = {1: _v1, 2: _v2, 3: _v3, 4: _v4, 5: _v5};
+
+  /// v5: реакция на сообщение (эмодзи под пузырём) и истории — фото или
+  /// видео персонажа на 24 часа, которые видны на этом телефоне.
+  static const List<String> _v5 = [
+    'ALTER TABLE messages ADD COLUMN reaction TEXT',
+    '''
+    CREATE TABLE stories (
+      id TEXT PRIMARY KEY,
+      device_id TEXT NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+      character_id TEXT NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+      media_id TEXT NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+      caption TEXT NOT NULL DEFAULT '',
+      posted_at INTEGER NOT NULL,
+      seen_at INTEGER,
+      created_at INTEGER NOT NULL
+    )
+    ''',
+    'CREATE INDEX idx_stories_device ON stories(device_id, posted_at)',
+  ];
 
   /// v4: «Прочитано: OFF» у исходящего сообщения сцены. Пока флаг стоит,
   /// сообщение остаётся непрочитанным: его читает только ответ контакта

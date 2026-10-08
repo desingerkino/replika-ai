@@ -6,6 +6,7 @@ import '../../app/kino.dart';
 import '../../app/services.dart';
 import '../../core/util/time_format.dart';
 import '../../core/util/platform_info.dart';
+import '../../core/design/tokens.dart';
 
 /// Высота нарисованной строки состояния (как у Android) и минимальная
 /// высота полосы на iOS.
@@ -93,7 +94,7 @@ class _FakeStatusBarState extends State<FakeStatusBar> {
       fixedSince: services.kino.fixedSince,
     );
     final color = widget.lightIcons || Theme.of(context).brightness == Brightness.dark
-        ? Colors.white
+        ? MediaPalette.onMedia
         : const Color(0xFF15202B);
     final text = TextStyle(
       color: color,

@@ -8,6 +8,8 @@ import '../../core/design/tokens.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../core/design/widgets/dialogs.dart';
 import '../../core/design/widgets/form.dart';
+import '../../core/design/widgets/quick_action.dart';
+import '../profile/shared_media.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../data/db/tables.dart';
@@ -226,7 +228,7 @@ class GroupInfoScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AvatarTones.at(i),
                       shape: BoxShape.circle,
-                      border: i == m.colorTone ? Border.all(width: 3, color: Colors.white) : null,
+                      border: i == m.colorTone ? Border.all(width: 3, color: MediaPalette.onMedia) : null,
                       boxShadow: i == m.colorTone
                           ? [BoxShadow(color: AvatarTones.at(i), blurRadius: 0, spreadRadius: 2)]
                           : null,
@@ -274,34 +276,110 @@ class GroupInfoScreen extends StatelessWidget {
           if (data == null) {
             return snapshot.isLoading ? const LoadingState() : const EmptyState(icon: Icons.group_off_outlined, title: 'Группа не найдена');
           }
+          final rc = context.rc;
+          final cs = context.cs;
           return ListView(
-            padding: listPadding(context, const EdgeInsets.fromLTRB(Space.l, Space.xl, Space.l, Space.xxl)),
+            padding: listPadding(context, const EdgeInsets.fromLTRB(0, Space.l, 0, Space.xxl)),
             children: [
-              Center(child: Avatar(name: data.title, size: 96)),
+              Center(child: Avatar(name: data.title, size: 104)),
               const SizedBox(height: Space.m),
               InkWell(
                 onTap: () => _rename(context, data),
-                child: Column(
-                  children: [
-                    Text(data.title, textAlign: TextAlign.center, style: context.tt.headlineSmall),
-                    Text(membersLabel(data.members.length), style: context.tt.bodyMedium),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.l),
+                  child: Column(
+                    children: [
+                      Text(data.title, textAlign: TextAlign.center, style: context.tt.headlineSmall?.copyWith(fontSize: 26)),
+                      const SizedBox(height: 2),
+                      Text(membersLabel(data.members.length), style: context.tt.bodyLarge?.copyWith(color: rc.textSecondary)),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(height: Space.l),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.l),
+                child: LiveQuery<bool>(
+                  tables: const {Tables.chats},
+                  queryKey: chatId,
+                  load: () async => (await services.chats.header(chatId))?.chat.muted ?? false,
+                  builder: (context, muted) => Row(
+                    children: [
+                      Expanded(
+                        child: QuickAction(
+                          icon: (muted.data ?? false) ? Icons.notifications_off_outlined : Icons.notifications_none_rounded,
+                          label: (muted.data ?? false) ? 'Без звука' : 'Звук',
+                          active: muted.data ?? false,
+                          onTap: () => services.chats.setMuted(chatId, !(muted.data ?? false)),
+                        ),
+                      ),
+                      const SizedBox(width: Space.s),
+                      Expanded(
+                        child: QuickAction(
+                          icon: Icons.person_add_alt_rounded,
+                          label: 'Добавить',
+                          onTap: () => _add(context, data),
+                        ),
+                      ),
+                      const SizedBox(width: Space.s),
+                      Expanded(
+                        child: QuickAction(
+                          icon: Icons.edit_outlined,
+                          label: 'Название',
+                          onTap: () => _rename(context, data),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: Space.s),
               const SectionLabel('Участники'),
-              SettingsTile(
-                icon: Icons.person_add_alt_rounded,
-                title: 'Добавить участников',
+              InkWell(
                 onTap: () => _add(context, data),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: Space.s),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(color: cs.primaryContainer, shape: BoxShape.circle),
+                        child: Icon(Icons.group_add_outlined, color: cs.primary),
+                      ),
+                      const SizedBox(width: Space.m),
+                      Text('Добавить участников', style: context.tt.bodyLarge?.copyWith(color: cs.primary, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
               ),
               for (final m in data.members)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Avatar(name: m.name, size: 40, tone: m.tone),
-                  title: Text(m.name),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                Padding(
+                  padding: const EdgeInsets.only(left: Space.l, right: Space.xs),
+                  child: Row(
                     children: [
+                      Avatar(name: m.name, size: 44, tone: m.tone),
+                      const SizedBox(width: Space.m),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(m.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.tt.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AvatarTones.at(m.colorTone),
+                            )),
+                            Text(
+                              m.characterId == data.ownerId ? 'вы' : 'участник',
+                              style: context.tt.bodySmall?.copyWith(color: rc.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (m.characterId == data.ownerId)
+                        Padding(
+                          padding: const EdgeInsets.only(right: Space.s),
+                          child: Text('владелец', style: context.tt.labelMedium?.copyWith(color: rc.textSecondary)),
+                        ),
                       IconButton(
                         tooltip: 'Цвет участника',
                         icon: Icon(Icons.circle, color: AvatarTones.at(m.colorTone)),
@@ -310,12 +388,14 @@ class GroupInfoScreen extends StatelessWidget {
                       if (m.characterId != data.ownerId)
                         IconButton(
                           tooltip: 'Удалить из группы',
-                          icon: const Icon(Icons.remove_circle_outline_rounded),
+                          icon: Icon(Icons.remove_circle_outline_rounded, color: rc.textTertiary),
                           onPressed: () => _remove(context, m),
                         ),
                     ],
                   ),
                 ),
+              const SizedBox(height: Space.m),
+              SharedMediaSection(deviceId: data.deviceId, chatId: chatId),
             ],
           );
         },

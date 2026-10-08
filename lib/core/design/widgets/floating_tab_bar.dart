@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import '../../theme/app_style.dart';
 import '../context.dart';
 import '../tokens.dart';
 import 'unread_badge.dart';
@@ -166,5 +167,138 @@ class _TabButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Прикреплённая нижняя панель (тема Telegram): светлая подложка, под
+/// активной вкладкой — мягкая «таблетка» цвета #D4E3FF, жирная подпись.
+class DockedTabBar extends StatelessWidget {
+  const DockedTabBar({
+    super.key,
+    required this.items,
+    required this.index,
+    required this.onSelect,
+  });
+
+  final List<TabBarItem> items;
+  final int index;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final rc = context.rc;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    final extra = (MediaQuery.textScalerOf(context).scale(12) - 12).clamp(0.0, 12.0);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: rc.navBar,
+        border: Border(top: BorderSide(color: rc.divider, width: 0.6)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: math.max(safeBottom - 10, 6)),
+        child: SizedBox(
+          height: Sizes.dockedTabBar + extra * 1.5,
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                Expanded(
+                  child: _DockedButton(
+                    item: items[i],
+                    selected: i == index,
+                    onTap: () => onSelect(i),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DockedButton extends StatelessWidget {
+  const _DockedButton({required this.item, required this.selected, required this.onTap});
+
+  final TabBarItem item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final rc = context.rc;
+    final color = selected ? rc.onNavIndicator : rc.textSecondary;
+    Widget icon = Icon(selected ? item.activeIcon : item.icon, size: 24, color: color);
+    if (item.badge > 0) {
+      icon = Badge(
+        backgroundColor: rc.alert,
+        textColor: Colors.white,
+        label: Text(UnreadBadge.label(item.badge)),
+        child: icon,
+      );
+    }
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: item.label,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: Motion.normal,
+              curve: Motion.curve,
+              width: selected ? 60 : 44,
+              height: 32,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? rc.navIndicator : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: icon,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              item.label,
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              style: TextStyle(
+                fontSize: 12,
+                height: 14 / 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? rc.textPrimary : rc.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Нижняя панель вкладок в виде, который задаёт тема оформления.
+class AppTabBar extends StatelessWidget {
+  const AppTabBar({super.key, required this.items, required this.index, required this.onSelect});
+
+  final List<TabBarItem> items;
+  final int index;
+  final ValueChanged<int> onSelect;
+
+  /// Сколько места снизу контент должен оставить под панелью
+  /// (без системного отступа — он добавляется отдельно).
+  static double contentInset(BuildContext context) => switch (context.style.tabBar) {
+        TabBarLook.floating => Sizes.tabBarContentInset,
+        TabBarLook.docked => Sizes.dockedTabBar + 6,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (context.style.tabBar) {
+      TabBarLook.floating => FloatingTabBar(items: items, index: index, onSelect: onSelect),
+      TabBarLook.docked => DockedTabBar(items: items, index: index, onSelect: onSelect),
+    };
   }
 }

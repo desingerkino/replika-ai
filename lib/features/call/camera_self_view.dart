@@ -225,7 +225,7 @@ class _CameraSelfViewState extends State<CameraSelfView> with WidgetsBindingObse
               : Text(
                   _problem!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  style: const TextStyle(color: MediaPalette.onMediaDim, fontSize: 11),
                 ),
         ),
       );

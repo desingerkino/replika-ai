@@ -62,6 +62,9 @@ abstract final class Sizes {
   static const double avatarContact = 44;
   static const double bubbleMaxWidthFactor = 0.78;
 
+  /// Фото и видео шире текста: превью крупное, как в Telegram.
+  static const double mediaMaxWidthFactor = 0.86;
+
   /// Предел ширины пузыря на широких экранах (iPad).
   static const double bubbleMaxWidthCap = 520;
   static const double sendButton = 44;
@@ -75,6 +78,9 @@ abstract final class Sizes {
   /// Сколько места под панелью вкладок должен оставлять прокручиваемый
   /// контент, чтобы последняя строка не пряталась за ней.
   static const double tabBarContentInset = tabBar + 24;
+
+  /// Прикреплённая нижняя панель (тема Telegram).
+  static const double dockedTabBar = 64;
 }
 
 /// Длительности и кривые анимаций.
@@ -143,4 +149,20 @@ abstract final class AvatarTints {
     final list = brightness == Brightness.dark ? dark : light;
     return list[index.abs() % list.length];
   }
+}
+
+/// Цвета поверх фото, видео и тёмных полноэкранных экранов (просмотр
+/// медиа, истории, звонок, запись). Не зависят от темы: картинка под ними
+/// может быть любой, поэтому текст всегда белый на затемнении.
+abstract final class MediaPalette {
+  static const Color background = Color(0xFF000000);
+  static const Color onMedia = Color(0xFFFFFFFF);
+  static const Color onMediaDim = Color(0xB3FFFFFF);
+  static const Color onMediaFaint = Color(0x8AFFFFFF);
+  static const Color scrimLight = Color(0x42000000);
+  static const Color scrim = Color(0x8C000000);
+  static const Color transparent = Color(0x00000000);
+
+  /// Подложка круглых кнопок звонка.
+  static const Color control = Color(0x3DFFFFFF);
 }

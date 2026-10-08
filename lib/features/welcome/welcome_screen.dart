@@ -15,7 +15,6 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final rc = context.rc;
     final tt = context.tt;
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -26,7 +25,7 @@ class WelcomeScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const Spacer(flex: 3),
-                  ReplikaLogo(size: 96, onDark: dark),
+                  const AnimatedReplikaLogo(size: 124),
                   const SizedBox(height: Space.xl),
                   Text(
                     'Добро пожаловать в Replika',
@@ -51,8 +50,8 @@ class WelcomeScreen extends StatelessWidget {
                     child: FilledButton(
                       onPressed: onStart,
                       style: FilledButton.styleFrom(
-                        backgroundColor: dark ? Palette.white : Palette.ink,
-                        foregroundColor: dark ? Palette.ink : Palette.white,
+                        backgroundColor: context.cs.primary,
+                        foregroundColor: context.cs.onPrimary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
                       ),

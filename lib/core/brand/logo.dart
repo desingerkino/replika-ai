@@ -1,15 +1,21 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
-import '../design/tokens.dart';
-
-/// Знак «Реплики»: плитка с двумя пересекающимися репликами-пузырями.
+/// Знак «Реплики» — стеклянная сфера (assets/brand/replika_logo.png).
+///
+/// [glow] — мягкое сине-фиолетовое свечение вокруг сферы.
+/// Для «живого» знака (дыхание, переливание) — [AnimatedReplikaLogo].
 class ReplikaLogo extends StatelessWidget {
-  const ReplikaLogo({super.key, this.size = 64, this.onDark = false});
+  const ReplikaLogo({super.key, this.size = 64, this.onDark = false, this.glow = false});
+
+  static const String asset = 'assets/brand/replika_logo.png';
 
   final double size;
 
-  /// true — вариант для тёмного фона (светлая плитка).
+  /// Оставлено для совместимости: сфера одинаково видна на любом фоне.
   final bool onDark;
+  final bool glow;
 
   @override
   Widget build(BuildContext context) {
@@ -18,66 +24,158 @@ class ReplikaLogo extends StatelessWidget {
       image: true,
       child: SizedBox.square(
         dimension: size,
-        child: CustomPaint(painter: _LogoPainter(onDark: onDark)),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: glow ? logoGlow(size, 1) : null,
+          ),
+          child: Image.asset(
+            asset,
+            width: size,
+            height: size,
+            filterQuality: FilterQuality.medium,
+            gaplessPlayback: true,
+            cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).round().clamp(32, 512),
+            errorBuilder: (context, error, stack) => _FallbackSphere(size: size),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _LogoPainter extends CustomPainter {
-  const _LogoPainter({required this.onDark});
+/// Свечение сферы: синее снизу-слева, фиолетовое сверху-справа.
+List<BoxShadow> logoGlow(double size, double strength) => [
+      BoxShadow(
+        color: const Color(0xFF3D7BFF).withValues(alpha: 0.42 * strength),
+        blurRadius: size * 0.42,
+        spreadRadius: size * 0.02,
+        offset: Offset(-size * 0.05, size * 0.06),
+      ),
+      BoxShadow(
+        color: const Color(0xFFCB30E0).withValues(alpha: 0.32 * strength),
+        blurRadius: size * 0.46,
+        offset: Offset(size * 0.06, -size * 0.05),
+      ),
+    ];
 
-  final bool onDark;
+/// Живой знак: медленное «дыхание» свечения и блик, скользящий по стеклу.
+/// При «уменьшении движения» в системе знак неподвижен.
+class AnimatedReplikaLogo extends StatefulWidget {
+  const AnimatedReplikaLogo({super.key, this.size = 96, this.period = const Duration(seconds: 6)});
+
+  final double size;
+  final Duration period;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final scale = size.shortestSide / 100;
-    canvas.save();
-    canvas.scale(scale);
+  State<AnimatedReplikaLogo> createState() => _AnimatedReplikaLogoState();
+}
 
-    final tileColor = onDark ? Palette.white : Palette.ink;
-    final firstBubble = onDark ? Palette.ink : Palette.white;
-    final secondBubble = onDark ? Palette.brand : Palette.brandBright;
+class _AnimatedReplikaLogoState extends State<AnimatedReplikaLogo> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(vsync: this, duration: widget.period);
 
-    // Плитка.
-    canvas.drawRRect(
-      RRect.fromLTRBR(0, 0, 100, 100, const Radius.circular(24)),
-      Paint()..color = tileColor,
-    );
-
-    // Первая реплика (слева сверху).
-    final first = Paint()..color = firstBubble;
-    canvas.drawRRect(RRect.fromLTRBR(16, 20, 66, 52, const Radius.circular(12)), first);
-    canvas.drawPath(
-      Path()
-        ..moveTo(24, 50)
-        ..lineTo(20, 63)
-        ..lineTo(36, 50)
-        ..close(),
-      first,
-    );
-
-    // Вторая реплика (справа снизу) с рамкой цвета плитки на пересечении.
-    final secondRect = RRect.fromLTRBR(34, 44, 84, 76, const Radius.circular(12));
-    final secondTail = Path()
-      ..moveTo(76, 74)
-      ..lineTo(80, 87)
-      ..lineTo(64, 74)
-      ..close();
-    final gap = Paint()
-      ..color = tileColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
-      ..strokeJoin = StrokeJoin.round;
-    canvas.drawRRect(secondRect, gap);
-    canvas.drawPath(secondTail, gap);
-    final second = Paint()..color = secondBubble;
-    canvas.drawRRect(secondRect, second);
-    canvas.drawPath(secondTail, second);
-
-    canvas.restore();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
-  bool shouldRepaint(_LogoPainter oldDelegate) => oldDelegate.onDark != onDark;
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.size;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final breath = 0.5 - 0.5 * math.cos(t * 2 * math.pi); // 0 → 1 → 0
+        return SizedBox.square(
+          dimension: size,
+          child: DecoratedBox(
+            decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: logoGlow(size, 0.6 + 0.4 * breath)),
+            child: Transform.scale(
+              scale: 1 + 0.025 * breath,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  child!,
+                  // Блик: светлая дуга медленно обходит сферу.
+                  ClipOval(
+                    child: CustomPaint(painter: GlassShinePainter(turn: t)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+      child: ReplikaLogo(size: size),
+    );
+  }
+}
+
+/// Стеклянный блик: полупрозрачная светлая дуга под углом [turn] (0…1).
+class GlassShinePainter extends CustomPainter {
+  const GlassShinePainter({required this.turn, this.strength = 1});
+
+  final double turn;
+  final double strength;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final angle = turn * 2 * math.pi;
+    final shader = SweepGradient(
+      startAngle: 0,
+      endAngle: 2 * math.pi,
+      transform: GradientRotation(angle),
+      colors: [
+        Colors.white.withValues(alpha: 0),
+        Colors.white.withValues(alpha: 0.28 * strength),
+        Colors.white.withValues(alpha: 0),
+        Colors.white.withValues(alpha: 0),
+      ],
+      stops: const [0.0, 0.08, 0.18, 1.0],
+    ).createShader(rect);
+    final paint = Paint()
+      ..shader = shader
+      ..blendMode = BlendMode.plus;
+    canvas.drawCircle(rect.center, size.shortestSide / 2, paint);
+  }
+
+  @override
+  bool shouldRepaint(GlassShinePainter oldDelegate) => oldDelegate.turn != turn || oldDelegate.strength != strength;
+}
+
+/// Если картинка не загрузилась — сфера-градиент тех же цветов.
+class _FallbackSphere extends StatelessWidget {
+  const _FallbackSphere({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          center: Alignment(-0.3, -0.35),
+          radius: 0.9,
+          colors: [Color(0xFFEDE7FF), Color(0xFF6E7BFF), Color(0xFF3A1E9E), Color(0xFFCB30E0)],
+          stops: [0.0, 0.35, 0.75, 1.0],
+        ),
+      ),
+    );
+  }
 }

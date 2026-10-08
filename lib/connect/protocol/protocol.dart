@@ -72,7 +72,7 @@ enum ConnectAction {
   mediaUploadChunk('MEDIA_UPLOAD_CHUNK', ConnectScope.media, immediate: true),
   mediaUploadCommit('MEDIA_UPLOAD_COMMIT', ConnectScope.media, immediate: true);
 
-  const ConnectAction(this.wire, this.scope, {this.immediate = false, this.supported = true});
+  const ConnectAction(this.wire, this.scope, {this.immediate = false});
 
   /// Имя в протоколе.
   final String wire;
@@ -83,8 +83,8 @@ enum ConnectAction {
   /// Выполняется сразу, минуя очередь (только чтение или экстренная остановка).
   final bool immediate;
 
-  /// Реализовано ли в этой версии Messenger.
-  final bool supported;
+  /// Реализовано ли в этой версии Messenger (сейчас — все команды).
+  bool get supported => true;
 
   static ConnectAction? parse(Object? wire) {
     for (final a in values) {

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 abstract final class AppType {
   static TextTheme textTheme({required Color primary, required Color secondary}) {
     return TextTheme(
+      headlineLarge: TextStyle(fontSize: 34, height: 41 / 34, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: primary),
       headlineSmall: TextStyle(fontSize: 24, height: 30 / 24, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: primary),
       titleLarge: TextStyle(fontSize: 20, height: 26 / 20, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: primary),
       titleMedium: TextStyle(fontSize: 17, height: 22 / 17, fontWeight: FontWeight.w600, letterSpacing: -0.1, color: primary),
@@ -42,4 +43,23 @@ abstract final class AppType {
     letterSpacing: 0.1,
     fontFeatures: [FontFeature.tabularFigures()],
   );
+}
+
+/// Роли текста интерфейса — как в iOS: Large Title, Title, Headline, Body,
+/// Caption. Экраны берут их из темы: `context.tt.largeTitle`.
+extension AppTextRoles on TextTheme {
+  /// Крупный заголовок раздела (34).
+  TextStyle get largeTitle => headlineLarge!;
+
+  /// Заголовок экрана или профиля (20).
+  TextStyle get title => titleLarge!;
+
+  /// Имя в списке, заголовок строки (17, полужирный).
+  TextStyle get headline => titleMedium!;
+
+  /// Основной текст (16).
+  TextStyle get body => bodyLarge!;
+
+  /// Подписи, время, пояснения (13).
+  TextStyle get caption => bodySmall!;
 }

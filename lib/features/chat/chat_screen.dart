@@ -23,6 +23,7 @@ import 'chat_rows.dart';
 import 'composer.dart';
 import 'message_bubble.dart';
 import 'typing_indicator.dart';
+import 'chat_wallpaper.dart';
 import '../../data/models/media_item.dart';
 import '../calls/calls_screen.dart';
 import '../../data/models/call_record.dart';
@@ -32,7 +33,7 @@ import '../record/voice_recorder_sheet.dart';
 import '../../core/design/adaptive.dart';
 
 
-enum _MessageAction { reply, copy, favorite, toggleDeleted, delete }
+enum _MessageAction { react, unreact, reply, copy, favorite, toggleDeleted, delete }
 
 enum _Attach { photoVideo, recordVideoNote, audio, voice, videoNote, library }
 
@@ -374,10 +375,34 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     setState(() => _selectedMessageId = message.id);
 
     final canCopy = !message.deleted && message.text.trim().isNotEmpty;
+    String? picked;
     final action = await showActionSheet<_MessageAction>(
       context,
-      header: _MessagePreview(message: message),
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!message.deleted)
+            Builder(
+              builder: (sheetContext) => ReactionPicker(
+                current: message.reaction,
+                onPick: (emoji) {
+                  picked = emoji;
+                  Navigator.of(sheetContext).pop(_MessageAction.react);
+                },
+              ),
+            ),
+          if (!message.deleted) const SizedBox(height: Space.m),
+          _MessagePreview(message: message),
+        ],
+      ),
       actions: [
+        if (message.reaction != null && !message.deleted)
+          const SheetAction(
+            value: _MessageAction.unreact,
+            icon: Icons.heart_broken_outlined,
+            label: 'Убрать реакцию',
+          ),
         if (!message.deleted)
           const SheetAction(
             value: _MessageAction.reply,
@@ -415,6 +440,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
     try {
       switch (action) {
+        case _MessageAction.react:
+          final emoji = picked;
+          await _s.messages.setReaction(message.id, emoji == message.reaction ? null : emoji);
+        case _MessageAction.unreact:
+          await _s.messages.setReaction(message.id, null);
         case _MessageAction.reply:
           _startReply(message);
         case _MessageAction.copy:
@@ -437,6 +467,16 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     } catch (error) {
       debugPrint('Действие с сообщением не выполнено: $error');
       if (mounted) _showSnack('Не удалось выполнить действие');
+    }
+  }
+
+  /// Двойное касание: ❤️, повторное — снять.
+  Future<void> _quickReact(Message message) async {
+    HapticFeedback.lightImpact();
+    try {
+      await _s.messages.setReaction(message.id, message.reaction == '❤️' ? null : '❤️');
+    } catch (error) {
+      debugPrint('Реакция не сохранена: $error');
     }
   }
 
@@ -555,7 +595,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           body: ContentWidth(
             child: Column(
               children: [
-                Expanded(child: _buildMessages(header)),
+                Expanded(child: ChatWallpaper(child: _buildMessages(header))),
                 Composer(
                   controller: _composer,
                   focusNode: _focus,
@@ -648,6 +688,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       onQuoteTap: quoted == null ? null : () => _requestReveal(quoted.id),
       senderName: _groupNames?[message.senderId],
       senderTone: _groupTones?[message.senderId],
+      onDoubleTap: message.deleted ? null : () => _quickReact(message),
+      onReactionTap: () => _openMessageMenu(message),
     );
     if (message.id != _revealId) return bubble;
     return KeyedSubtree(key: _revealKey, child: bubble);
