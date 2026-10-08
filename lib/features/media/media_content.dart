@@ -140,10 +140,14 @@ class VideoContent extends StatelessWidget {
         children: [
           VideoFrame(media: media, width: width, height: height),
           Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(color: Color(0x88000000), shape: BoxShape.circle),
-            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34),
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: const Color(0x8C000000),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0x66FFFFFF), width: 1.5),
+            ),
+            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 38),
           ),
           if (duration != null)
             Positioned(
@@ -361,9 +365,10 @@ class AudioContent extends StatelessWidget {
                     }
                   }
                 },
-                child: Container(
-                  width: 42,
-                  height: 42,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
                   child: Icon(
                     playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
@@ -378,14 +383,14 @@ class AudioContent extends StatelessWidget {
             // оставались внутри пузыря.
             Flexible(
               child: SizedBox(
-              width: 150,
+              width: 176,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (voice)
                     SizedBox(
-                      height: 26,
+                      height: 28,
                       width: double.infinity,
                       child: CustomPaint(
                         painter: WaveformPainter(
@@ -452,7 +457,7 @@ class WaveformPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (values.isEmpty) return;
     final step = size.width / values.length;
-    final barWidth = math.max(1.5, step * 0.55);
+    final barWidth = math.max(2.0, step * 0.6);
     final paint = Paint()..strokeCap = StrokeCap.round..strokeWidth = barWidth;
     for (var i = 0; i < values.length; i++) {
       final x = step * i + step / 2;

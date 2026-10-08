@@ -15,6 +15,8 @@ import '../features/operator/scene_editor_screen.dart';
 import '../features/operator/scene_chats_screen.dart';
 import '../features/operator/scene_panel_screen.dart';
 import '../features/settings/addons_screen.dart';
+import '../features/settings/sections/section_screens.dart';
+import '../features/settings/sections/themes_screen.dart';
 import '../features/profile/contact_edit_screen.dart';
 import '../features/profile/contact_profile_screen.dart';
 
@@ -26,7 +28,10 @@ abstract final class AppNavigator {
   /// Экраны настроек, которые в двухпанельной раскладке открываются справа.
   /// Только те, что не закрывают себя через Navigator.pop и не возвращают
   /// результат.
-  static const Set<String> _settingsPaneRoutes = {'/favorites', '/media', '/profiles', '/addons'};
+  static const Set<String> _settingsPaneRoutes = {
+    '/favorites', '/media', '/profiles', '/addons',
+    '/themes', '/settings/notifications', '/settings/privacy', '/settings/ai', '/settings/storage', '/about',
+  };
 
   static Future<T?> _push<T>(String name, Widget screen, [Object? arguments]) async {
     final navigator = key.currentState;
@@ -116,6 +121,19 @@ abstract final class AppNavigator {
   static Future<void> openImprov() => _push<void>('/improv', const ImprovScreen());
 
   static Future<void> openAddons() => _push<void>('/addons', const AddonsScreen());
+
+  static Future<void> openThemes() => _push<void>('/themes', const ThemesScreen());
+
+  static Future<void> openNotificationSettings() =>
+      _push<void>('/settings/notifications', const NotificationsSettingsScreen());
+
+  static Future<void> openPrivacy() => _push<void>('/settings/privacy', const PrivacySettingsScreen());
+
+  static Future<void> openAiSettings() => _push<void>('/settings/ai', const AiSettingsScreen());
+
+  static Future<void> openStorage() => _push<void>('/settings/storage', const StorageSettingsScreen());
+
+  static Future<void> openAbout() => _push<void>('/about', const AboutScreen());
 
   static Future<void> openMediaLibrary() =>
       _push<void>('/media', const MediaLibraryScreen());
