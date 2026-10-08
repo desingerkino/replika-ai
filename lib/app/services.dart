@@ -319,6 +319,10 @@ class AppServices {
         MediaPaths.reset();
         debugPrint('Папка медиатеки недоступна: $error');
       }
+      // Голосовое дослушано до конца — отметка «прослушано» (не статус доставки).
+      services.audio.onCompleted = (messageId) => unawaited(
+            services.messages.setPlayed(messageId).catchError((Object e) => debugPrint('Отметка не сохранена: $e')),
+          );
       services.kino.apply();
       await services.notifications.init();
       // Connect поднимается в фоне: запуск приложения его не ждёт.
