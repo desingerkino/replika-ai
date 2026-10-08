@@ -13,6 +13,7 @@ import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../data/db/tables.dart';
 import '../../data/models/media_item.dart';
+import 'media_content.dart' show VideoFrame;
 import 'media_kinds.dart';
 import 'media_viewer.dart';
 import '../../core/design/adaptive.dart';
@@ -195,17 +196,48 @@ class _MediaLibraryScreenState extends State<MediaLibraryScreen> {
                         'если удалить их из галереи.',
                   );
                 }
-                return ListView.builder(
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return _MediaTile(
-                      key: ValueKey(item.id),
-                      item: item,
-                      onTap: () => _open(item),
-                      onLongPress: _picking ? null : () => _delete(item),
-                    );
-                  },
+                // Фото и видео — сеткой, как галерея; остальное — списком.
+                final visual = [for (final m in items) if (m.kind == MediaKind.photo || m.kind == MediaKind.video) m];
+                final others = [for (final m in items) if (m.kind != MediaKind.photo && m.kind != MediaKind.video) m];
+                return CustomScrollView(
+                  slivers: [
+                    if (visual.isNotEmpty)
+                      SliverPadding(
+                        padding: const EdgeInsets.all(2),
+                        sliver: SliverGrid(
+                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 160,
+                            mainAxisSpacing: 2,
+                            crossAxisSpacing: 2,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final item = visual[index];
+                              return _MediaCell(
+                                key: ValueKey(item.id),
+                                item: item,
+                                onTap: () => _open(item),
+                                onLongPress: _picking ? null : () => _delete(item),
+                              );
+                            },
+                            childCount: visual.length,
+                          ),
+                        ),
+                      ),
+                    SliverList.builder(
+                      itemCount: others.length,
+                      itemBuilder: (context, index) {
+                        final item = others[index];
+                        return _MediaTile(
+                          key: ValueKey(item.id),
+                          item: item,
+                          onTap: () => _open(item),
+                          onLongPress: _picking ? null : () => _delete(item),
+                        );
+                      },
+                    ),
+                    SliverPadding(padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + Space.l)),
+                  ],
                 );
               },
             ),
@@ -275,6 +307,53 @@ class _MediaTile extends StatelessWidget {
                   playback.isPlaying(item.id) ? Icons.pause_circle_rounded : Icons.play_circle_rounded,
                   color: context.cs.primary,
                   size: 30,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Квадрат сетки: превью фото или первый кадр видео с длительностью.
+class _MediaCell extends StatelessWidget {
+  const _MediaCell({super.key, required this.item, required this.onTap, this.onLongPress});
+
+  final MediaItem item;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final video = item.kind == MediaKind.video;
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: LayoutBuilder(
+        builder: (context, constraints) => Stack(
+          fit: StackFit.expand,
+          children: [
+            if (video)
+              VideoFrame(media: item, width: constraints.maxWidth, height: constraints.maxHeight)
+            else
+              Image.file(
+                File(item.path),
+                fit: BoxFit.cover,
+                cacheWidth: (constraints.maxWidth * MediaQuery.devicePixelRatioOf(context)).round(),
+                errorBuilder: (context, error, stack) => _IconBox(icon: mediaKindIcon(item.kind)),
+              ),
+            if (video)
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: MediaPalette.scrim, borderRadius: BorderRadius.circular(Radii.pill)),
+                  child: Text(
+                    item.duration == null ? 'Видео' : formatDuration(item.duration!),
+                    style: const TextStyle(color: MediaPalette.onMedia, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
           ],

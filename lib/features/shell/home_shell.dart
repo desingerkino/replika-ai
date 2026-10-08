@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/live_query.dart';
 import '../../app/navigator.dart';
@@ -131,7 +132,10 @@ class _HomeShellState extends State<HomeShell> {
                           builder: (context, snapshot) => AppTabBar(
                             index: index,
                             items: _tabItems(snapshot.data ?? 0),
-                            onSelect: (selected) => AppNavigator.homeTab.value = selected,
+                            onSelect: (selected) {
+                              if (selected != AppNavigator.homeTab.value) HapticFeedback.selectionClick();
+                              AppNavigator.homeTab.value = selected;
+                            },
                           ),
                         ),
                       ),
