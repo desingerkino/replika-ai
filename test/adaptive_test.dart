@@ -108,7 +108,7 @@ void main() {
     testWidgets('в «Настройках» экраны открываются справа и закрываются «Назад»', (tester) async {
       await tester.pumpWidget(MaterialApp(navigatorKey: AppNavigator.key, home: const SizedBox()));
       AppNavigator.twoPane.value = true;
-      AppNavigator.homeTab.value = 3;
+      AppNavigator.homeTab.value = 4;
       await AppNavigator.openAddons();
       expect(AppNavigator.detailScreen.value?.name, '/addons');
       expect(AppNavigator.key.currentState!.canPop(), isFalse);

@@ -241,9 +241,9 @@ void main() {
 
   test('M4: OPEN_SCREEN — вкладки и групповой чат', () async {
     expect((await client.command('OPEN_SCREEN', {'screen': 'CALLS'})).success, isTrue);
-    expect(AppNavigator.homeTab.value, 1);
-    expect((await client.command('OPEN_SCREEN', {'screen': 'CONTACTS'})).success, isTrue);
     expect(AppNavigator.homeTab.value, 2);
+    expect((await client.command('OPEN_SCREEN', {'screen': 'CONTACTS'})).success, isTrue);
+    expect(AppNavigator.homeTab.value, 1);
     expect((await client.command('OPEN_SCREEN', {'screen': 'CHAT_LIST'})).success, isTrue);
     expect(AppNavigator.homeTab.value, 0);
 

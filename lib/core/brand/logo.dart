@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../design/tokens.dart';
 
-/// Знак «Реплики»: реплика-пузырь с точками «печатает» и открытая хлопушка.
-/// Та же геометрия используется в tool/generate_icons.py для иконки.
+/// Знак «Реплики»: плитка с двумя пересекающимися репликами-пузырями.
 class ReplikaLogo extends StatelessWidget {
   const ReplikaLogo({super.key, this.size = 64, this.onDark = false});
 
   final double size;
 
-  /// true — вариант для тёмного фона и иконки (белый пузырь).
+  /// true — вариант для тёмного фона (светлая плитка).
   final bool onDark;
 
   @override
@@ -36,49 +35,45 @@ class _LogoPainter extends CustomPainter {
     canvas.save();
     canvas.scale(scale);
 
-    final slateColor = onDark ? Palette.tungsten : Palette.ink;
-    final stripeColor = onDark ? Palette.ink : Palette.tungsten;
-    final bubbleColor = onDark ? Palette.white : Palette.petrol;
-    final dotColor = onDark ? Palette.petrol : Palette.white;
+    final tileColor = onDark ? Palette.white : Palette.ink;
+    final firstBubble = onDark ? Palette.ink : Palette.white;
+    final secondBubble = onDark ? Palette.brand : Palette.brandBright;
 
-    // Планка хлопушки.
-    final slate = Path()
-      ..moveTo(10, 26)
-      ..lineTo(86, 8)
-      ..lineTo(89, 19)
-      ..lineTo(13, 37)
-      ..close();
-    canvas.drawPath(slate, Paint()..color = slateColor);
-
-    canvas.save();
-    canvas.clipPath(slate);
-    final stripe = Paint()
-      ..color = stripeColor
-      ..strokeWidth = 7
-      ..strokeCap = StrokeCap.butt;
-    for (double x = 2; x < 100; x += 16) {
-      canvas.drawLine(Offset(x, 44), Offset(x + 22, 0), stripe);
-    }
-    canvas.restore();
-
-    // Пузырь-реплика с хвостиком.
-    final bubblePaint = Paint()..color = bubbleColor;
+    // Плитка.
     canvas.drawRRect(
-      RRect.fromLTRBR(10, 40, 90, 86, const Radius.circular(16)),
-      bubblePaint,
+      RRect.fromLTRBR(0, 0, 100, 100, const Radius.circular(24)),
+      Paint()..color = tileColor,
     );
-    final tail = Path()
-      ..moveTo(22, 84)
-      ..lineTo(15, 97)
-      ..lineTo(40, 84)
-      ..close();
-    canvas.drawPath(tail, bubblePaint);
 
-    // Три точки «печатает».
-    final dotPaint = Paint()..color = dotColor;
-    for (final x in const [34.0, 50.0, 66.0]) {
-      canvas.drawCircle(Offset(x, 63), 5.5, dotPaint);
-    }
+    // Первая реплика (слева сверху).
+    final first = Paint()..color = firstBubble;
+    canvas.drawRRect(RRect.fromLTRBR(16, 20, 66, 52, const Radius.circular(12)), first);
+    canvas.drawPath(
+      Path()
+        ..moveTo(24, 50)
+        ..lineTo(20, 63)
+        ..lineTo(36, 50)
+        ..close(),
+      first,
+    );
+
+    // Вторая реплика (справа снизу) с рамкой цвета плитки на пересечении.
+    final secondRect = RRect.fromLTRBR(34, 44, 84, 76, const Radius.circular(12));
+    final secondTail = Path()
+      ..moveTo(76, 74)
+      ..lineTo(80, 87)
+      ..lineTo(64, 74)
+      ..close();
+    final gap = Paint()
+      ..color = tileColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawRRect(secondRect, gap);
+    canvas.drawPath(secondTail, gap);
+    final second = Paint()..color = secondBubble;
+    canvas.drawRRect(secondRect, second);
+    canvas.drawPath(secondTail, second);
 
     canvas.restore();
   }

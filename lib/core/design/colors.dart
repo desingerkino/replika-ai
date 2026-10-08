@@ -29,6 +29,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     required this.warning,
     required this.danger,
     required this.selection,
+    required this.alert,
   });
 
   final Color chatBackground;
@@ -57,60 +58,65 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
   final Color danger;
   final Color selection;
 
+  /// Красный бейдж непрочитанных на значке вкладки «Чаты».
+  final Color alert;
+
   static const ReplikaColors light = ReplikaColors(
-    chatBackground: Color(0xFFE8EDEB),
+    chatBackground: Color(0xFFE9ECF1),
     bubbleIn: Color(0xFFFFFFFF),
-    bubbleOut: Color(0xFF155E75),
+    bubbleOut: Color(0xFF3D5CFF),
     onBubbleIn: Color(0xFF15202B),
     onBubbleOut: Color(0xFFFFFFFF),
-    metaIn: Color(0xFF8A969E),
-    metaOut: Color(0xFFB7D3DB),
+    metaIn: Color(0xFF8A929C),
+    metaOut: Color(0xFFC9D3FF),
     tickRead: Color(0xFF8CE3D3),
     textPrimary: Color(0xFF15202B),
-    textSecondary: Color(0xFF5B6770),
-    textTertiary: Color(0xFF98A3AA),
-    divider: Color(0xFFE1E6E8),
-    surfaceMuted: Color(0xFFF1F4F5),
-    badge: Color(0xFF155E75),
-    badgeMuted: Color(0xFFA3AEB5),
+    textSecondary: Color(0xFF646A73),
+    textTertiary: Color(0xFF8B919A),
+    divider: Color(0xFFE1E4E8),
+    surfaceMuted: Color(0xFFEAECF0),
+    badge: Color(0xFF3D5CFF),
+    badgeMuted: Color(0xFF8E949C),
     onBadge: Color(0xFFFFFFFF),
     draft: Color(0xFFC8372D),
-    daySeparator: Color(0xFFD3DCD9),
-    onDaySeparator: Color(0xFF4E5B63),
+    daySeparator: Color(0xFFD6DBE3),
+    onDaySeparator: Color(0xFF4E5662),
     accent: Color(0xFFE3A13B),
-    online: Color(0xFF2F9E6E),
+    online: Color(0xFF34C759),
     success: Color(0xFF2F9E6E),
     warning: Color(0xFFD08A1E),
     danger: Color(0xFFC8372D),
-    selection: Color(0x1F155E75),
+    selection: Color(0x1F3D5CFF),
+    alert: Color(0xFFFF383C),
   );
 
   static const ReplikaColors dark = ReplikaColors(
-    chatBackground: Color(0xFF0E1418),
-    bubbleIn: Color(0xFF1E272E),
-    bubbleOut: Color(0xFF1B6F86),
+    chatBackground: Color(0xFF0D1015),
+    bubbleIn: Color(0xFF1E2229),
+    bubbleOut: Color(0xFF3550E0),
     onBubbleIn: Color(0xFFE7ECEF),
     onBubbleOut: Color(0xFFFFFFFF),
-    metaIn: Color(0xFF7F8C96),
-    metaOut: Color(0xFFA9CAD4),
+    metaIn: Color(0xFF7F8791),
+    metaOut: Color(0xFFC2CCFF),
     tickRead: Color(0xFF8CE3D3),
     textPrimary: Color(0xFFE7ECEF),
-    textSecondary: Color(0xFF9AA7B1),
-    textTertiary: Color(0xFF6B7881),
-    divider: Color(0xFF232C33),
-    surfaceMuted: Color(0xFF1A2228),
-    badge: Color(0xFF3E9BB5),
-    badgeMuted: Color(0xFF4A565F),
-    onBadge: Color(0xFF06181E),
+    textSecondary: Color(0xFF9AA0AA),
+    textTertiary: Color(0xFF6B727C),
+    divider: Color(0xFF262A31),
+    surfaceMuted: Color(0xFF1B1F26),
+    badge: Color(0xFF7C93FF),
+    badgeMuted: Color(0xFF4A515A),
+    onBadge: Color(0xFF0B0C12),
     draft: Color(0xFFF06A5F),
-    daySeparator: Color(0xFF1C262C),
-    onDaySeparator: Color(0xFFA7B4BD),
+    daySeparator: Color(0xFF1C2028),
+    onDaySeparator: Color(0xFFA7AEB9),
     accent: Color(0xFFE8AE55),
-    online: Color(0xFF4CC08A),
+    online: Color(0xFF30D158),
     success: Color(0xFF4CC08A),
     warning: Color(0xFFF0A43A),
     danger: Color(0xFFF06A5F),
-    selection: Color(0x333E9BB5),
+    selection: Color(0x337C93FF),
+    alert: Color(0xFFFF4245),
   );
 
   @override
@@ -140,6 +146,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
     Color? warning,
     Color? danger,
     Color? selection,
+    Color? alert,
   }) {
     return ReplikaColors(
       chatBackground: chatBackground ?? this.chatBackground,
@@ -167,6 +174,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
       warning: warning ?? this.warning,
       danger: danger ?? this.danger,
       selection: selection ?? this.selection,
+      alert: alert ?? this.alert,
     );
   }
 
@@ -200,6 +208,7 @@ class ReplikaColors extends ThemeExtension<ReplikaColors> {
       warning: mix(warning, other.warning),
       danger: mix(danger, other.danger),
       selection: mix(selection, other.selection),
+      alert: mix(alert, other.alert),
     );
   }
 }

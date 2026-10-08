@@ -4,7 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/brand/brand.dart';
 import '../core/design/theme.dart';
-import '../features/shell/home_shell.dart';
+import '../features/welcome/welcome_gate.dart';
 import '../features/kino/fake_status_bar.dart';
 import 'hidden_gestures.dart';
 import 'navigator.dart';
@@ -42,7 +42,7 @@ class ReplikaApp extends StatelessWidget {
               child: KinoFrame(child: child ?? const SizedBox.shrink()),
             ),
           ),
-          home: const HomeShell(),
+          home: const WelcomeGate(),
         ),
       ),
     );

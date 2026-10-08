@@ -24,6 +24,8 @@ import '../search/message_hit_tile.dart';
 
 enum _ChatAction { pin, read, mute, delete }
 
+enum _ComposeAction { chat, group }
+
 /// Список чатов текущего телефона.
 class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key, required this.deviceId});
@@ -36,6 +38,7 @@ class ChatsScreen extends StatefulWidget {
 
 class _ChatsScreenState extends State<ChatsScreen> {
   final TextEditingController _search = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
   String _query = '';
   Timer? _clock;
 
@@ -52,6 +55,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
   void dispose() {
     _clock?.cancel();
     _search.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -59,6 +63,32 @@ class _ChatsScreenState extends State<ChatsScreen> {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  Future<void> _compose() async {
+    final action = await showActionSheet<_ComposeAction>(
+      context,
+      actions: const [
+        SheetAction(
+          value: _ComposeAction.chat,
+          icon: Icons.chat_bubble_outline_rounded,
+          label: 'Новый чат',
+        ),
+        SheetAction(
+          value: _ComposeAction.group,
+          icon: Icons.group_add_outlined,
+          label: 'Новая группа',
+        ),
+      ],
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _ComposeAction.chat:
+        // Чат начинается с выбора контакта.
+        AppNavigator.homeTab.value = 1;
+      case _ComposeAction.group:
+        await AppNavigator.openNewGroup();
+    }
   }
 
   Future<void> _openActions(ChatListItem item) async {
@@ -136,14 +166,19 @@ class _ChatsScreenState extends State<ChatsScreen> {
         bottom: false,
         child: Column(
           children: [
-            const ScreenHeader(
+            ScreenHeader(
               title: 'Чаты',
               onTitleHold: AppNavigator.openOperator,
               actions: [
                 IconButton(
-                  tooltip: 'Новая группа',
-                  icon: Icon(Icons.group_add_outlined),
-                  onPressed: AppNavigator.openNewGroup,
+                  tooltip: 'Поиск',
+                  icon: const Icon(AppIcons.search),
+                  onPressed: _searchFocus.requestFocus,
+                ),
+                IconButton(
+                  tooltip: 'Новый чат',
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: _compose,
                 ),
               ],
             ),
@@ -151,6 +186,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
               padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.s),
               child: SearchField(
                 controller: _search,
+                focusNode: _searchFocus,
                 hint: 'Поиск',
                 onChanged: (value) => setState(() => _query = value),
               ),
@@ -178,26 +214,39 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         : const LoadingState();
                   }
                   if (all.isEmpty) {
-                    return const EmptyState(
+                    return EmptyState(
                       icon: AppIcons.emptyChats,
                       title: 'Чатов пока нет',
                       message: 'Откройте контакт, чтобы начать переписку.',
+                      action: FilledButton(
+                        onPressed: () => AppNavigator.homeTab.value = 1,
+                        child: const Text('Новый чат'),
+                      ),
                     );
                   }
                   final items = filterChats(all, _query);
                   final now = DateTime.now();
                   if (_query.trim().isEmpty) {
+                    final pinned = items.where((item) => item.chat.isPinned).toList();
+                    final others = items.where((item) => !item.chat.isPinned).toList();
+                    final sections = pinned.isNotEmpty && others.isNotEmpty;
                     return ListenableBuilder(
                       listenable: services.typing,
-                      builder: (context, _) => ListView.builder(
+                      builder: (context, _) => ListView(
                         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: const EdgeInsets.only(bottom: Space.s),
-                        itemCount: items.length,
-                        itemBuilder: (context, index) => _tile(
-                          items[index],
-                          now,
-                          showDivider: index < items.length - 1,
-                        ),
+                        padding: EdgeInsets.only(bottom: Space.s + MediaQuery.paddingOf(context).bottom),
+                        children: [
+                          if (sections) const SectionLabel('Закреплённые'),
+                          for (var i = 0; i < pinned.length; i++)
+                            _tile(
+                              pinned[i],
+                              now,
+                              showDivider: sections || i < pinned.length - 1 || others.isNotEmpty,
+                            ),
+                          if (sections) const SectionLabel('Все чаты'),
+                          for (var i = 0; i < others.length; i++)
+                            _tile(others[i], now, showDivider: i < others.length - 1),
+                        ],
                       ),
                     );
                   }
@@ -265,7 +314,7 @@ class _SearchResults extends StatelessWidget {
         }
         return ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.only(bottom: Space.s),
+          padding: EdgeInsets.only(bottom: Space.s + MediaQuery.paddingOf(context).bottom),
           children: [
             if (chats.isNotEmpty) ...[
               const SectionLabel('Чаты'),

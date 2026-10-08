@@ -7,6 +7,7 @@ abstract final class SettingKeys {
   static const String currentDeviceId = 'current_device_id';
   static const String seedVersion = 'seed_version';
   static const String themeMode = 'theme_mode';
+  static const String welcomeSeen = 'welcome_seen';
   static const String activeSceneId = 'active_scene_id';
   static const String volumeKeys = 'volume_keys';
   static const String resetToast = 'reset_toast';

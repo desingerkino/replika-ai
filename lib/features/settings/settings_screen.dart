@@ -90,7 +90,7 @@ class SettingsScreen extends StatelessWidget {
                       final mode = services.themeMode.value;
                       final kino = services.kino.enabled;
                       return ListView(
-                      padding: const EdgeInsets.only(bottom: Space.xl),
+                      padding: EdgeInsets.only(bottom: Space.xl + MediaQuery.paddingOf(context).bottom),
                       children: [
                         if (data != null)
                           _OwnerCard(

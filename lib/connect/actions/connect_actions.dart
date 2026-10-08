@@ -684,8 +684,8 @@ class ConnectActions implements CommandExecutor {
       case ConnectScreen.contacts:
         AppNavigator.toRoot();
         AppNavigator.homeTab.value = switch (screen) {
-          ConnectScreen.calls => 1,
-          ConnectScreen.contacts => 2,
+          ConnectScreen.calls => 2,
+          ConnectScreen.contacts => 1,
           _ => 0,
         };
         return {'screen': screen.wire};

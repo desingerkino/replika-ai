@@ -109,6 +109,7 @@ class CallsScreen extends StatelessWidget {
                   }
                   final now = DateTime.now();
                   return ListView.builder(
+                    padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
                     itemCount: items.length,
                     itemBuilder: (context, index) => _CallTile(
                       item: items[index],

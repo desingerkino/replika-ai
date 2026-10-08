@@ -99,7 +99,15 @@ class ScreenHeader extends StatelessWidget {
               child: _hold(
                 Semantics(
                   header: true,
-                  child: Text(title, style: context.tt.headlineSmall),
+                  child: Text(
+                    title,
+                    style: context.tt.headlineSmall?.copyWith(
+                      fontSize: 34,
+                      height: 41 / 34,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                 ),
               ),
             ),

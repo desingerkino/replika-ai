@@ -32,7 +32,7 @@ abstract final class AppNavigator {
     final navigator = key.currentState;
     if (navigator == null) return null;
     if (twoPane.value &&
-        homeTab.value == 3 &&
+        homeTab.value == 4 &&
         !navigator.canPop() &&
         _settingsPaneRoutes.contains(name)) {
       detailChat.value = null;
@@ -155,8 +155,8 @@ abstract final class AppNavigator {
     }
   }
 
-  /// Вкладка главного экрана: 0 — чаты, 1 — звонки, 2 — контакты,
-  /// 3 — настройки. Меняется касанием и командой Connect OPEN_SCREEN.
+  /// Вкладка главного экрана: 0 — чаты, 1 — контакты, 2 — звонки,
+  /// 3 — истории, 4 — настройки. Меняется касанием и командой Connect OPEN_SCREEN.
   static final ValueNotifier<int> homeTab = ValueNotifier<int>(0);
 
   /// «Назад»: закрыть верхний экран; в двухпанельной раскладке без верхних
@@ -165,7 +165,7 @@ abstract final class AppNavigator {
     final navigator = key.currentState;
     if (navigator == null) return;
     if (twoPane.value && !navigator.canPop()) {
-      if (detailScreen.value != null && homeTab.value == 3) {
+      if (detailScreen.value != null && homeTab.value == 4) {
         detailScreen.value = null;
         return;
       }

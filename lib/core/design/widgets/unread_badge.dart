@@ -27,9 +27,9 @@ class UnreadBadge extends StatelessWidget {
         label(count),
         style: TextStyle(
           color: rc.onBadge,
-          fontSize: 12,
+          fontSize: 13,
           height: 1.2,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),

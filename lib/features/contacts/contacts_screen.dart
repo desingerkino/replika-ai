@@ -206,7 +206,7 @@ class _ContactList extends StatelessWidget {
 
     return ListView.builder(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.only(bottom: Space.s),
+      padding: EdgeInsets.only(bottom: Space.s + MediaQuery.paddingOf(context).bottom),
       itemCount: rows.length,
       itemBuilder: (context, index) {
         final row = rows[index];
