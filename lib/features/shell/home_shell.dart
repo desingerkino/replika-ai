@@ -114,7 +114,7 @@ class _HomeShellState extends State<HomeShell> {
                         child: MediaQuery(
                           data: MediaQuery.of(context).copyWith(
                             padding: MediaQuery.paddingOf(context).copyWith(
-                              bottom: MediaQuery.paddingOf(context).bottom + Sizes.tabBarContentInset,
+                              bottom: MediaQuery.paddingOf(context).bottom + AppTabBar.contentInset(context),
                             ),
                           ),
                           child: tabs,
@@ -128,7 +128,7 @@ class _HomeShellState extends State<HomeShell> {
                           tables: const {Tables.chats},
                           queryKey: deviceId,
                           load: () => services.chats.totalUnread(deviceId),
-                          builder: (context, snapshot) => FloatingTabBar(
+                          builder: (context, snapshot) => AppTabBar(
                             index: index,
                             items: _tabItems(snapshot.data ?? 0),
                             onSelect: (selected) => AppNavigator.homeTab.value = selected,

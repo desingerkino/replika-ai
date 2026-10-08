@@ -75,6 +75,9 @@ abstract final class Sizes {
   /// Сколько места под панелью вкладок должен оставлять прокручиваемый
   /// контент, чтобы последняя строка не пряталась за ней.
   static const double tabBarContentInset = tabBar + 24;
+
+  /// Прикреплённая нижняя панель (тема Telegram).
+  static const double dockedTabBar = 64;
 }
 
 /// Длительности и кривые анимаций.
