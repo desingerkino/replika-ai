@@ -8,7 +8,6 @@ import '../../app/services.dart';
 import '../../core/design/context.dart';
 import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
-import '../../core/design/widgets/avatar.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../data/db/tables.dart';
@@ -16,6 +15,12 @@ import '../../data/models/call_record.dart';
 import '../../data/models/contact.dart';
 import '../calls/calls_screen.dart';
 import '../../core/design/widgets/form.dart';
+import '../../core/design/widgets/action_sheet.dart';
+import '../../core/design/widgets/quick_action.dart';
+import '../../data/repositories/story_repository.dart';
+import '../stories/story_actions.dart';
+import '../stories/story_avatar.dart';
+import 'shared_media.dart';
 
 /// Профиль собеседника — так его видит владелец телефона.
 /// Служебная заметка оператора здесь не показывается: экран бывает в кадре.
@@ -84,6 +89,7 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
                   : const EmptyState(icon: AppIcons.profile, title: 'Профиль не найден');
         } else {
           body = _ProfileBody(
+            deviceId: widget.deviceId,
             contact: contact,
             onWrite: _write,
             onCall: (kind) => startOutgoingCall(
@@ -117,69 +123,117 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
 }
 
 class _ProfileBody extends StatelessWidget {
-  const _ProfileBody({required this.contact, required this.onWrite, required this.onCall});
+  const _ProfileBody({
+    required this.deviceId,
+    required this.contact,
+    required this.onWrite,
+    required this.onCall,
+  });
 
+  final String deviceId;
   final Contact contact;
   final VoidCallback onWrite;
   final ValueChanged<CallKind> onCall;
+
+  Future<void> _more(BuildContext context) async {
+    final services = Services.read(context);
+    final chatId = await services.chats.findDirect(deviceId: deviceId, characterId: contact.id);
+    final header = chatId == null ? null : await services.chats.header(chatId);
+    if (!context.mounted) return;
+    final muted = header?.chat.muted ?? false;
+    final action = await showActionSheet<String>(
+      context,
+      actions: [
+        if (chatId != null)
+          SheetAction(
+            value: 'mute',
+            icon: muted ? Icons.notifications_active_outlined : AppIcons.muted,
+            label: muted ? 'Включить уведомления' : 'Без звука',
+          ),
+        const SheetAction(value: 'story', icon: Icons.add_circle_outline_rounded, label: 'Добавить историю контакта'),
+        const SheetAction(value: 'edit', icon: AppIcons.edit, label: 'Изменить контакт'),
+      ],
+    );
+    if (!context.mounted || action == null) return;
+    switch (action) {
+      case 'mute':
+        if (chatId != null) await services.chats.setMuted(chatId, !muted);
+      case 'story':
+        await addStory(context, deviceId: deviceId, characterId: contact.id);
+      case 'edit':
+        await AppNavigator.openContactEditor(deviceId: deviceId, characterId: contact.id);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final rc = context.rc;
     final tt = context.tt;
+    final cs = context.cs;
+    final services = Services.of(context);
     final character = contact.character;
     final status = character.statusText.trim();
     return ListView(
-      padding: listPadding(context, const EdgeInsets.fromLTRB(Space.l, Space.xl, Space.l, Space.xl)),
+      padding: listPadding(context, const EdgeInsets.fromLTRB(0, Space.l, 0, Space.xl)),
       children: [
         Center(
-          child: Avatar(
-            name: contact.shownName,
-            size: 104,
-            imagePath: contact.avatarPath,
-            tone: character.avatarTone,
+          child: LiveQuery<List<StoryAuthor>>(
+            tables: const {Tables.stories, Tables.media},
+            queryKey: '$deviceId|${contact.id}',
+            load: () => services.stories.authorsForDevice(deviceId),
+            builder: (context, snapshot) {
+              final authors = snapshot.data ?? const <StoryAuthor>[];
+              final mine = [for (final a in authors) if (a.characterId == contact.id) a];
+              final has = mine.isNotEmpty;
+              return GestureDetector(
+                onTap: has ? () => openStories(context, deviceId: deviceId, authors: mine) : null,
+                child: StoryAvatar(
+                  name: contact.shownName,
+                  size: 128,
+                  imagePath: contact.avatarPath,
+                  tone: character.avatarTone,
+                  hasStories: has,
+                  unseen: has && mine.first.hasUnseen,
+                ),
+              );
+            },
           ),
         ),
-        const SizedBox(height: Space.l),
-        Text(contact.shownName, textAlign: TextAlign.center, style: tt.headlineSmall),
+        const SizedBox(height: Space.m),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.l),
+          child: Text(contact.shownName, textAlign: TextAlign.center, style: tt.headlineSmall?.copyWith(fontSize: 26)),
+        ),
         if (status.isNotEmpty) ...[
           const SizedBox(height: Space.xs),
           Text(
             status,
             textAlign: TextAlign.center,
-            style: tt.bodyMedium?.copyWith(
-              color: character.isOnline ? context.cs.primary : rc.textSecondary,
-            ),
+            style: tt.bodyLarge?.copyWith(color: character.isOnline ? cs.primary : rc.textSecondary),
           ),
         ],
-        const SizedBox(height: Space.xl),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: Space.s,
-          runSpacing: Space.s,
-          children: [
-            FilledButton.icon(
-              onPressed: onWrite,
-              icon: const Icon(AppIcons.message, size: 20),
-              label: const Text('Написать'),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: () => onCall(CallKind.audio),
-              icon: const Icon(Icons.call_rounded, size: 20),
-              label: const Text('Позвонить'),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: () => onCall(CallKind.video),
-              icon: const Icon(Icons.videocam_rounded, size: 20),
-              label: const Text('Видео'),
-            ),
-          ],
+        const SizedBox(height: Space.l),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.l),
+          child: Row(
+            children: [
+              Expanded(child: QuickAction(icon: Icons.call_outlined, label: 'Звонок', onTap: () => onCall(CallKind.audio))),
+              const SizedBox(width: Space.s),
+              Expanded(child: QuickAction(icon: Icons.videocam_outlined, label: 'Видео', onTap: () => onCall(CallKind.video))),
+              const SizedBox(width: Space.s),
+              Expanded(child: QuickAction(icon: Icons.chat_bubble_outline_rounded, label: 'Чат', onTap: onWrite)),
+              const SizedBox(width: Space.s),
+              Expanded(child: QuickAction(icon: Icons.more_vert_rounded, label: 'Ещё', onTap: () => _more(context))),
+            ],
+          ),
         ),
-        const SizedBox(height: Space.xl),
+        const SizedBox(height: Space.l),
+        Divider(height: 8, thickness: 8, color: rc.surfaceMuted.withValues(alpha: 0.6)),
         if (character.phone.trim().isNotEmpty)
           _InfoCard(
             label: 'Мобильный',
             value: character.phone,
+            accent: true,
             onLongPress: () async {
               await Clipboard.setData(ClipboardData(text: character.phone));
               if (context.mounted) {
@@ -189,41 +243,34 @@ class _ProfileBody extends StatelessWidget {
               }
             },
           ),
-        if (!contact.saved && character.fullName.isNotEmpty) ...[
-          const SizedBox(height: Space.s),
-          _InfoCard(label: 'Имя', value: character.fullName),
-        ],
+        if (!contact.saved && character.fullName.isNotEmpty) _InfoCard(label: 'Имя', value: character.fullName),
+        SharedMediaSection(deviceId: deviceId, characterId: contact.id),
       ],
     );
   }
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.label, required this.value, this.onLongPress});
+  const _InfoCard({required this.label, required this.value, this.onLongPress, this.accent = false});
 
   final String label;
   final String value;
   final VoidCallback? onLongPress;
+  final bool accent;
 
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
-    return Material(
-      color: rc.surfaceMuted,
-      borderRadius: BorderRadius.circular(Radii.card),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.card),
-        onLongPress: onLongPress,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: Space.m),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: context.tt.labelMedium),
-              const SizedBox(height: 2),
-              Text(value, style: context.tt.bodyLarge),
-            ],
-          ),
+    return InkWell(
+      onLongPress: onLongPress,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Space.l + 4, vertical: Space.m),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: context.tt.labelMedium),
+            const SizedBox(height: 2),
+            Text(value, style: context.tt.bodyLarge?.copyWith(color: accent ? context.cs.primary : null)),
+          ],
         ),
       ),
     );

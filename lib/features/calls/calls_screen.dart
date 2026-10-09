@@ -7,6 +7,7 @@ import '../../core/design/context.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/avatar.dart';
+import '../../core/design/widgets/replika_refresh.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../core/util/time_format.dart';
@@ -108,12 +109,16 @@ class CallsScreen extends StatelessWidget {
                     );
                   }
                   final now = DateTime.now();
-                  return ListView.builder(
-                    itemCount: items.length,
-                    itemBuilder: (context, index) => _CallTile(
-                      item: items[index],
-                      now: now,
-                      onTap: () => _actions(context, items[index]),
+                  return ReplikaRefreshIndicator(
+                    onRefresh: () async => snapshot.reload(),
+                    child: ListView.builder(
+                      padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
+                      itemCount: items.length,
+                      itemBuilder: (context, index) => _CallTile(
+                        item: items[index],
+                        now: now,
+                        onTap: () => _actions(context, items[index]),
+                      ),
                     ),
                   );
                 },

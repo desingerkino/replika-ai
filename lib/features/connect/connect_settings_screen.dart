@@ -217,7 +217,7 @@ class _ConnectSettingsScreenState extends State<ConnectSettingsScreen> {
                     label: connect.pairingOpen ? 'ОЖИДАНИЕ СОПРЯЖЕНИЯ…' : 'РАЗРЕШИТЬ НОВОЕ УСТРОЙСТВО',
                     icon: Icons.link_rounded,
                     color: connect.pairingOpen ? OperatorPalette.standby : OperatorPalette.line,
-                    foreground: connect.pairingOpen ? OperatorPalette.background : Colors.white,
+                    foreground: connect.pairingOpen ? OperatorPalette.background : MediaPalette.onMedia,
                     height: 56,
                     onPressed: connect.state == ConnectState.off
                         ? null

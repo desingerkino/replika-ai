@@ -30,6 +30,8 @@ class Message {
     this.deliveredAt,
     this.readAt,
     this.deletedAt,
+    this.reaction,
+    this.playedAt,
   });
 
   final String id;
@@ -62,6 +64,14 @@ class Message {
 
   final MediaItem? media;
 
+  /// Реакция-эмодзи под пузырём (null — нет).
+  final String? reaction;
+
+  /// Голосовое прослушано до конца (состояние воспроизведения, не доставки).
+  final DateTime? playedAt;
+
+  bool get played => playedAt != null;
+
   bool get isMedia =>
       type != MessageType.text && type != MessageType.system && type != MessageType.call;
 
@@ -85,6 +95,8 @@ class Message {
         deliveredAt: row['delivered_at'] == null ? null : intToDate(row['delivered_at']),
         readAt: row['read_at'] == null ? null : intToDate(row['read_at']),
         deletedAt: row['deleted_at'] == null ? null : intToDate(row['deleted_at']),
+        reaction: readStringOrNull(row, 'reaction'),
+        playedAt: intToDateOrNull(row['played_at']),
       );
 
   /// Сообщение из строки, где поля переданы с префиксом (например, «m_»).
@@ -121,6 +133,8 @@ class Message {
             : (state == MessageState.delivered || state == MessageState.read ? dateToInt(sentAt) : null),
         'read_at': readAt != null ? dateToInt(readAt!) : (state == MessageState.read ? dateToInt(sentAt) : null),
         'deleted_at': deletedAt != null ? dateToInt(deletedAt!) : (deleted ? dateToInt(sentAt) : null),
+        'reaction': reaction,
+        'played_at': playedAt == null ? null : dateToInt(playedAt!),
       };
 
   Message copyWith({
@@ -148,5 +162,6 @@ class Message {
         sceneId: sceneId,
         createdAt: createdAt,
         media: media,
+        reaction: reaction,
       );
 }

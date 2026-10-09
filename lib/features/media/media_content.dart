@@ -58,7 +58,7 @@ class PhotoContent extends StatelessWidget {
           width: width,
           height: height,
           child: ColoredBox(
-            color: Colors.black26,
+            color: MediaPalette.scrimLight,
             child: Icon(Icons.broken_image_outlined, color: context.rc.textTertiary),
           ),
         ),
@@ -109,7 +109,7 @@ class _VideoFrameState extends State<VideoFrame> {
       width: widget.width,
       height: widget.height,
       child: ColoredBox(
-        color: Colors.black,
+        color: MediaPalette.background,
         child: ready && size.width > 0
             ? FittedBox(
                 fit: BoxFit.cover,
@@ -140,10 +140,14 @@ class VideoContent extends StatelessWidget {
         children: [
           VideoFrame(media: media, width: width, height: height),
           Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(color: Color(0x88000000), shape: BoxShape.circle),
-            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34),
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: const Color(0x8C000000),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0x66FFFFFF), width: 1.5),
+            ),
+            child: const Icon(Icons.play_arrow_rounded, color: MediaPalette.onMedia, size: 38),
           ),
           if (duration != null)
             Positioned(
@@ -224,7 +228,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
           children: [
             ClipOval(
               child: ColoredBox(
-                color: Colors.black,
+                color: MediaPalette.background,
                 child: SizedBox.expand(
                   child: _ready && size.width > 0
                       ? FittedBox(
@@ -239,7 +243,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
             if (value.isPlaying || value.position > Duration.zero)
               Positioned.fill(
                 child: CustomPaint(
-                  painter: _RingPainter(progress: progress, color: Colors.white),
+                  painter: _RingPainter(progress: progress, color: MediaPalette.onMedia),
                 ),
               ),
             if (remaining != null)
@@ -254,7 +258,7 @@ class _VideoNoteContentState extends State<VideoNoteContent> {
                   width: 44,
                   height: 44,
                   decoration: const BoxDecoration(color: Color(0x66000000), shape: BoxShape.circle),
-                  child: const Icon(Icons.volume_up_rounded, color: Colors.white, size: 24),
+                  child: const Icon(Icons.volume_up_rounded, color: MediaPalette.onMedia, size: 24),
                 ),
               ),
           ],
@@ -301,7 +305,7 @@ class _Pill extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          color: Colors.white,
+          color: MediaPalette.onMedia,
           fontSize: 12,
           fontWeight: FontWeight.w500,
           fontFeatures: [FontFeature.tabularFigures()],
@@ -311,7 +315,9 @@ class _Pill extends StatelessWidget {
   }
 }
 
-/// Голосовое или аудио: кнопка, «волна» или название, время.
+/// Голосовое или аудио: кнопка, волна (или дорожка) с перемоткой касанием
+/// и перетаскиванием, текущая позиция и длительность. [messageId] связывает
+/// воспроизведение с сообщением (плеер над чатом, «прослушано»).
 class AudioContent extends StatelessWidget {
   const AudioContent({
     super.key,
@@ -321,6 +327,8 @@ class AudioContent extends StatelessWidget {
     required this.accent,
     required this.onAccent,
     required this.muted,
+    this.messageId,
+    this.unplayed = false,
   });
 
   final MediaItem media;
@@ -329,6 +337,17 @@ class AudioContent extends StatelessWidget {
   final Color accent;
   final Color onAccent;
   final Color muted;
+  final String? messageId;
+
+  /// Входящее голосовое ещё не дослушано — точка рядом со временем.
+  final bool unplayed;
+
+  void _failed(BuildContext context) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Не удалось воспроизвести файл')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -339,10 +358,18 @@ class AudioContent extends StatelessWidget {
         final playing = playback.isPlaying(media.id);
         final current = playback.isCurrent(media.id);
         final progress = playback.progressOf(media.id);
-        final total = media.duration ?? playback.duration;
-        final time = current && playback.position > Duration.zero
-            ? formatDuration(playback.position)
+        final total = media.duration ?? (current ? playback.duration : null);
+        final time = current
+            ? '${formatDuration(playback.position)}${total == null ? '' : ' / ${formatDuration(total)}'}'
             : (total == null ? '' : formatDuration(total));
+        Future<void> seek(double f) async {
+          try {
+            await playback.seekFraction(media, f, messageId: messageId);
+          } catch (_) {
+            if (context.mounted) _failed(context);
+          }
+        }
+
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -352,18 +379,15 @@ class AudioContent extends StatelessWidget {
               child: GestureDetector(
                 onTap: () async {
                   try {
-                    await playback.toggle(media);
+                    await playback.toggle(media, messageId: messageId);
                   } catch (_) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Не удалось воспроизвести файл')),
-                      );
-                    }
+                    if (context.mounted) _failed(context);
                   }
                 },
-                child: Container(
-                  width: 42,
-                  height: 42,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
                   child: Icon(
                     playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
@@ -378,60 +402,162 @@ class AudioContent extends StatelessWidget {
             // оставались внутри пузыря.
             Flexible(
               child: SizedBox(
-              width: 150,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (voice)
-                    SizedBox(
-                      height: 26,
-                      width: double.infinity,
-                      child: CustomPaint(
-                        painter: WaveformPainter(
-                          values: media.waveform.isEmpty ? decorativeWaveform(media.id) : media.waveform,
-                          progress: progress,
-                          played: accent,
-                          idle: muted,
+                width: 176,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!voice)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          media.originalName ?? 'Аудио',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: foreground, fontSize: 15, fontWeight: FontWeight.w600),
                         ),
                       ),
-                    )
-                  else ...[
-                    Text(
-                      media.originalName ?? 'Аудио',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: foreground, fontSize: 15, fontWeight: FontWeight.w600),
+                    SeekableWaveform(
+                      // Волна — только настоящая (записанная в приложении);
+                      // у файлов без замеров — ровная дорожка с бегунком.
+                      values: voice ? media.waveform : const [],
+                      progress: progress,
+                      played: accent,
+                      idle: muted,
+                      onSeek: seek,
                     ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 3,
-                        color: accent,
-                        backgroundColor: muted,
-                      ),
+                    const SizedBox(height: 3),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          time,
+                          style: TextStyle(
+                            color: muted,
+                            fontSize: 12,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        if (unplayed) ...[
+                          const SizedBox(width: 5),
+                          Semantics(
+                            label: 'Не прослушано',
+                            child: Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
-                  const SizedBox(height: 3),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      color: muted,
-                      fontSize: 12,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
             ),
           ],
         );
       },
     );
   }
+}
+
+/// Волна (или дорожка, если замеров нет) с перемоткой: касание или
+/// перетаскивание по ней переставляет воспроизведение.
+class SeekableWaveform extends StatefulWidget {
+  const SeekableWaveform({
+    super.key,
+    required this.values,
+    required this.progress,
+    required this.played,
+    required this.idle,
+    required this.onSeek,
+    this.height = 28,
+  });
+
+  final List<double> values;
+  final double progress;
+  final Color played;
+  final Color idle;
+  final ValueChanged<double> onSeek;
+  final double height;
+
+  @override
+  State<SeekableWaveform> createState() => _SeekableWaveformState();
+}
+
+class _SeekableWaveformState extends State<SeekableWaveform> {
+  double? _dragging;
+
+  double _fraction(Offset local, double width) => width <= 0 ? 0 : (local.dx / width).clamp(0.0, 1.0);
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = _dragging ?? widget.progress;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth.isFinite ? constraints.maxWidth : 176.0;
+        return Semantics(
+          slider: true,
+          value: '${(shown * 100).round()}%',
+          label: 'Перемотка',
+          onIncrease: () => widget.onSeek((widget.progress + 0.1).clamp(0.0, 1.0)),
+          onDecrease: () => widget.onSeek((widget.progress - 0.1).clamp(0.0, 1.0)),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapUp: (d) => widget.onSeek(_fraction(d.localPosition, width)),
+            onHorizontalDragStart: (d) => setState(() => _dragging = _fraction(d.localPosition, width)),
+            onHorizontalDragUpdate: (d) => setState(() => _dragging = _fraction(d.localPosition, width)),
+            onHorizontalDragEnd: (_) {
+              final f = _dragging;
+              setState(() => _dragging = null);
+              if (f != null) widget.onSeek(f);
+            },
+            onHorizontalDragCancel: () => setState(() => _dragging = null),
+            child: SizedBox(
+              height: widget.height,
+              width: width,
+              child: CustomPaint(
+                painter: widget.values.isEmpty
+                    ? _TrackPainter(progress: shown, played: widget.played, idle: widget.idle)
+                    : WaveformPainter(
+                        values: widget.values,
+                        progress: shown,
+                        played: widget.played,
+                        idle: widget.idle,
+                      ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Дорожка с бегунком для аудио без замеров громкости.
+class _TrackPainter extends CustomPainter {
+  const _TrackPainter({required this.progress, required this.played, required this.idle});
+
+  final double progress;
+  final Color played;
+  final Color idle;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final y = size.height / 2;
+    final x = size.width * progress;
+    final paint = Paint()
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(0, y), Offset(size.width, y), paint..color = idle);
+    canvas.drawLine(Offset(0, y), Offset(x, y), paint..color = played);
+    if (size.width >= 10) canvas.drawCircle(Offset(x.clamp(5.0, size.width - 5), y), 5, Paint()..color = played);
+  }
+
+  @override
+  bool shouldRepaint(_TrackPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.played != played || oldDelegate.idle != idle;
 }
 
 /// Столбики «волны» голосового; проигранная часть — цветом акцента.
@@ -452,7 +578,7 @@ class WaveformPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (values.isEmpty) return;
     final step = size.width / values.length;
-    final barWidth = math.max(1.5, step * 0.55);
+    final barWidth = math.max(2.0, step * 0.6);
     final paint = Paint()..strokeCap = StrokeCap.round..strokeWidth = barWidth;
     for (var i = 0; i < values.length; i++) {
       final x = step * i + step / 2;

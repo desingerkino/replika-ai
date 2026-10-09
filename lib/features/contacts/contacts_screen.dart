@@ -11,6 +11,7 @@ import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/dialogs.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../core/design/widgets/search_field.dart';
+import '../../core/design/widgets/replika_refresh.dart';
 import '../../core/design/widgets/states.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../data/db/tables.dart';
@@ -160,11 +161,14 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       message: 'Нет контактов по запросу «${_query.trim()}».',
                     );
                   }
-                  return _ContactList(
-                    contacts: found,
-                    withSections: _query.trim().isEmpty,
-                    onTap: _openChat,
-                    onLongPress: _actions,
+                  return ReplikaRefreshIndicator(
+                    onRefresh: () async => snapshot.reload(),
+                    child: _ContactList(
+                      contacts: found,
+                      withSections: _query.trim().isEmpty,
+                      onTap: _openChat,
+                      onLongPress: _actions,
+                    ),
                   );
                 },
               ),
@@ -206,7 +210,7 @@ class _ContactList extends StatelessWidget {
 
     return ListView.builder(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.only(bottom: Space.s),
+      padding: EdgeInsets.only(bottom: Space.s + MediaQuery.paddingOf(context).bottom),
       itemCount: rows.length,
       itemBuilder: (context, index) {
         final row = rows[index];

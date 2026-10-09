@@ -283,6 +283,21 @@ class MessageRepository extends Repository {
     notify({Tables.messages, Tables.chats});
   }
 
+  /// Голосовое прослушано до конца (только первый раз).
+  Future<void> setPlayed(String id) async {
+    final changed = await db.rawUpdate(
+      'UPDATE messages SET played_at = ? WHERE id = ? AND played_at IS NULL',
+      [dateToInt(DateTime.now()), id],
+    );
+    if (changed > 0) notify({Tables.messages});
+  }
+
+  /// Реакция-эмодзи на сообщение; null — убрать.
+  Future<void> setReaction(String id, String? reaction) async {
+    await db.update(Tables.messages, {'reaction': reaction}, where: 'id = ?', whereArgs: [id]);
+    notify({Tables.messages});
+  }
+
   Future<void> _updateFlag(String id, String column, bool value) async {
     await db.update(
       Tables.messages,

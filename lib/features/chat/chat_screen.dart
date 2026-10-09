@@ -23,18 +23,20 @@ import 'chat_rows.dart';
 import 'composer.dart';
 import 'message_bubble.dart';
 import 'typing_indicator.dart';
+import 'chat_wallpaper.dart';
+import 'attach_sheet.dart';
+import 'chat_audio_bar.dart';
 import '../../data/models/media_item.dart';
 import '../calls/calls_screen.dart';
 import '../../data/models/call_record.dart';
 import '../media/media_kinds.dart';
 import '../record/video_note_recorder.dart';
-import '../record/voice_recorder_sheet.dart';
+import '../record/voice_recording.dart';
 import '../../core/design/adaptive.dart';
 
 
-enum _MessageAction { reply, copy, favorite, toggleDeleted, delete }
+enum _MessageAction { react, unreact, reply, copy, favorite, toggleDeleted, delete }
 
-enum _Attach { photoVideo, recordVideoNote, audio, voice, videoNote, library }
 
 /// Открытый чат.
 class ChatScreen extends StatefulWidget {
@@ -79,6 +81,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   AppServices get _s => _services!;
 
+  /// Запись голосового в поле ввода.
+  VoiceRecorderController? _voiceController;
+  VoiceRecorderController get _voice => _voiceController!;
+
+  void _onVoiceProblem() {
+    final text = _voiceController?.problem.value;
+    if (text != null && mounted) _showSnack(text);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +105,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _services = Services.of(context);
     if (!_started) {
       _started = true;
+      _voiceController = VoiceRecorderController(_services!)..problem.addListener(_onVoiceProblem);
       _services!.openChatId.value = widget.chatId;
       unawaited(_services!.notifications.clearChat(widget.chatId));
       _restoreDraft();
@@ -113,6 +125,16 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final open = _services?.openChatId;
     if (open != null && open.value == widget.chatId) open.value = null;
     _saveDraftNow();
+    final voice = _voiceController;
+    if (voice != null) {
+      voice.problem.removeListener(_onVoiceProblem);
+      // Ушли из чата посреди записи — запись удаляется, а не уходит молча.
+      if (voice.active) {
+        unawaited(voice.cancel().whenComplete(voice.dispose));
+      } else {
+        voice.dispose();
+      }
+    }
     _scroll.dispose();
     _composer.dispose();
     _focus.dispose();
@@ -212,24 +234,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   Future<void> _attach(ChatHeader header) async {
     FocusScope.of(context).unfocus();
-    final choice = await showActionSheet<_Attach>(
-      context,
-      actions: const [
-        SheetAction(value: _Attach.photoVideo, icon: Icons.photo_library_rounded, label: 'Фото или видео'),
-        SheetAction(value: _Attach.recordVideoNote, icon: Icons.radio_button_checked_rounded, label: 'Записать видеосообщение'),
-        SheetAction(value: _Attach.voice, icon: Icons.mic_rounded, label: 'Голосовое сообщение (файл)'),
-        SheetAction(value: _Attach.videoNote, icon: Icons.video_camera_front_rounded, label: 'Видеосообщение (файл)'),
-        SheetAction(value: _Attach.audio, icon: Icons.music_note_rounded, label: 'Аудиофайл'),
-        SheetAction(value: _Attach.library, icon: Icons.perm_media_outlined, label: 'Из медиатеки'),
-      ],
-    );
+    final choice = await showAttachSheet(context);
     if (choice == null || !mounted) return;
 
     List<MediaItem> items;
-    if (choice == _Attach.recordVideoNote) {
+    if (choice == AttachChoice.recordVideoNote) {
       final recorded = await recordVideoNote(context);
       items = recorded == null ? const [] : [recorded];
-    } else if (choice == _Attach.library) {
+    } else if (choice == AttachChoice.library) {
       final picked = await AppNavigator.pickFromLibrary(MediaKind.values.toSet());
       items = picked == null ? const [] : [picked];
     } else {
@@ -237,14 +249,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       try {
         items = await _s.media.pickAndImport(
           switch (choice) {
-            _Attach.photoVideo => PickSource.media,
-            _Attach.voice || _Attach.audio => PickSource.audio,
-            _Attach.videoNote => PickSource.video,
-            _Attach.library || _Attach.recordVideoNote => PickSource.any,
+            AttachChoice.photo => PickSource.image,
+            AttachChoice.video || AttachChoice.videoNote => PickSource.video,
+            AttachChoice.voice => PickSource.audio,
+            AttachChoice.file || AttachChoice.library || AttachChoice.recordVideoNote => PickSource.any,
           },
           preferred: switch (choice) {
-            _Attach.voice => MediaKind.voice,
-            _Attach.videoNote => MediaKind.videoNote,
+            AttachChoice.voice => MediaKind.voice,
+            AttachChoice.videoNote => MediaKind.videoNote,
             _ => null,
           },
         );
@@ -287,10 +299,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _recordVoice(ChatHeader header) async {
-    FocusScope.of(context).unfocus();
-    final item = await recordVoice(context);
-    if (item == null || !mounted) return;
+  /// Голосовое записано в поле ввода — отправить.
+  Future<void> _sendVoice(ChatHeader header, MediaItem item) async {
+    if (!mounted) return;
     final replyTo = _replyTo;
     setState(() {
       _replyTo = null;
@@ -374,10 +385,34 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     setState(() => _selectedMessageId = message.id);
 
     final canCopy = !message.deleted && message.text.trim().isNotEmpty;
+    String? picked;
     final action = await showActionSheet<_MessageAction>(
       context,
-      header: _MessagePreview(message: message),
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!message.deleted)
+            Builder(
+              builder: (sheetContext) => ReactionPicker(
+                current: message.reaction,
+                onPick: (emoji) {
+                  picked = emoji;
+                  Navigator.of(sheetContext).pop(_MessageAction.react);
+                },
+              ),
+            ),
+          if (!message.deleted) const SizedBox(height: Space.m),
+          _MessagePreview(message: message),
+        ],
+      ),
       actions: [
+        if (message.reaction != null && !message.deleted)
+          const SheetAction(
+            value: _MessageAction.unreact,
+            icon: Icons.heart_broken_outlined,
+            label: 'Убрать реакцию',
+          ),
         if (!message.deleted)
           const SheetAction(
             value: _MessageAction.reply,
@@ -415,6 +450,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
     try {
       switch (action) {
+        case _MessageAction.react:
+          final emoji = picked;
+          await _s.messages.setReaction(message.id, emoji == message.reaction ? null : emoji);
+        case _MessageAction.unreact:
+          await _s.messages.setReaction(message.id, null);
         case _MessageAction.reply:
           _startReply(message);
         case _MessageAction.copy:
@@ -437,6 +477,16 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     } catch (error) {
       debugPrint('Действие с сообщением не выполнено: $error');
       if (mounted) _showSnack('Не удалось выполнить действие');
+    }
+  }
+
+  /// Двойное касание: ❤️, повторное — снять.
+  Future<void> _quickReact(Message message) async {
+    HapticFeedback.lightImpact();
+    try {
+      await _s.messages.setReaction(message.id, message.reaction == '❤️' ? null : '❤️');
+    } catch (error) {
+      debugPrint('Реакция не сохранена: $error');
     }
   }
 
@@ -534,6 +584,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       deviceId: header.chat.deviceId, characterId: peerId, kind: CallKind.audio, chatId: widget.chatId),
                 ),
               ],
+              IconButton(
+                tooltip: 'Фон чата',
+                icon: const Icon(Icons.wallpaper_outlined),
+                onPressed: () => AppNavigator.openChatBackground(widget.chatId),
+              ),
             ],
             title: ListenableBuilder(
               listenable: _s.typing,
@@ -555,7 +610,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           body: ContentWidth(
             child: Column(
               children: [
-                Expanded(child: _buildMessages(header)),
+                Expanded(child: ChatWallpaper(background: header.chat.background, child: _buildMessages(header))),
                 Composer(
                   controller: _composer,
                   focusNode: _focus,
@@ -563,7 +618,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   reply: _replyTo,
                   onCancelReply: () => setState(() => _replyTo = null),
                   onAttach: () => _attach(header),
-                  onVoice: () => _recordVoice(header),
+                  voice: _voice,
+                  onVoiceSend: (item) => _sendVoice(header, item),
                   busy: _importing,
                 ),
               ],
@@ -591,6 +647,32 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           final id = _revealId;
           if (id != null) WidgetsBinding.instance.addPostFrameCallback((_) => _reveal(id));
         }
+        final voiceIds = {
+          for (final m in messages)
+            if (m.type == MessageType.voice || m.type == MessageType.audio) m.id: m,
+        };
+        return Stack(
+          children: [
+            Positioned.fill(child: _messageList(header, messages)),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ChatAudioBar(
+                messages: voiceIds,
+                senderName: (m) => m.senderId == header.ownerCharacterId
+                    ? 'Вы'
+                    : (_groupNames?[m.senderId] ?? header.peer.displayName),
+                onReveal: _requestReveal,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _messageList(ChatHeader header, List<Message> messages) {
         return ListenableBuilder(
           listenable: _s.typing,
           builder: (context, _) {
@@ -631,8 +713,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             );
           },
         );
-      },
-    );
   }
 
   Widget _buildBubble(MessageRow row, Map<String, Message> byId) {
@@ -648,6 +728,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       onQuoteTap: quoted == null ? null : () => _requestReveal(quoted.id),
       senderName: _groupNames?[message.senderId],
       senderTone: _groupTones?[message.senderId],
+      onDoubleTap: message.deleted ? null : () => _quickReact(message),
+      onReactionTap: () => _openMessageMenu(message),
     );
     if (message.id != _revealId) return bubble;
     return KeyedSubtree(key: _revealKey, child: bubble);

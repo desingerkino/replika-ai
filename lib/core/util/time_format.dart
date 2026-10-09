@@ -44,3 +44,30 @@ String formatDaySeparator(DateTime time, DateTime now) {
   final base = '${time.day} ${_monthsGenitive[time.month - 1]}';
   return time.year == now.year ? base : '$base ${time.year}';
 }
+
+/// Русское число с существительным: 1 минута, 2 минуты, 5 минут.
+String pluralRu(int n, String one, String few, String many) {
+  final mod10 = n % 10;
+  final mod100 = n % 100;
+  if (mod10 == 1 && mod100 != 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+}
+
+/// «только что», «15 минут назад», «3 часа назад», «вчера в 18:21»,
+/// «10 сент. в 09:05» — для историй и статуса «был(а)».
+String formatAgo(DateTime time, DateTime now) {
+  final diff = now.difference(time);
+  if (diff.inMinutes < 1) return 'только что';
+  if (diff.inMinutes < 60) {
+    final m = diff.inMinutes;
+    return '$m ${pluralRu(m, 'минуту', 'минуты', 'минут')} назад';
+  }
+  final days = daysBetween(time, now);
+  if (days == 0) {
+    final h = diff.inHours;
+    return '$h ${pluralRu(h, 'час', 'часа', 'часов')} назад';
+  }
+  if (days == 1) return 'вчера в ${formatClock(time)}';
+  return '${time.day} ${_monthsShort[time.month - 1]} в ${formatClock(time)}';
+}

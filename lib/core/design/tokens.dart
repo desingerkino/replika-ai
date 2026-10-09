@@ -1,12 +1,12 @@
 import 'package:flutter/widgets.dart';
 
 /// Базовая палитра бренда «Реплика».
-/// Петроль — основной цвет, вольфрам (тёплый свет ламп на площадке) —
+/// Синий — основной цвет, вольфрам (тёплый свет ламп на площадке) —
 /// редкий акцент. Никаких неоновых и «стеклянных» эффектов.
 abstract final class Palette {
-  static const Color petrol = Color(0xFF155E75);
-  static const Color petrolDeep = Color(0xFF0E4658);
-  static const Color petrolBright = Color(0xFF3E9BB5);
+  static const Color brand = Color(0xFF3D5CFF);
+  static const Color brandDeep = Color(0xFF2B44D1);
+  static const Color brandBright = Color(0xFF7C93FF);
   static const Color tungsten = Color(0xFFE3A13B);
   static const Color ink = Color(0xFF15202B);
   static const Color white = Color(0xFFFFFFFF);
@@ -56,16 +56,31 @@ abstract final class Radii {
 /// Размеры элементов.
 abstract final class Sizes {
   static const double topBar = 56;
-  static const double chatRowMinHeight = 72;
-  static const double avatarList = 52;
+  static const double chatRowMinHeight = 76;
+  static const double avatarList = 56;
   static const double avatarHeader = 38;
   static const double avatarContact = 44;
   static const double bubbleMaxWidthFactor = 0.78;
+
+  /// Фото и видео шире текста: превью крупное, как в Telegram.
+  static const double mediaMaxWidthFactor = 0.86;
 
   /// Предел ширины пузыря на широких экранах (iPad).
   static const double bubbleMaxWidthCap = 520;
   static const double sendButton = 44;
   static const double minTouch = 48;
+
+  /// Плавающая нижняя панель вкладок (узкий экран).
+  static const double tabBar = 64;
+  static const double tabBarSideMargin = 16;
+  static const double tabBarMinBottomMargin = 12;
+
+  /// Сколько места под панелью вкладок должен оставлять прокручиваемый
+  /// контент, чтобы последняя строка не пряталась за ней.
+  static const double tabBarContentInset = tabBar + 24;
+
+  /// Прикреплённая нижняя панель (тема Telegram).
+  static const double dockedTabBar = 64;
 }
 
 /// Длительности и кривые анимаций.
@@ -101,4 +116,53 @@ abstract final class AvatarTones {
   }
 
   static Color forKey(String key) => all[indexForKey(key)];
+}
+
+/// Спокойные тона аватаров-инициалов (светлая подложка, тёмные буквы).
+/// Индексы совпадают с [AvatarTones], чтобы выбранный контакту тон
+/// сохранял свой оттенок.
+abstract final class AvatarTints {
+  static const List<(Color, Color)> light = [
+    (Color(0xFFDFE5FF), Color(0xFF2F49CC)),
+    (Color(0xFFFFE5D4), Color(0xFFB8501A)),
+    (Color(0xFFEADFFF), Color(0xFF6035C5)),
+    (Color(0xFFD8F1E2), Color(0xFF1B7F4B)),
+    (Color(0xFFFFDCE8), Color(0xFFB81D56)),
+    (Color(0xFFEEF0D0), Color(0xFF5F6318)),
+    (Color(0xFFD3EFEF), Color(0xFF0F7377)),
+    (Color(0xFFFFEFC9), Color(0xFF8A5A00)),
+  ];
+
+  static const List<(Color, Color)> dark = [
+    (Color(0xFF232C5C), Color(0xFFB4C1FF)),
+    (Color(0xFF4A2A17), Color(0xFFFFB48A)),
+    (Color(0xFF32245C), Color(0xFFCDB8FF)),
+    (Color(0xFF173A28), Color(0xFF7FD8A6)),
+    (Color(0xFF4B1C2E), Color(0xFFFF9DBB)),
+    (Color(0xFF3A3B17), Color(0xFFD6D98A)),
+    (Color(0xFF143B3D), Color(0xFF7FD3D6)),
+    (Color(0xFF4A3610), Color(0xFFFFD27F)),
+  ];
+
+  /// (подложка, буквы) для индекса тона.
+  static (Color, Color) at(int index, Brightness brightness) {
+    final list = brightness == Brightness.dark ? dark : light;
+    return list[index.abs() % list.length];
+  }
+}
+
+/// Цвета поверх фото, видео и тёмных полноэкранных экранов (просмотр
+/// медиа, истории, звонок, запись). Не зависят от темы: картинка под ними
+/// может быть любой, поэтому текст всегда белый на затемнении.
+abstract final class MediaPalette {
+  static const Color background = Color(0xFF000000);
+  static const Color onMedia = Color(0xFFFFFFFF);
+  static const Color onMediaDim = Color(0xB3FFFFFF);
+  static const Color onMediaFaint = Color(0x8AFFFFFF);
+  static const Color scrimLight = Color(0x42000000);
+  static const Color scrim = Color(0x8C000000);
+  static const Color transparent = Color(0x00000000);
+
+  /// Подложка круглых кнопок звонка.
+  static const Color control = Color(0x3DFFFFFF);
 }

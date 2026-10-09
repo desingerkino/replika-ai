@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/chat/chat_backgrounds.dart';
 import '../features/call/call_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../data/models/media_item.dart';
@@ -15,6 +16,8 @@ import '../features/operator/scene_editor_screen.dart';
 import '../features/operator/scene_chats_screen.dart';
 import '../features/operator/scene_panel_screen.dart';
 import '../features/settings/addons_screen.dart';
+import '../features/settings/sections/section_screens.dart';
+import '../features/settings/sections/themes_screen.dart';
 import '../features/profile/contact_edit_screen.dart';
 import '../features/profile/contact_profile_screen.dart';
 
@@ -26,13 +29,16 @@ abstract final class AppNavigator {
   /// Экраны настроек, которые в двухпанельной раскладке открываются справа.
   /// Только те, что не закрывают себя через Navigator.pop и не возвращают
   /// результат.
-  static const Set<String> _settingsPaneRoutes = {'/favorites', '/media', '/profiles', '/addons'};
+  static const Set<String> _settingsPaneRoutes = {
+    '/favorites', '/media', '/profiles', '/addons',
+    '/themes', '/settings/notifications', '/settings/privacy', '/settings/ai', '/settings/storage', '/about',
+  };
 
   static Future<T?> _push<T>(String name, Widget screen, [Object? arguments]) async {
     final navigator = key.currentState;
     if (navigator == null) return null;
     if (twoPane.value &&
-        homeTab.value == 3 &&
+        homeTab.value == 4 &&
         !navigator.canPop() &&
         _settingsPaneRoutes.contains(name)) {
       detailChat.value = null;
@@ -117,6 +123,22 @@ abstract final class AppNavigator {
 
   static Future<void> openAddons() => _push<void>('/addons', const AddonsScreen());
 
+  static Future<void> openChatBackground(String chatId) =>
+      _push<void>('/chat/background', ChatBackgroundScreen(chatId: chatId), chatId);
+
+  static Future<void> openThemes() => _push<void>('/themes', const ThemesScreen());
+
+  static Future<void> openNotificationSettings() =>
+      _push<void>('/settings/notifications', const NotificationsSettingsScreen());
+
+  static Future<void> openPrivacy() => _push<void>('/settings/privacy', const PrivacySettingsScreen());
+
+  static Future<void> openAiSettings() => _push<void>('/settings/ai', const AiSettingsScreen());
+
+  static Future<void> openStorage() => _push<void>('/settings/storage', const StorageSettingsScreen());
+
+  static Future<void> openAbout() => _push<void>('/about', const AboutScreen());
+
   static Future<void> openMediaLibrary() =>
       _push<void>('/media', const MediaLibraryScreen());
 
@@ -155,8 +177,8 @@ abstract final class AppNavigator {
     }
   }
 
-  /// Вкладка главного экрана: 0 — чаты, 1 — звонки, 2 — контакты,
-  /// 3 — настройки. Меняется касанием и командой Connect OPEN_SCREEN.
+  /// Вкладка главного экрана: 0 — чаты, 1 — контакты, 2 — звонки,
+  /// 3 — истории, 4 — настройки. Меняется касанием и командой Connect OPEN_SCREEN.
   static final ValueNotifier<int> homeTab = ValueNotifier<int>(0);
 
   /// «Назад»: закрыть верхний экран; в двухпанельной раскладке без верхних
@@ -165,7 +187,7 @@ abstract final class AppNavigator {
     final navigator = key.currentState;
     if (navigator == null) return;
     if (twoPane.value && !navigator.canPop()) {
-      if (detailScreen.value != null && homeTab.value == 3) {
+      if (detailScreen.value != null && homeTab.value == 4) {
         detailScreen.value = null;
         return;
       }

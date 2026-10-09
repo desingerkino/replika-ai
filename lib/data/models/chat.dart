@@ -15,6 +15,8 @@ class Chat {
     this.draft,
     required this.createdAt,
     required this.updatedAt,
+    this.archivedAt,
+    this.background,
   });
 
   final String id;
@@ -29,7 +31,14 @@ class Chat {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// В архиве (не показывается в общем списке).
+  final DateTime? archivedAt;
+
+  /// Фон переписки (id из каталога фонов); null — «Стандартный».
+  final String? background;
+
   bool get isPinned => pinnedAt != null;
+  bool get isArchived => archivedAt != null;
 
   factory Chat.fromRow(Map<String, Object?> row) => Chat(
         id: row['id'] as String,
@@ -43,6 +52,8 @@ class Chat {
         draft: readStringOrNull(row, 'draft'),
         createdAt: intToDate(row['created_at']),
         updatedAt: intToDate(row['updated_at']),
+        archivedAt: intToDateOrNull(row['archived_at']),
+        background: readStringOrNull(row, 'background'),
       );
 }
 

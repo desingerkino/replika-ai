@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../../theme/app_style.dart';
 import '../context.dart';
 import '../icons.dart';
 import '../tokens.dart';
@@ -89,6 +90,8 @@ class ScreenHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Крупный заголовок iOS (34) или компактный, как в теме Telegram (28).
+    final large = context.style.chatListHeader == ChatListHeaderLook.largeTitle;
     return Padding(
       padding: const EdgeInsets.fromLTRB(Space.l + 4, Space.m, Space.s, Space.s),
       child: ConstrainedBox(
@@ -99,7 +102,15 @@ class ScreenHeader extends StatelessWidget {
               child: _hold(
                 Semantics(
                   header: true,
-                  child: Text(title, style: context.tt.headlineSmall),
+                  child: Text(
+                    title,
+                    style: context.tt.headlineSmall?.copyWith(
+                      fontSize: large ? 34 : 28,
+                      height: large ? 41 / 34 : 34 / 28,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                 ),
               ),
             ),

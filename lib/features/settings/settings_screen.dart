@@ -7,10 +7,11 @@ import '../../core/brand/brand.dart';
 import '../../core/design/context.dart';
 import '../../core/design/icons.dart';
 import '../../core/design/tokens.dart';
-import '../../core/design/widgets/action_sheet.dart';
 import '../../core/design/widgets/avatar.dart';
 import '../../core/design/widgets/form.dart';
+import '../../core/design/widgets/quick_action.dart';
 import '../../core/design/widgets/top_bar.dart';
+import '../stories/story_actions.dart';
 import '../../data/db/tables.dart';
 import '../../data/models/contact.dart';
 
@@ -39,38 +40,16 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _pickTheme(BuildContext context, AppServices services) async {
-    final current = services.themeMode.value;
-    final mode = await showActionSheet<ThemeMode>(
-      context,
-      header: Text('Тема', style: context.tt.titleMedium),
-      actions: [
-        for (final (mode, icon) in const [
-          (ThemeMode.system, AppIcons.themeSystem),
-          (ThemeMode.light, AppIcons.themeLight),
-          (ThemeMode.dark, AppIcons.themeDark),
-        ])
-          SheetAction(
-            value: mode,
-            icon: icon,
-            label: themeModeLabel(mode),
-            selected: mode == current,
-          ),
-      ],
-    );
-    if (mode != null) await services.setThemeMode(mode);
-  }
-
   @override
   Widget build(BuildContext context) {
     final services = Services.of(context);
     return ColoredBox(
-      color: context.cs.surface,
+      color: settingsBackground(context),
       child: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            const ScreenHeader(title: 'Настройки'),
+            if (!context.style.settingsQuickActions) const ScreenHeader(title: 'Настройки'),
             Expanded(
               child: LiveQuery<_SettingsData?>(
                 tables: const {
@@ -85,67 +64,114 @@ class SettingsScreen extends StatelessWidget {
                 builder: (context, snapshot) {
                   final data = snapshot.data;
                   return ListenableBuilder(
-                    listenable: Listenable.merge([services.themeMode, services.kino]),
+                    listenable: Listenable.merge([services.theme, services.kino]),
                     builder: (context, _) {
-                      final mode = services.themeMode.value;
                       final kino = services.kino.enabled;
+                      final themeLabel = '${services.theme.id.label} · ${themeModeLabel(services.theme.mode)}';
+                      void editOwner() {
+                        if (data == null) return;
+                        AppNavigator.openContactEditor(
+                          deviceId: deviceId,
+                          characterId: data.ownerId,
+                          ownerMode: true,
+                        );
+                      }
+
                       return ListView(
-                      padding: const EdgeInsets.only(bottom: Space.xl),
-                      children: [
-                        if (data != null)
-                          _OwnerCard(
-                            data: data,
-                            onTap: () => AppNavigator.openContactEditor(
-                              deviceId: deviceId,
-                              characterId: data.ownerId,
-                              ownerMode: true,
+                        padding: EdgeInsets.only(bottom: Space.xl + MediaQuery.paddingOf(context).bottom),
+                        children: [
+                          if (data != null)
+                            context.style.settingsQuickActions
+                                ? _ProfileHeader(
+                                    data: data,
+                                    onEdit: editOwner,
+                                    onStory: () => addStory(context, deviceId: deviceId),
+                                    onThemes: AppNavigator.openThemes,
+                                  )
+                                : _OwnerCard(data: data, onTap: editOwner),
+                          SettingsGroup(title: 'Аккаунт', children: [
+                          SettingsTile(
+                            icon: Icons.person_outline_rounded,
+                            title: 'Личные данные',
+                            subtitle: 'Имя, номер, фото и статус владельца телефона',
+                            onTap: editOwner,
+                          ),
+                          SettingsTile(
+                            icon: Icons.motion_photos_on_outlined,
+                            title: 'Мои истории',
+                            onTap: () => AppNavigator.homeTab.value = 3,
+                          ),
+                          SettingsTile(
+                            icon: Icons.call_outlined,
+                            title: 'Недавние звонки',
+                            onTap: () => AppNavigator.homeTab.value = 2,
+                          ),
+                          SettingsTile(
+                            icon: AppIcons.starOutline,
+                            title: 'Избранное',
+                            trailing: data == null || data.favoritesCount == 0 ? null : '${data.favoritesCount}',
+                            onTap: () => AppNavigator.openFavorites(deviceId),
+                          ),
+                          if (!kino)
+                            const SettingsTile(
+                              icon: Icons.phone_android_rounded,
+                              title: 'Профили телефона',
+                              subtitle: 'Сменить, создать, импорт и экспорт',
+                              onTap: AppNavigator.openProfiles,
                             ),
-                          ),
-                        const SectionLabel('Сообщения'),
-                        SettingsTile(
-                          icon: AppIcons.star,
-                          title: 'Избранное',
-                          trailing: data == null || data.favoritesCount == 0
-                              ? null
-                              : '${data.favoritesCount}',
-                          onTap: () => AppNavigator.openFavorites(deviceId),
-                        ),
-                        if (!kino) SettingsTile(
-                          icon: Icons.perm_media_outlined,
-                          title: 'Медиатека',
-                          subtitle: 'Фото, видео, аудио и голосовые для переписок',
-                          onTap: AppNavigator.openMediaLibrary,
-                        ),
-                        const SectionLabel('Оформление'),
-                        SettingsTile(
-                          icon: AppIcons.theme,
-                          title: 'Тема',
-                          trailing: themeModeLabel(mode),
-                          onTap: () => _pickTheme(context, services),
-                        ),
-                        if (!kino) const SectionLabel('Профили телефона'),
-                        if (!kino)
+                          ]),
+                          SettingsGroup(title: 'Настройки', children: [
                           const SettingsTile(
-                            icon: Icons.phone_android_rounded,
-                            title: 'Профили телефона',
-                            subtitle: 'Сменить, создать, импорт и экспорт',
-                            onTap: AppNavigator.openProfiles,
+                            icon: Icons.notifications_none_rounded,
+                            title: 'Уведомления и звуки',
+                            onTap: AppNavigator.openNotificationSettings,
                           ),
-                        if (!kino) const SectionLabel('Дополнения'),
-                        if (!kino) const SettingsTile(
-                          icon: Icons.extension_outlined,
-                          title: 'Дополнения',
-                          subtitle: 'Операторский режим, кнопки громкости',
-                          onTap: AppNavigator.openAddons,
-                        ),
-                        if (!kino) const SectionLabel('О приложении'),
-                        if (!kino) SettingsTile(
-                          icon: AppIcons.info,
-                          title: '${Brand.name} ${Brand.version}',
-                          subtitle: 'Все данные хранятся только на этом телефоне',
-                        ),
-                      ],
-                    );
+                          const SettingsTile(
+                            icon: Icons.lock_outline_rounded,
+                            title: 'Конфиденциальность',
+                            onTap: AppNavigator.openPrivacy,
+                          ),
+                          const SettingsTile(
+                            icon: Icons.smart_toy_outlined,
+                            title: 'ИИ-собеседник',
+                            onTap: AppNavigator.openAiSettings,
+                          ),
+                          const SettingsTile(
+                            icon: Icons.data_usage_rounded,
+                            title: 'Данные и память',
+                            onTap: AppNavigator.openStorage,
+                          ),
+                          SettingsTile(
+                            icon: Icons.palette_outlined,
+                            title: 'Темы',
+                            trailing: themeLabel,
+                            onTap: AppNavigator.openThemes,
+                          ),
+                          if (!kino)
+                            SettingsTile(
+                              icon: Icons.perm_media_outlined,
+                              title: 'Медиатека',
+                              subtitle: 'Фото, видео, аудио и голосовые для переписок',
+                              onTap: AppNavigator.openMediaLibrary,
+                            ),
+                          if (!kino)
+                            const SettingsTile(
+                              icon: Icons.extension_outlined,
+                              title: 'Дополнения',
+                              subtitle: 'Операторский режим, кнопки громкости',
+                              onTap: AppNavigator.openAddons,
+                            ),
+                          ]),
+                          SettingsGroup(title: 'О приложении', children: [
+                          SettingsTile(
+                            icon: AppIcons.info,
+                            title: '${Brand.name} ${Brand.version}',
+                            subtitle: 'Все данные хранятся только на этом телефоне',
+                            onTap: AppNavigator.openAbout,
+                          ),
+                          ]),
+                        ],
+                      );
                     },
                   );
                 },
@@ -153,6 +179,55 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Шапка профиля в стиле Telegram: крупный аватар по центру, имя, номер
+/// и три быстрых действия.
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({required this.data, required this.onEdit, required this.onStory, required this.onThemes});
+
+  final _SettingsData data;
+  final VoidCallback onEdit;
+  final VoidCallback onStory;
+  final VoidCallback onThemes;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = context.tt;
+    final rc = context.rc;
+    final character = data.owner?.character;
+    final name = character?.fullName ?? '';
+    final shown = name.isEmpty ? data.deviceName : name;
+    final phone = character?.phone ?? '';
+    final cell = context.style.groupedSettings ? rc.groupedCell : null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.l, Space.l, Space.l, Space.s),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: onEdit,
+            child: Avatar(name: shown, size: 96, imagePath: data.owner?.avatarPath, tone: character?.avatarTone),
+          ),
+          const SizedBox(height: Space.m),
+          Text(shown, textAlign: TextAlign.center, style: tt.titleLarge?.copyWith(fontSize: 22)),
+          if (phone.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(phone, style: tt.bodyMedium?.copyWith(color: rc.textSecondary)),
+          ],
+          const SizedBox(height: Space.l),
+          Row(
+            children: [
+              Expanded(child: QuickAction(icon: Icons.photo_camera_outlined, label: 'Фото профиля', onTap: onEdit, background: cell)),
+              const SizedBox(width: Space.s),
+              Expanded(child: QuickAction(icon: Icons.add_circle_outline_rounded, label: 'Новая история', onTap: onStory, background: cell)),
+              const SizedBox(width: Space.s),
+              Expanded(child: QuickAction(icon: Icons.palette_outlined, label: 'Темы', onTap: onThemes, background: cell)),
+            ],
+          ),
+        ],
       ),
     );
   }

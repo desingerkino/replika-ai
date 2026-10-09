@@ -32,7 +32,7 @@ class KinoScreen extends StatelessWidget {
                 label: s.enabled ? 'КИНОРЕЖИМ ВКЛЮЧЁН' : 'ВКЛЮЧИТЬ КИНОРЕЖИМ',
                 icon: Icons.movie_creation_outlined,
                 color: s.enabled ? OperatorPalette.live : OperatorPalette.ready,
-                foreground: s.enabled ? Colors.white : OperatorPalette.background,
+                foreground: s.enabled ? MediaPalette.onMedia : OperatorPalette.background,
                 height: 72,
                 onPressed: () => kino.update(s.copyWith(enabled: !s.enabled)),
               ),
@@ -60,7 +60,7 @@ class KinoScreen extends StatelessWidget {
                 const SizedBox(height: Space.s),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: MediaPalette.onMedia,
                     borderRadius: BorderRadius.circular(Radii.control),
                   ),
                   child: FakeStatusBar(settings: s, lightIcons: false),

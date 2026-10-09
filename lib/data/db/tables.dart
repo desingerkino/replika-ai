@@ -14,9 +14,10 @@ abstract final class Tables {
   static const String calls = 'calls';
   static const String preparedReplies = 'prepared_replies';
   static const String settings = 'settings';
+  static const String stories = 'stories';
 
   static const Set<String> all = {
     media, characters, devices, deviceContacts, chats, chatMembers, messages,
-    scenes, sceneCharacters, sceneActions, takes, calls, preparedReplies, settings,
+    scenes, sceneCharacters, sceneActions, takes, calls, preparedReplies, settings, stories,
   };
 }

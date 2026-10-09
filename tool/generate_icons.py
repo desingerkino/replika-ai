@@ -1,159 +1,156 @@
 #!/usr/bin/env python3
-"""Генерирует иконки «Реплики» для Android из той же геометрии, что и
-lib/core/brand/logo.dart. Нужен Pillow: pip install pillow.
+"""Генерирует иконки «Реплики» для Android и iOS из логотипа-сферы
+assets/brand/replika_logo.png (PNG с прозрачным фоном). Нужен Pillow:
+pip install pillow.
 
-Результат кладётся в tool/android_res/, откуда его копирует
-tool/prepare_android.sh. Готовые PNG уже лежат в проекте; запускать
-скрипт нужно только после изменения логотипа.
+Результат кладётся в tool/android_res/ и tool/ios_res/, откуда его
+копируют tool/prepare_android.sh и tool/prepare_ios.sh. Готовые PNG уже
+лежат в проекте; запускать скрипт нужно только после смены логотипа.
 """
 import os
-from PIL import Image, ImageChops, ImageDraw
-
-PETROL = (0x15, 0x5E, 0x75, 255)
-INK = (0x15, 0x20, 0x2B, 255)
-TUNGSTEN = (0xE3, 0xA1, 0x3B, 255)
-WHITE = (255, 255, 255, 255)
-CLEAR = (0, 0, 0, 0)
-SS = 4  # суперсэмплинг для гладких краёв
+from PIL import Image, ImageDraw, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+LOGO = os.path.join(ROOT, "assets", "brand", "replika_logo.png")
 OUT = os.path.join(HERE, "android_res")
 IOS_OUT = os.path.join(HERE, "ios_res", "AppIcon.appiconset")
-DOCS = os.path.join(os.path.dirname(HERE), "docs", "brand")
+DOCS = os.path.join(ROOT, "docs", "brand")
 
-SLATE = [(10, 26), (86, 8), (89, 19), (13, 37)]
-TAIL = [(22, 84), (15, 97), (40, 84)]
-DOTS = [34, 50, 66]
+# Фон иконки: глубокий ночной синий — сфера «светится» на нём, как в макете.
+BG_TOP = (0x16, 0x1A, 0x3A)
+BG_BOTTOM = (0x07, 0x09, 0x18)
+BG_HEX = "#0B0F24"
 
-
-def _scaled(points, k, ox, oy):
-    return [(ox + x * k, oy + y * k) for x, y in points]
-
-
-def logo_layer(canvas, box, ox, oy, mono=False):
-    """Рисует знак в квадрат box×box с левым верхним углом (ox, oy)."""
-    k = box / 100.0
-    slate_col, stripe_col = (TUNGSTEN, INK)
-    bubble_col, dot_col = (WHITE, PETROL)
-    if mono:
-        slate_col = bubble_col = WHITE
-
-    layer = Image.new("RGBA", (canvas, canvas), CLEAR)
-    d = ImageDraw.Draw(layer)
-    d.polygon(_scaled(SLATE, k, ox, oy), fill=slate_col)
-
-    # Полосы хлопушки только внутри планки.
-    slate_mask = Image.new("L", (canvas, canvas), 0)
-    ImageDraw.Draw(slate_mask).polygon(_scaled(SLATE, k, ox, oy), fill=255)
-    stripes = Image.new("L", (canvas, canvas), 0)
-    ds = ImageDraw.Draw(stripes)
-    x = 2
-    while x < 100:
-        ds.line([(ox + x * k, oy + 44 * k), (ox + (x + 22) * k, oy)],
-                fill=255, width=max(1, round(7 * k)))
-        x += 16
-    stripes = ImageChops.multiply(stripes, slate_mask)
-
-    if mono:
-        # Монохромная иконка: полосы и точки вырезаются прозрачностью.
-        alpha = layer.split()[3]
-        layer.putalpha(ImageChops.subtract(alpha, stripes))
-    else:
-        layer.paste(Image.new("RGBA", (canvas, canvas), stripe_col), (0, 0), stripes)
-
-    d = ImageDraw.Draw(layer)
-    d.rounded_rectangle([ox + 10 * k, oy + 40 * k, ox + 90 * k, oy + 86 * k],
-                        radius=16 * k, fill=bubble_col)
-    d.polygon(_scaled(TAIL, k, ox, oy), fill=bubble_col)
-    r = 5.5 * k
-    for cx in DOTS:
-        bbox = [ox + cx * k - r, oy + 63 * k - r, ox + cx * k + r, oy + 63 * k + r]
-        if mono:
-            hole = Image.new("L", (canvas, canvas), 0)
-            ImageDraw.Draw(hole).ellipse(bbox, fill=255)
-            alpha = layer.split()[3]
-            layer.putalpha(ImageChops.subtract(alpha, hole))
-            d = ImageDraw.Draw(layer)
-        else:
-            d.ellipse(bbox, fill=dot_col)
-    return layer
+DENSITIES = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
 
 
-def legacy_icon(size):
-    """Иконка для Android 7 и ниже: скруглённый квадрат петроль + знак."""
-    c = size * SS
-    img = Image.new("RGBA", (c, c), CLEAR)
-    margin = c * 0.04
-    ImageDraw.Draw(img).rounded_rectangle([margin, margin, c - margin, c - margin],
-                                          radius=c * 0.22, fill=PETROL)
-    box = c * 0.66
-    img = Image.alpha_composite(img, logo_layer(c, box, (c - box) / 2, (c - box) / 2 + c * 0.01))
-    return img.resize((size, size), Image.LANCZOS)
+def background(size):
+    """Вертикальный градиент с мягким свечением за сферой."""
+    bg = Image.new("RGB", (size, size), BG_BOTTOM)
+    draw = ImageDraw.Draw(bg)
+    for y in range(size):
+        t = y / max(1, size - 1)
+        col = tuple(round(a + (b - a) * t) for a, b in zip(BG_TOP, BG_BOTTOM))
+        draw.line([(0, y), (size, y)], fill=col)
+    glow = Image.new("L", (size, size), 0)
+    g = ImageDraw.Draw(glow)
+    r = size * 0.36
+    c = size / 2
+    g.ellipse((c - r, c - r, c + r, c + r), fill=150)
+    glow = glow.filter(ImageFilter.GaussianBlur(size * 0.09))
+    tint = Image.new("RGB", (size, size), (0x5B, 0x4B, 0xF0))
+    return Image.composite(tint, bg, glow).convert("RGBA")
 
 
-def adaptive_layer(size, mono=False):
-    """Передний слой адаптивной иконки: знак в безопасной зоне 66dp из 108dp."""
-    c = size * SS
-    box = c * 0.50
-    img = logo_layer(c, box, (c - box) / 2, (c - box) / 2, mono=mono)
-    return img.resize((size, size), Image.LANCZOS)
+def sphere(logo, diameter):
+    return logo.resize((diameter, diameter), Image.LANCZOS)
 
 
-def ios_icon(size=1024):
-    """Иконка iOS: полный квадрат петроль без скруглений и без прозрачности
-    (скругляет система) + знак."""
-    c = size * SS
-    img = Image.new("RGBA", (c, c), PETROL)
-    box = c * 0.62
-    img = Image.alpha_composite(img, logo_layer(c, box, (c - box) / 2, (c - box) / 2 + c * 0.01))
-    return img.resize((size, size), Image.LANCZOS).convert("RGB")
+def place(canvas, logo, diameter):
+    s = sphere(logo, diameter)
+    off = ((canvas.width - diameter) // 2, (canvas.height - diameter) // 2)
+    canvas.alpha_composite(s, off)
+    return canvas
 
 
-def write_ios_icon():
-    os.makedirs(IOS_OUT, exist_ok=True)
-    ios_icon(1024).save(os.path.join(IOS_OUT, "icon-1024.png"))
-    with open(os.path.join(IOS_OUT, "Contents.json"), "w", encoding="utf-8") as f:
-        f.write(
-            '{\n  "images" : [\n    {\n      "filename" : "icon-1024.png",\n'
-            '      "idiom" : "universal",\n      "platform" : "ios",\n'
-            '      "size" : "1024x1024"\n    }\n  ],\n'
-            '  "info" : {\n    "author" : "xcode",\n    "version" : 1\n  }\n}\n')
+def rounded(img, radius_k=0.225):
+    size = img.width
+    mask = Image.new("L", (size * 4, size * 4), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (0, 0, size * 4 - 1, size * 4 - 1), radius=size * 4 * radius_k, fill=255
+    )
+    mask = mask.resize((size, size), Image.LANCZOS)
+    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    out.paste(img, (0, 0), mask)
+    return out
+
+
+def _bezier(points, t):
+    pts = list(points)
+    while len(pts) > 1:
+        pts = [((1 - t) * a[0] + t * b[0], (1 - t) * a[1] + t * b[1]) for a, b in zip(pts, pts[1:])]
+    return pts[0]
+
+
+def _taper(draw, n, ctrl, w0, w1, ease=1.6):
+    """Мазок по кривой Безье: тонкое начало, «капля» в конце — как
+    завитки на сфере логотипа."""
+    steps = 400
+    for i in range(steps + 1):
+        t = i / steps
+        x, y = _bezier(ctrl, t)
+        r = (w0 + (w1 - w0) * (t ** ease)) / 2
+        draw.ellipse(((x - r) * n, (y - r) * n, (x + r) * n, (y + r) * n), fill=255)
+
+
+def notification_glyph(size):
+    """Значок уведомления Android: белый силуэт сферы-логотипа (кольцо и
+    два завитка) на прозрачном фоне. Сплошной круг система показывала бы
+    белым пятном — поэтому рисуем узнаваемые завитки."""
+    n = size * 4
+    mask = Image.new("L", (n, n), 0)
+    d = ImageDraw.Draw(mask)
+    d.ellipse((0.04 * n, 0.04 * n, 0.96 * n, 0.96 * n), outline=255, width=int(0.07 * n))
+    _taper(d, n, [(0.34, 0.76), (0.16, 0.40), (0.40, 0.16), (0.62, 0.22), (0.84, 0.30), (0.76, 0.52), (0.60, 0.50)],
+           0.035, 0.15)
+    _taper(d, n, [(0.36, 0.60), (0.52, 0.50), (0.66, 0.58), (0.70, 0.74)], 0.035, 0.12)
+    mask = mask.resize((size, size), Image.LANCZOS)
+    out = Image.new("RGBA", (size, size), (255, 255, 255, 0))
+    out.putalpha(mask)
+    return out
 
 
 def main():
-    write_ios_icon()
-    densities = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
-    for name, scale in densities.items():
+    logo = Image.open(LOGO).convert("RGBA")
+
+    # iOS: квадрат 1024 без прозрачности (скругляет сама система).
+    ios = place(background(1024), logo, 840).convert("RGB")
+    os.makedirs(IOS_OUT, exist_ok=True)
+    ios.save(os.path.join(IOS_OUT, "icon-1024.png"))
+
+    for name, k in DENSITIES.items():
         folder = os.path.join(OUT, f"mipmap-{name}")
         os.makedirs(folder, exist_ok=True)
-        legacy_icon(round(48 * scale)).save(os.path.join(folder, "ic_launcher.png"))
-        adaptive_layer(round(108 * scale)).save(os.path.join(folder, "ic_launcher_foreground.png"))
-        adaptive_layer(round(108 * scale), mono=True).save(
-            os.path.join(folder, "ic_launcher_monochrome.png"))
+        # Старые лаунчеры: готовая скруглённая плитка 48 dp.
+        legacy = int(48 * k)
+        tile = place(background(legacy * 4), logo, int(legacy * 4 * 0.84))
+        rounded(tile).resize((legacy, legacy), Image.LANCZOS).save(
+            os.path.join(folder, "ic_launcher.png")
+        )
+        # Адаптивная иконка: слой 108 dp, безопасная зона 66 dp.
+        layer = int(108 * k)
+        fg = Image.new("RGBA", (layer, layer), (0, 0, 0, 0))
+        place(fg, logo, int(layer * 0.64))
+        fg.save(os.path.join(folder, "ic_launcher_foreground.png"))
+        # Монохромная (тематические значки Android 13+): белый силуэт сферы.
+        mono = Image.new("RGBA", (layer, layer), (0, 0, 0, 0))
+        d = int(layer * 0.56)
+        alpha = sphere(logo, d).split()[3]
+        white = Image.new("RGBA", (d, d), (255, 255, 255, 255))
+        white.putalpha(alpha)
+        mono.alpha_composite(white, ((layer - d) // 2, (layer - d) // 2))
+        mono.save(os.path.join(folder, "ic_launcher_monochrome.png"))
 
-    anydpi = os.path.join(OUT, "mipmap-anydpi-v26")
-    os.makedirs(anydpi, exist_ok=True)
-    with open(os.path.join(anydpi, "ic_launcher.xml"), "w", encoding="utf-8") as f:
-        f.write(
-            '<?xml version="1.0" encoding="utf-8"?>\n'
-            '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
-            '    <background android:drawable="@color/ic_launcher_background"/>\n'
-            '    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n'
-            '    <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>\n'
-            '</adaptive-icon>\n')
+    # Значок в строке состояния и в шторке уведомлений: 24 dp, белый силуэт.
+    for name, k in DENSITIES.items():
+        folder = os.path.join(OUT, f"drawable-{name}")
+        os.makedirs(folder, exist_ok=True)
+        notification_glyph(int(24 * k)).save(os.path.join(folder, "ic_notification.png"))
 
     values = os.path.join(OUT, "values")
     os.makedirs(values, exist_ok=True)
     with open(os.path.join(values, "ic_launcher_background.xml"), "w", encoding="utf-8") as f:
         f.write(
-            '<?xml version="1.0" encoding="utf-8"?>\n'
-            '<resources>\n'
-            '    <color name="ic_launcher_background">#155E75</color>\n'
-            '</resources>\n')
+            '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
+            f'    <color name="ic_launcher_background">{BG_HEX}</color>\n</resources>\n'
+        )
 
     os.makedirs(DOCS, exist_ok=True)
-    legacy_icon(512).save(os.path.join(DOCS, "replika_icon_512.png"))
-    print("Иконки записаны в", OUT)
+    rounded(ios.convert("RGBA").resize((512, 512), Image.LANCZOS)).save(
+        os.path.join(DOCS, "replika_icon_512.png")
+    )
+    print("Иконки обновлены.")
 
 
 if __name__ == "__main__":

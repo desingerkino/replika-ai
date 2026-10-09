@@ -132,7 +132,7 @@ class _VideoNoteRecorderState extends State<_VideoNoteRecorder> {
               child: IconButton(
                 tooltip: 'Отмена',
                 onPressed: _busy ? null : () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                icon: const Icon(Icons.close_rounded, color: MediaPalette.onMedia),
               ),
             ),
             const Spacer(),
@@ -140,7 +140,7 @@ class _VideoNoteRecorderState extends State<_VideoNoteRecorder> {
               Padding(
                 padding: const EdgeInsets.all(Space.xl),
                 child: Text(_problem!,
-                    textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 16)),
+                    textAlign: TextAlign.center, style: const TextStyle(color: MediaPalette.onMedia, fontSize: 16)),
               )
             else
               ClipOval(
@@ -150,14 +150,14 @@ class _VideoNoteRecorderState extends State<_VideoNoteRecorder> {
                       ? CameraCover(controller: controller)
                       : const ColoredBox(
                           color: Color(0xFF26313A),
-                          child: Center(child: CircularProgressIndicator(color: Colors.white)),
+                          child: Center(child: CircularProgressIndicator(color: MediaPalette.onMedia)),
                         ),
                 ),
               ),
             const SizedBox(height: Space.l),
             Text(
               _recording ? formatDuration(elapsed) : 'Видеосообщение до 1 минуты',
-              style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600),
+              style: const TextStyle(color: MediaPalette.onMedia, fontSize: 17, fontWeight: FontWeight.w600),
             ),
             const Spacer(),
             if (_problem == null)
@@ -173,7 +173,7 @@ class _VideoNoteRecorderState extends State<_VideoNoteRecorder> {
                       height: 78,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
+                        border: Border.all(color: MediaPalette.onMedia, width: 4),
                       ),
                       child: Center(
                         child: AnimatedContainer(

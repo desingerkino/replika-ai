@@ -1,7 +1,7 @@
 name: replika
 description: "Реплика — постановочный мессенджер для кино и сериалов (Android, iPhone, iPad)."
 publish_to: 'none'
-version: 0.17.0+19
+version: 0.19.1+22
 
 environment:
   sdk: ^3.6.0
@@ -19,6 +19,8 @@ dependencies:
   file_picker: ^12.3.0
   video_player: ^2.9.0
   just_audio: ^0.10.5
+  # Звуковая сессия звонка: разговорный динамик, громкая связь (идёт вместе с just_audio).
+  audio_session: '>=0.1.18 <0.3.0'
   camera: '>=0.11.0 <0.13.0'
   record: ^6.2.0
   # Запись экрана видеозвонка и сохранение в галерею (свой небольшой плагин, packages/replika_recorder).
@@ -43,3 +45,18 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+    - assets/brand/
+  # Roboto (Apache 2.0, лицензия — assets/fonts/Roboto-LICENSE.txt): один
+  # шрифт интерфейса на Android и iPhone.
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700

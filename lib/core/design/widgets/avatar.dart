@@ -40,16 +40,17 @@ class Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = tone != null ? AvatarTones.at(tone!) : AvatarTones.forKey(name);
+    final index = tone ?? AvatarTones.indexForKey(name);
+    final (background, foreground) = AvatarTints.at(index, Theme.of(context).brightness);
     final fallback = DecoratedBox(
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
       child: Center(
         child: Text(
           initialsOf(name),
           maxLines: 1,
           textScaler: TextScaler.noScaling,
           style: TextStyle(
-            color: Colors.white,
+            color: foreground,
             fontSize: size * 0.36,
             height: 1,
             fontWeight: FontWeight.w600,

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/brand/brand.dart';
-import '../core/brand/logo.dart';
 import '../core/design/context.dart';
 import '../core/design/icons.dart';
 import '../core/design/theme.dart';
+import '../core/theme/app_theme_id.dart';
+import '../features/splash/splash_screen.dart';
 import '../core/design/tokens.dart';
 import 'app.dart';
 import 'services.dart';
@@ -39,7 +40,10 @@ class _StartupAppState extends State<StartupApp> {
 
   Future<void> _load() async {
     try {
-      final services = await AppServices.open();
+      // Заставка показывается хотя бы до конца своей анимации появления.
+      final opened = AppServices.open();
+      await Future.wait<Object?>([opened, Future<void>.delayed(const Duration(milliseconds: 1100))]);
+      final services = await opened;
       if (!mounted) return;
       setState(() {
         _services = services;
@@ -58,31 +62,29 @@ class _StartupAppState extends State<StartupApp> {
   @override
   Widget build(BuildContext context) {
     final services = _services;
-    if (services != null) return ReplikaApp(services: services);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 420),
+      switchInCurve: Curves.easeOutCubic,
+      child: services != null
+          ? ReplikaApp(key: const ValueKey('app'), services: services)
+          : _startup(),
+    );
+  }
+
+  Widget _startup() {
     return MaterialApp(
+      key: const ValueKey('startup'),
       title: Brand.name,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      theme: AppTheme.build(AppThemeId.fallback, Brightness.light),
+      darkTheme: AppTheme.build(AppThemeId.fallback, Brightness.dark),
       themeMode: ThemeMode.system,
       locale: appLocale,
       supportedLocales: const [appLocale],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       home: _error == null
-          ? const _Splash()
+          ? const SplashScreen()
           : _StartupError(error: _error!, retrying: _opening, onRetry: _retry),
-    );
-  }
-}
-
-class _Splash extends StatelessWidget {
-  const _Splash();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
-      body: Center(child: ReplikaLogo(size: 88, onDark: isDark)),
     );
   }
 }

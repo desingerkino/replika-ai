@@ -11,30 +11,35 @@ class SearchField extends StatelessWidget {
     required this.controller,
     required this.hint,
     required this.onChanged,
+    this.focusNode,
   });
 
   final TextEditingController controller;
   final String hint;
   final ValueChanged<String> onChanged;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
     final rc = context.rc;
+    final pill = context.style.searchRadius >= 100;
     return Container(
+      constraints: BoxConstraints(minHeight: pill ? 46 : 38),
       decoration: BoxDecoration(
         color: rc.surfaceMuted,
-        borderRadius: BorderRadius.circular(Radii.control),
+        borderRadius: BorderRadius.circular(context.style.searchRadius),
       ),
-      padding: const EdgeInsets.only(left: Space.m),
+      padding: EdgeInsets.only(left: pill ? Space.l : Space.m),
       child: Row(
         children: [
-          Icon(AppIcons.search, size: 22, color: rc.textTertiary),
-          const SizedBox(width: Space.s),
+          Icon(AppIcons.search, size: pill ? 22 : 18, color: rc.textSecondary),
+          SizedBox(width: pill ? Space.m : Space.s),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 11),
+              padding: const EdgeInsets.symmetric(vertical: 9),
               child: TextField(
                 controller: controller,
+                focusNode: focusNode,
                 onChanged: onChanged,
                 textInputAction: TextInputAction.search,
                 style: context.tt.bodyLarge,

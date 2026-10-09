@@ -81,6 +81,93 @@ class SectionLabel extends StatelessWidget {
   }
 }
 
+/// Фон экранов настроек: в сгруппированном стиле — системный серый
+/// (#F2F2F7), иначе — обычная поверхность.
+Color settingsBackground(BuildContext context) =>
+    context.style.groupedSettings ? context.rc.groupedBackground : context.cs.surface;
+
+/// Группа настроек. В сгруппированном стиле (iOS) — скруглённая карточка
+/// с тонкими разделителями после значка; иначе — подпись и строки подряд.
+class SettingsGroup extends StatelessWidget {
+  const SettingsGroup({super.key, this.title, required this.children, this.footer});
+
+  final String? title;
+  final List<Widget> children;
+
+  /// Пояснение мелким текстом под группой.
+  final String? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    final rc = context.rc;
+    final grouped = context.style.groupedSettings;
+    final rows = [for (final c in children) if (c is! SizedBox || c.child != null) c];
+    if (!grouped) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (title != null) SectionLabel(title!),
+          ...rows,
+          if (footer != null) _Footer(footer!),
+        ],
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (title != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Space.l, Space.xl, Space.l, Space.s - 2),
+              child: Text(
+                title!.toUpperCase(),
+                style: context.tt.labelMedium?.copyWith(color: rc.textSecondary, letterSpacing: 0.4),
+              ),
+            )
+          else
+            const SizedBox(height: Space.l),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(Radii.card - 2),
+            child: Material(
+              color: rc.groupedCell,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < rows.length; i++) ...[
+                    if (i > 0)
+                      Padding(
+                        // Разделитель начинается после значка, как в iOS.
+                        padding: const EdgeInsets.only(left: Space.l + 4 + 22 + Space.l),
+                        child: Divider(height: 0.5, thickness: 0.5, color: rc.divider),
+                      ),
+                    rows[i],
+                  ],
+                ],
+              ),
+            ),
+          ),
+          if (footer != null) _Footer(footer!),
+        ],
+      ),
+    );
+  }
+}
+
+class _Footer extends StatelessWidget {
+  const _Footer(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.l + 4, Space.s, Space.l + 4, 0),
+      child: Text(text, style: context.tt.bodySmall?.copyWith(color: context.rc.textSecondary)),
+    );
+  }
+}
+
 /// Строка списка настроек.
 class SettingsTile extends StatelessWidget {
   const SettingsTile({

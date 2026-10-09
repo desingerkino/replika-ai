@@ -48,9 +48,12 @@ void main() {
 
   test('зашифрованный кадр читает только собеседник', () async {
     final (device, controller) = await pairOfCiphers();
-    final frame = await controller.seal({'type': 'command', 'commandId': 'c1'});
-    expect(frame.toString(), isNot(contains('c1')), reason: 'в кадре нет открытого текста');
-    expect((await device.open(frame))['commandId'], 'c1');
+    // Длинная метка: короткая («c1») случайно встречается в base64 шифротекста.
+    const secret = 'commandId-SECRET-PLAINTEXT-42';
+    final frame = await controller.seal({'type': 'command', 'commandId': secret});
+    expect(frame.toString(), isNot(contains(secret)), reason: 'в кадре нет открытого текста');
+    expect(frame.toString(), isNot(contains('command')), reason: 'тип команды тоже зашифрован');
+    expect((await device.open(frame))['commandId'], secret);
   });
 
   test('повтор перехваченного кадра отклоняется', () async {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -7,6 +8,7 @@ import '../core/util/ids.dart';
 import '../data/models/call_record.dart';
 import '../data/models/message.dart';
 import '../data/models/origin.dart';
+import 'call_audio.dart';
 import 'call_engine.dart';
 import 'services.dart';
 
@@ -124,6 +126,13 @@ class AssetCallSounds implements CallSounds {
     try {
       await _p.stop();
       await _p.setAsset(asset);
+      // Гудки вызова идут туда же, куда разговор (у уха — в разговорный
+      // динамик); рингтон входящего — как обычный звонок телефона.
+      if (!kIsWeb && Platform.isAndroid) {
+        await _p.setAndroidAudioAttributes(
+          asset.endsWith('ringtone.wav') ? CallAudio.ringtoneAttributes : CallAudio.voiceAttributes,
+        );
+      }
       await _p.setLoopMode(loop ? LoopMode.one : LoopMode.off);
       unawaited(_p.play());
     } catch (error) {
