@@ -1,6 +1,6 @@
 # Replika Next: редизайн и система тем
 
-Версия 0.19.0 (сборка 21). Основа — ветка `new-ui-ios27`: 5 вкладок, плавающая панель,
+Версия 0.19.1 (сборка 22). Основа — ветка `new-ui-ios27`: 5 вкладок, плавающая панель,
 приветствие. Вся прежняя логика сохранена: сцены, операторский режим,
 Connect, кинорежим, звонки, ИИ.
 
@@ -128,3 +128,10 @@ iOS 1024) пересобирает `tool/generate_icons.py`.
 
 Миграция базы 6: `chats.archived_at`, `chats.background`, `messages.played_at`.
 Тесты: `test/v2_test.dart` (миграция, архив, фон, «прослушано», волна WAV, вписывание видео, каталог фонов) и обновлённые `stage7b_test.dart`, `replika_next_test.dart`, `widget_test.dart`.
+
+## Шрифт (0.19.1)
+
+Весь интерфейс набран Roboto из ресурсов приложения (`assets/fonts`, Apache 2.0,
+лицензия — `assets/fonts/Roboto-LICENSE.txt`): на Android и iPhone текст
+выглядит одинаково, ничего не грузится из сети. Начертания: Light, Regular,
+Italic, Medium, Bold. Иконки — Material Icons (Apache 2.0).

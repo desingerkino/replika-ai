@@ -37,6 +37,8 @@ abstract final class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      // Один шрифт на обеих платформах: Roboto из ресурсов приложения.
+      fontFamily: AppType.family,
       brightness: brightness,
       colorScheme: cs,
       scaffoldBackgroundColor: cs.surface,

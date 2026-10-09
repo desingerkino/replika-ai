@@ -1,7 +1,7 @@
 name: replika
 description: "Реплика — постановочный мессенджер для кино и сериалов (Android, iPhone, iPad)."
 publish_to: 'none'
-version: 0.19.0+21
+version: 0.19.1+22
 
 environment:
   sdk: ^3.6.0
@@ -46,3 +46,17 @@ flutter:
   assets:
     - assets/sounds/
     - assets/brand/
+  # Roboto (Apache 2.0, лицензия — assets/fonts/Roboto-LICENSE.txt): один
+  # шрифт интерфейса на Android и iPhone.
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700

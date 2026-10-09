@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Типографическая шкала. Шрифт — системный: в кадре приложение должно
-/// выглядеть родным для конкретного телефона, и ничего не грузится из сети.
+/// Типографическая шкала. Шрифт — Roboto из ресурсов приложения: одинаковый
+/// на Android и iPhone, свободная лицензия, ничего не грузится из сети.
 abstract final class AppType {
+  /// Шрифт интерфейса (assets/fonts, Apache 2.0).
+  static const String family = 'Roboto';
+
   static TextTheme textTheme({required Color primary, required Color secondary}) {
     return TextTheme(
       headlineLarge: TextStyle(fontSize: 34, height: 41 / 34, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: primary),
