@@ -15,6 +15,9 @@ public class ReplikaRecorderPlugin: NSObject, FlutterPlugin {
       binaryMessenger: registrar.messenger())
     let instance = ReplikaRecorderPlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
+    // Продление работы в фоне, чтобы начатый шаг сцены успел показать
+    // уведомление на заблокированном экране (см. ReplikaBackgroundActivity).
+    ReplikaBackgroundActivity.register(with: registrar)
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

@@ -8,6 +8,7 @@ import '../../core/design/tokens.dart';
 import '../../core/design/widgets/form.dart';
 import '../../core/design/widgets/top_bar.dart';
 import '../../core/util/platform_info.dart';
+import '../../app/background_activity.dart';
 
 /// Одно дополнение. Новая функция добавляется записью в [addons] —
 /// страницу настроек переделывать не нужно.
@@ -107,7 +108,8 @@ final List<Addon> addons = [
     builder: (context) => SettingsTile(
       icon: Icons.notification_add_outlined,
       title: 'Проверить уведомление',
-      subtitle: 'Показать пробное уведомление через 3 секунды — успейте свернуть приложение',
+      subtitle: 'Пробное уведомление через 5 секунд — успейте заблокировать экран '
+          'или свернуть приложение',
       onTap: () async {
         final services = Services.read(context);
         final messenger = ScaffoldMessenger.of(context);
@@ -118,12 +120,19 @@ final List<Addon> addons = [
           ));
           return;
         }
-        await Future<void>.delayed(const Duration(seconds: 3));
-        await services.notifications.showEvent(
-          id: 7,
-          title: 'Реплика',
-          text: 'Пробное уведомление: звук и показ работают.',
-        );
+        messenger.showSnackBar(const SnackBar(
+          content: Text('Через 5 секунд придёт уведомление — заблокируйте экран'),
+        ));
+        // Как шаг сцены: ожидание и показ доводятся до конца и после
+        // блокировки экрана (iOS иначе приостанавливает приложение).
+        await BackgroundActivity.run('Пробное уведомление', () async {
+          await Future<void>.delayed(const Duration(seconds: 5));
+          await services.notifications.showEvent(
+            id: 7,
+            title: 'Реплика',
+            text: 'Пробное уведомление: звук и показ работают.',
+          );
+        });
       },
     ),
   ),

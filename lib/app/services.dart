@@ -28,6 +28,7 @@ import '../data/profile_transfer.dart';
 import 'auto_reply.dart';
 import 'improv.dart';
 import 'kino.dart';
+import 'background_activity.dart';
 import 'notifications.dart';
 import 'improv_sender.dart';
 import 'media_store.dart';
@@ -191,6 +192,17 @@ class AppServices {
   /// счётчик непрочитанных, если собеседник пишет в открытый чат).
   final ValueNotifier<String?> openChatId = ValueNotifier<String?>(null);
 
+  /// Чат открыт и приложение на экране (не в фоне, не под блокировкой).
+  bool chatOnScreen(String chatId) => openChatId.value == chatId && appInForeground;
+
+  /// Спросить разрешение на уведомления, пока приложение на экране:
+  /// из фона (экран заблокирован) iOS окно запроса не показывает, и первое
+  /// уведомление сцены пропадало. Если пользователь уже решил — окна нет.
+  Future<void> requestNotificationPermissionIfNeeded() async {
+    if (!notificationsEnabled.value || !appInForeground) return;
+    await notifications.ensurePermission();
+  }
+
   /// Кнопки громкости управляют сценой (Настройки → Дополнения).
   final ValueNotifier<bool> volumeKeysEnabled;
 
@@ -218,10 +230,12 @@ class AppServices {
     }
   }
 
-  /// Входящее в чат, который сейчас не открыт: уведомление, как у
+  /// Входящее в чат, который сейчас не на экране: уведомление, как у
   /// настоящего мессенджера. Чаты «без звука» уведомлений не дают.
+  /// Чат, открытый перед блокировкой экрана или уходом в фон, на экране
+  /// уже не виден — уведомление показывается (как в Telegram и WhatsApp).
   Future<void> notifyIncoming(String chatId, String text, {DateTime? time, String? senderName}) async {
-    if (!notificationsEnabled.value || openChatId.value == chatId) return;
+    if (!notificationsEnabled.value || chatOnScreen(chatId)) return;
     final header = await chats.header(chatId);
     if (header == null || header.chat.muted) return;
     await notifications.showMessage(

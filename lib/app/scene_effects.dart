@@ -10,6 +10,7 @@ import '../data/models/scene_action.dart';
 import '../data/models/take.dart';
 import '../data/models/call_record.dart';
 import 'call_engine.dart';
+import 'background_activity.dart';
 import 'call_services.dart';
 import 'navigator.dart';
 import 'notifications.dart';
@@ -407,9 +408,14 @@ class SceneDataEffects implements SceneEffects, SceneProgressStore {
     await _insert(info, chatId,
         senderId: target.peerId, type: type, text: text, mediaId: mediaId, replyToId: reply?.id);
     if (reply != null && reply.senderId == info.ownerId) await _readByReply(reply);
-    if (!_chatOpen(chatId)) {
+    final open = _chatOpen(chatId);
+    if (!open) {
       await services.chats.incrementUnread(chatId);
       _record({'op': 'unreadDec', 'chatId': chatId});
+    }
+    // Уведомление — если чат не открыт или открыт, но экран заблокирован
+    // (приложение в фоне): так ведут себя настоящие мессенджеры.
+    if (!open || !appInForeground) {
       _record({'op': 'chatNotif', 'chatId': chatId});
       final shown = text.isNotEmpty ? text : messageTypeLabelFor(type);
       final inGroup = action.params['groupId'] != null;
@@ -778,14 +784,16 @@ class SceneDataEffects implements SceneEffects, SceneProgressStore {
     final chat = await services.chats.openOrCreateDirect(deviceId: device, characterId: from);
     await _touch(info, chat);
     final id = await _insert(info, chat, senderId: from, type: MessageType.text, text: text);
-    final onScreen = services.currentDeviceId.value == device && _chatOpen(chat);
+    final thisPhone = services.currentDeviceId.value == device;
+    final onScreen = thisPhone && _chatOpen(chat);
     if (!onScreen) {
       await services.chats.incrementUnread(chat);
       _record({'op': 'unreadDec', 'chatId': chat});
-      if (services.currentDeviceId.value == device) {
-        _record({'op': 'chatNotif', 'chatId': chat});
-        unawaited(services.notifyIncoming(chat, text, time: services.engine.sceneNow()));
-      }
+    }
+    // Чат открыт, но экран заблокирован — уведомление всё равно нужно.
+    if (thisPhone && (!onScreen || !appInForeground)) {
+      _record({'op': 'chatNotif', 'chatId': chat});
+      unawaited(services.notifyIncoming(chat, text, time: services.engine.sceneNow()));
     }
     return id;
   }

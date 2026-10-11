@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../data/models/message.dart';
 import '../data/models/origin.dart';
+import 'background_activity.dart';
 import 'improv.dart';
 import 'services.dart';
 
@@ -15,7 +16,11 @@ class ServicesImprovSender implements ImprovSender {
   final AppServices services;
 
   @override
-  Future<String> send(String chatId, QueuedReply reply) async {
+  Future<String> send(String chatId, QueuedReply reply) =>
+      // «Печатает…» и ответ доходят до уведомления и под экраном блокировки (iOS).
+      BackgroundActivity.run('Импровизация', () => _send(chatId, reply));
+
+  Future<String> _send(String chatId, QueuedReply reply) async {
     final header = await services.chats.header(chatId);
     if (header == null) throw StateError('Чат не найден');
     final owner = header.ownerCharacterId;
@@ -41,6 +46,9 @@ class ServicesImprovSender implements ImprovSender {
     );
     if (!reply.fromOwner && services.openChatId.value != chatId) {
       await services.chats.incrementUnread(chatId);
+    }
+    // Чат открыт, но экран заблокирован — уведомление всё равно нужно.
+    if (!reply.fromOwner && !services.chatOnScreen(chatId)) {
       unawaited(services.notifyIncoming(chatId, reply.text.trim(),
           time: sceneId == null ? null : services.engine.sceneNow()));
     }

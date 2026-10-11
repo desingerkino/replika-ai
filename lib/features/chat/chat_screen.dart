@@ -116,6 +116,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Приложение уходит в фон — черновик сохраняется сразу.
     if (state != AppLifecycleState.resumed) _saveDraftNow();
+    // Вернулись в открытый чат (разблокировали экран) — его уведомление
+    // больше не нужно, как у настоящих мессенджеров.
+    if (state == AppLifecycleState.resumed) unawaited(_services?.notifications.clearChat(widget.chatId));
   }
 
   @override

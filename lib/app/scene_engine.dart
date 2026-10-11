@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../core/util/time_format.dart';
 import '../data/models/scene_action.dart';
 import '../data/models/take.dart';
+import 'background_activity.dart';
 import 'scene_chat_view.dart';
 
 /// Состояние движка сцен.
@@ -704,7 +705,9 @@ class SceneEngine extends ChangeNotifier {
   Future<void> _runAuto(int generation) async {
     _autoLoopGeneration = generation;
     try {
-      await _autoLoop(generation);
+      // Автоцикл: задержки между событиями тоже идут под экраном блокировки
+      // (в пределах времени, которое даёт iOS).
+      await BackgroundActivity.run('Сцена', () => _autoLoop(generation));
     } finally {
       if (_autoLoopGeneration == generation) _autoLoopGeneration = null;
     }
@@ -745,7 +748,12 @@ class SceneEngine extends ChangeNotifier {
     }
   }
 
-  Future<void> _perform(SceneAction action, int generation, {int? index, bool mark = false}) async {
+  /// Действие сцены целиком (с «печатает…» и уведомлением) доводится до
+  /// конца, даже если сразу после «Далее» заблокировали экран (iOS).
+  Future<void> _perform(SceneAction action, int generation, {int? index, bool mark = false}) =>
+      BackgroundActivity.run('Шаг сцены', () => _performAction(action, generation, index: index, mark: mark));
+
+  Future<void> _performAction(SceneAction action, int generation, {int? index, bool mark = false}) async {
     final info = _info;
     final type = action.type;
     if (info == null) return;

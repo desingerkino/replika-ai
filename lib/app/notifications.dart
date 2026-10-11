@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'background_activity.dart';
+
 /// Номер уведомления чата: одно уведомление на чат, новые сообщения
 /// обновляют его, открытие чата убирает.
 int chatNotificationId(String chatId) {
@@ -118,6 +120,9 @@ class NotificationService {
   Future<bool> ensurePermission() async {
     if (!_ready) return false;
     if (_permissionAsked) return enabledInSystem();
+    // Из фона (экран заблокирован) iOS окно запроса не показывает: не тратим
+    // единственную попытку, просто узнаём текущее состояние.
+    if (!appInForeground) return enabledInSystem();
     _permissionAsked = true;
     try {
       final ios = _ios;

@@ -6,6 +6,7 @@ import 'ai_context.dart';
 import 'improv.dart';
 import 'improv_sender.dart';
 import 'services.dart';
+import 'background_activity.dart';
 
 /// Одна реплика переписки для ИИ.
 @immutable
@@ -92,7 +93,13 @@ class AutoReplyController extends ChangeNotifier {
   }
 
   /// Вызывается после того, как владелец телефона отправил текст в чат.
-  Future<void> onOwnerMessage(String chatId) async {
+  /// Ответ доводится до конца и после блокировки экрана — в пределах
+  /// времени, которое даёт iOS (модель на графическом процессоре в фоне
+  /// iOS может остановить: тогда ответ придёт после разблокировки).
+  Future<void> onOwnerMessage(String chatId) =>
+      BackgroundActivity.run('Ответ ИИ', () => _onOwnerMessage(chatId));
+
+  Future<void> _onOwnerMessage(String chatId) async {
     final ai = engine;
     if (ai == null) return;
     await _loaded;

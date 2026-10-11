@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -48,6 +50,15 @@ class _StartupAppState extends State<StartupApp> {
       setState(() {
         _services = services;
         _opening = false;
+      });
+      // Разрешение на уведомления — пока приложение на экране, при подготовке
+      // к дублю. Раньше его спрашивали при первом уведомлении сцены, а если
+      // экран в этот момент был заблокирован, iOS окно не показывала и
+      // уведомление пропадало. Решение уже принято — окна не будет.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Timer(const Duration(milliseconds: 1500), () {
+          if (mounted) unawaited(services.requestNotificationPermissionIfNeeded());
+        });
       });
     } catch (error, stack) {
       debugPrint('Ошибка запуска: $error\n$stack');
